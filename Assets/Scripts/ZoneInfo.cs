@@ -5,15 +5,19 @@ using UnityEngine.UI;
 
 public class ZoneInfo : MonoBehaviour
 {
-    //[SerializeField]
-    //Button tokenButton0, tokenButton1, tokenButton2;
-    //[SerializeField]
-    //Button heroButton0, heroButton1, heroButton2;
-
-    //void TokenButtonClicked()
-    //{
-    //    Debug.Log("TokenButtonClicked!!!");
-    //}
+    public void TokenButtonClicked(Button button)
+    {
+        //Debug.Log("TokenButtonClicked!!! button.name: " + button.name);
+        CanvasGroup buttonCanvas = button.GetComponent<CanvasGroup>();
+        if (buttonCanvas.alpha == 1)
+        {
+            buttonCanvas.alpha = (float).2;
+        }
+        else
+        {
+            buttonCanvas.alpha = (float)1;
+        }
+    }
 
     // Start is called before the first frame update
     void Start()
