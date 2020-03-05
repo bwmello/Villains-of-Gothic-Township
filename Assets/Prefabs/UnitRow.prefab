@@ -37,7 +37,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 14, y: 0}
+  m_AnchoredPosition: {x: -26, y: 0}
   m_SizeDelta: {x: 5, y: 5}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3620712601740270332
@@ -210,7 +210,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 20, y: -6}
+  m_AnchoredPosition: {x: 44, y: -6}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!212 &3620712601893847824
@@ -455,7 +455,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 26, y: 0}
+  m_AnchoredPosition: {x: -14, y: 0}
   m_SizeDelta: {x: 5, y: 5}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3620712603183040348
@@ -785,7 +785,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 20, y: -0.000005722}
+  m_AnchoredPosition: {x: -20, y: -0.000005722}
   m_SizeDelta: {x: 10, y: 10}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3620712603312104157
@@ -989,7 +989,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 2.5}
+  m_AnchoredPosition: {x: 0, y: -3}
   m_SizeDelta: {x: 20, y: 10}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1963930095442117461
@@ -1128,17 +1128,17 @@ MonoBehaviour:
     - serializedVersion: 3
       time: 0
       value: -0.0001372858
-      inSlope: 0.302187
-      outSlope: 0.302187
+      inSlope: -0.19989197
+      outSlope: -0.19989197
       tangentMode: 34
       weightedMode: 0
       inWeight: 0
       outWeight: 0.33333334
     - serializedVersion: 3
-      time: 0.49961638
-      value: 0.15084028
-      inSlope: 0.0010291338
-      outSlope: 0.0010291338
+      time: 0.49955088
+      value: -0.0999935
+      inSlope: 0.00061796606
+      outSlope: 0.00061796606
       tangentMode: 34
       weightedMode: 0
       inWeight: 0.33333334
@@ -1146,8 +1146,8 @@ MonoBehaviour:
     - serializedVersion: 3
       time: 1
       value: 0.00066078454
-      inSlope: -0.30012873
-      outSlope: -0.30012873
+      inSlope: 0.2011279
+      outSlope: 0.2011279
       tangentMode: 34
       weightedMode: 0
       inWeight: 0.33333334

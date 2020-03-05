@@ -7,10 +7,55 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1103413341689018946, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: CurveScale
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1103413341689018946, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: VertexCurve.m_Curve.Array.data[0].inSlope
+      value: 0.30097803
+      objectReference: {fileID: 0}
+    - target: {fileID: 1103413341689018946, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: VertexCurve.m_Curve.Array.data[0].outSlope
+      value: 0.30097803
+      objectReference: {fileID: 0}
+    - target: {fileID: 1103413341689018946, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: VertexCurve.m_Curve.Array.data[1].value
+      value: 0.14998886
+      objectReference: {fileID: 0}
+    - target: {fileID: 1103413341689018946, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: VertexCurve.m_Curve.Array.data[1].inSlope
+      value: 0.0015201569
+      objectReference: {fileID: 0}
+    - target: {fileID: 1103413341689018946, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: VertexCurve.m_Curve.Array.data[1].outSlope
+      value: 0.0015201569
+      objectReference: {fileID: 0}
+    - target: {fileID: 1103413341689018946, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: VertexCurve.m_Curve.Array.data[2].inSlope
+      value: -0.29793772
+      objectReference: {fileID: 0}
+    - target: {fileID: 1103413341689018946, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: VertexCurve.m_Curve.Array.data[2].outSlope
+      value: -0.29793772
+      objectReference: {fileID: 0}
+    - target: {fileID: 1103413341689018946, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: VertexCurve.m_Curve.Array.data[1].time
+      value: 0.49879435
+      objectReference: {fileID: 0}
     - target: {fileID: 3620712601740270272, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -14
+      value: 14
       objectReference: {fileID: 0}
     - target: {fileID: 3620712601893847824, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
@@ -21,7 +66,7 @@ PrefabInstance:
     - target: {fileID: 3620712601893847831, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 44
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 3620712601893847831, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
@@ -36,12 +81,12 @@ PrefabInstance:
     - target: {fileID: 3620712603183040288, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -26
+      value: 26
       objectReference: {fileID: 0}
     - target: {fileID: 3620712603312104099, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -20
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 3620712603341133452, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
@@ -157,6 +202,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_RootOrder
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3736574561220380137, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 2.5
       objectReference: {fileID: 0}
     - target: {fileID: 5939706517644142130, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
