@@ -17,7 +17,7 @@ GameObject:
   - component: {fileID: 99739927912648838}
   m_Layer: 5
   m_Name: ZoneInfoPanel
-  m_TagString: Untagged
+  m_TagString: ZoneInfoPanel
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -195,6 +195,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8c2a960297025466ea0d65b85a403d5d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  adjacentZones: []
+  lineOfSightZones: []
+  elevation: 0
+  maxOccupancy: 0
+  terrainDifficulty: 0
+  terrainDanger: 0
 --- !u!1 &6802748874346499837
 GameObject:
   m_ObjectHideFlags: 0
@@ -333,7 +339,7 @@ PrefabInstance:
     - target: {fileID: 4194353948598637565, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
         type: 3}
       propertyPath: m_textInfo.characterCount
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 4194353948598637565, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
         type: 3}
@@ -812,7 +818,7 @@ PrefabInstance:
     - target: {fileID: 3620712603312104156, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
       propertyPath: m_textInfo.characterCount
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 3620712603312104156, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
@@ -1280,7 +1286,7 @@ PrefabInstance:
     - target: {fileID: 3620712603312104156, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
       propertyPath: m_textInfo.characterCount
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 3620712603312104156, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
@@ -1768,7 +1774,7 @@ PrefabInstance:
     - target: {fileID: 3620712603312104156, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
       propertyPath: m_textInfo.characterCount
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 3620712603312104156, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
@@ -2625,7 +2631,7 @@ PrefabInstance:
     - target: {fileID: 3620712603312104156, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
       propertyPath: m_textInfo.characterCount
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 3620712603312104156, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
@@ -2767,6 +2773,16 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 7320453720201463127}
     m_Modifications:
+    - target: {fileID: 499749899686709246, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: movePoints
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 499749899686709246, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: ignoreElevation
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3620712601893847824, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
       propertyPath: m_Sprite
@@ -2841,7 +2857,7 @@ PrefabInstance:
     - target: {fileID: 3620712603312104156, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
       propertyPath: m_textInfo.characterCount
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 3620712603312104156, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
@@ -2968,6 +2984,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: UnitRow 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3620712603341133459, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: m_TagString
+      value: UZI
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6dcd349d4280042a1bd85e84b4793140, type: 3}
 --- !u!224 &6639864572071105796 stripped
@@ -2986,7 +3007,7 @@ PrefabInstance:
     - target: {fileID: 4194353948598637565, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
         type: 3}
       propertyPath: m_textInfo.characterCount
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 4194353948598637565, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
         type: 3}

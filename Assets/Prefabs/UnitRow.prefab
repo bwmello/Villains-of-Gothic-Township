@@ -814,7 +814,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: '1
+  m_text: '0
 
 '
   m_isRightToLeft: 0
@@ -918,6 +918,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3620712603341133452}
   - component: {fileID: 3620712603341133455}
+  - component: {fileID: 499749899686709246}
   m_Layer: 5
   m_Name: UnitRow
   m_TagString: Untagged
@@ -956,6 +957,27 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3620712603341133459}
   m_CullTransparentMesh: 1
+--- !u!114 &499749899686709246
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3620712603341133459}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 208ef6e8bb7534f498190648a5fd2080, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  lifePoints: 1
+  defense: 0
+  movePoints: 0
+  ignoreTerrainDifficulty: 0
+  ignoreElevation: 0
+  ignoreSize: 0
+  size: 1
+  menace: 1
+  reinforcementCost: 1
 --- !u!1 &3743010383988308571
 GameObject:
   m_ObjectHideFlags: 0

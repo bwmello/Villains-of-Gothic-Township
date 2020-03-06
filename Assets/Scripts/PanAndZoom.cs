@@ -97,7 +97,7 @@ public class PanAndZoom : MonoBehaviour
                 touch0StartPosition = Input.mousePosition;
                 touch0StartTime = Time.time;
                 touch0LastPosition = touch0StartPosition;
-                Debug.Log("!!!UpdateWithMouse, touch0StartPosition: " + touch0StartPosition.ToString());
+                //Debug.Log("!!!UpdateWithMouse, touch0StartPosition: " + touch0StartPosition.ToString());
 
                 isTouching = true;
 
