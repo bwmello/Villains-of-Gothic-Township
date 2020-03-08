@@ -336,6 +336,16 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 7320453720201463127}
     m_Modifications:
+    - target: {fileID: 1073400145209800415, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
+        type: 3}
+      propertyPath: movePoints
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1073400145209800415, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
+        type: 3}
+      propertyPath: lifePoints
+      value: 6
+      objectReference: {fileID: 0}
     - target: {fileID: 4194353948598637565, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
         type: 3}
       propertyPath: m_textInfo.characterCount
@@ -465,6 +475,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: VillainRow 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4194353948618237874, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
+        type: 3}
+      propertyPath: m_TagString
+      value: BARN
       objectReference: {fileID: 0}
     - target: {fileID: 4194353948645431161, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
         type: 3}
@@ -759,6 +774,11 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 7320453720201463127}
     m_Modifications:
+    - target: {fileID: 499749899686709246, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: movePoints
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 3620712601893847824, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
       propertyPath: m_Sprite
@@ -944,6 +964,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: UnitRow 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3620712603341133459, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: m_TagString
+      value: PISTOLS
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6dcd349d4280042a1bd85e84b4793140, type: 3}
@@ -1227,6 +1252,11 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 7320453720201463127}
     m_Modifications:
+    - target: {fileID: 499749899686709246, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: movePoints
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 3620712601893847824, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
       propertyPath: m_Sprite
@@ -1412,6 +1442,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: UnitRow 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 3620712603341133459, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: m_TagString
+      value: SHOTGUN
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6dcd349d4280042a1bd85e84b4793140, type: 3}
@@ -1715,6 +1750,16 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 7320453720201463127}
     m_Modifications:
+    - target: {fileID: 499749899686709246, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: movePoints
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 499749899686709246, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: ignoreElevation
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3620712601893847824, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
       propertyPath: m_Sprite
@@ -1900,6 +1945,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: UnitRow 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3620712603341133459, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: m_TagString
+      value: CHAINS
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6dcd349d4280042a1bd85e84b4793140, type: 3}
@@ -2588,6 +2638,16 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 7320453720201463127}
     m_Modifications:
+    - target: {fileID: 499749899686709246, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: movePoints
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 499749899686709246, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: ignoreSize
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3620712602402919255, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
       propertyPath: m_textInfo.characterCount
@@ -2757,6 +2817,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: UnitRow 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3620712603341133459, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: m_TagString
+      value: CROWBAR
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6dcd349d4280042a1bd85e84b4793140, type: 3}
@@ -3004,6 +3069,21 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 7320453720201463127}
     m_Modifications:
+    - target: {fileID: 1073400145209800415, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
+        type: 3}
+      propertyPath: movePoints
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1073400145209800415, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
+        type: 3}
+      propertyPath: lifePoints
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 1073400145209800415, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
+        type: 3}
+      propertyPath: ignoreElevation
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 4194353948598637565, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
         type: 3}
       propertyPath: m_textInfo.characterCount
@@ -3133,6 +3213,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: VillainRow 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4194353948618237874, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
+        type: 3}
+      propertyPath: m_TagString
+      value: SUPERBARN
       objectReference: {fileID: 0}
     - target: {fileID: 4194353948645431161, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
         type: 3}

@@ -6,6 +6,12 @@ TagManager:
   tags:
   - ZoneInfoPanel
   - UZI
+  - CHAINS
+  - PISTOLS
+  - CROWBAR
+  - SHOTGUN
+  - BARN
+  - SUPERBARN
   layers:
   - Default
   - TransparentFX

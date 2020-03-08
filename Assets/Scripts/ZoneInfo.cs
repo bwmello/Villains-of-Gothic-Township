@@ -7,6 +7,7 @@ using TMPro;  // for getting henchmen quantity from UnitRows
 public class ZoneInfo : MonoBehaviour
 {
     public List<GameObject> adjacentZones;
+    public List<GameObject> steeplyAdjacentZones;
     public List<GameObject> lineOfSightZones;  // Use elevation difference between both zones when determining if height bonus
     public int elevation;
     public int maxOccupancy;
