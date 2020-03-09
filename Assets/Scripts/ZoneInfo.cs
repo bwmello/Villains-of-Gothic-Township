@@ -14,17 +14,7 @@ public class ZoneInfo : MonoBehaviour
     public int terrainDifficulty = 0;
     public int terrainDanger = 0;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    public bool has1stHero, has2ndHero, has3rdHero = false;
 
     public int GetCurrentOccupancy()
     {
@@ -38,6 +28,17 @@ public class ZoneInfo : MonoBehaviour
             }
         }
         return currentOccupancy;
+    }
+
+    public bool HasToken(string tokenName)
+    {
+        Transform tokensRow = transform.Find("TokensRow");
+        return tokensRow.Find(tokenName) == null ? false : true;
+    }
+
+    public bool HasHeroes()
+    {
+        return GetHeroesCount() > 0 ? true : false;
     }
 
     public int GetHeroesCount()

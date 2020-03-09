@@ -978,6 +978,15 @@ MonoBehaviour:
   size: 1
   menace: 1
   reinforcementCost: 1
+  actionProficiencies:
+  - action: MELEE
+    dice: []
+  - action: RANGED
+    dice: []
+  - action: MANIPULATION
+    dice: []
+  - action: THOUGHT
+    dice: []
 --- !u!1 &3743010383988308571
 GameObject:
   m_ObjectHideFlags: 0

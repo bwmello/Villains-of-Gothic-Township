@@ -13,19 +13,13 @@ public class ScenarioMap : MonoBehaviour
     GameObject clockHand;
 
     private int currentRound = 1;
-    private readonly float uncoverTime = 3.0f;
+    private readonly float uncoverTime = 2.0f;
 
     // Start is called before the first frame update
     void Start()
     {
         float startingClockHandAngle = -(currentRound * 30) + 2;
         clockHand.transform.eulerAngles = new Vector3(0, 0, startingClockHandAngle);
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 
     public void StartHeroTurn()
@@ -39,7 +33,6 @@ public class ScenarioMap : MonoBehaviour
     IEnumerator TurnClockHand(float currentAngle, float newAngle)
     {
         float t = 0;
-        var uncoverTime = 2;
 
         while (t < 1f)
         {
@@ -54,18 +47,27 @@ public class ScenarioMap : MonoBehaviour
         yield return 0;
     }
 
-    // TODO make both of  these dictionary  mappings. We could also add ID, skills, attack
-    //private string[] unitMapping = new string[] { "UZI", "CHAIN", "PISTOLS", "REINFORCEMENT", "CROWBAR", "SHOTGUN" };  // Must match order and naming of UnitRows in ZoneInfoPanel prefab
-    //private string[] villainMapping = new string[] { "BARN", "SUPERBARN" };  // Must match order and naming of VillainRows in ZoneInfoPanel prefab
-
-    Queue<string> villainRiver = new Queue<string>(new string[] { "UZI", "CHAINS", "PISTOLS", /*"REINFORCEMENT",*/ "CROWBAR", "SHOTGUN", "BARN" });
+    readonly Queue<string> villainRiver = new Queue<string>(new string[] { "UZI", "CHAINS", "PISTOLS", /*"REINFORCEMENT",*/ "CROWBAR", "SHOTGUN", "BARN" });
     //private string[] villainRiver = new string[] { "UZI", "CHAIN", "PISTOLS", "REINFORCEMENT", "CROWBAR", "SHOTGUN", "BARN" };
-    private string[] actionsPrioritized = new string[] { "ACTIVATE", "ATTACK" };  //, "DEFEND", "MANEUVER" };
     public void EndHeroTurn()
     {
+        List<GameObject> computerZones = new List<GameObject>();
+        List<GameObject> bombZones = new List<GameObject>();
+        List<GameObject> primedBombZones = new List<GameObject>();
+        List<GameObject> heroZones = new List<GameObject>();
+        foreach (GameObject zone in GameObject.FindGameObjectsWithTag("ZoneInfoPanel"))
+        {
+            ZoneInfo zoneInfo = zone.GetComponent<ZoneInfo>();
+            if (zoneInfo.HasToken("Computer")) { computerZones.Add(zone); }
+            if (zoneInfo.HasToken("Bomb")) { bombZones.Add(zone); }
+            if (zoneInfo.HasToken("PrimedBomb")) { primedBombZones.Add(zone); }
+            if (zoneInfo.HasHeroes()) { heroZones.Add(zone); }
+        }
+
         for (int i = 0; i < 2; i++)
         {
             string unitTag = villainRiver.Dequeue();
+            villainRiver.Enqueue(unitTag);
             foreach (GameObject unit in GameObject.FindGameObjectsWithTag(unitTag))
             {
                 Unit unitInfo = unit.GetComponent<Unit>();
@@ -139,6 +141,8 @@ public class ScenarioMap : MonoBehaviour
                 }
             }
         }
+
+        StartHeroTurn();
     }
 
     private Dictionary<GameObject, int> getPossibleDestinations(GameObject currentZone, Unit unitInfo, int movePointsPreviouslyUsed, Dictionary<GameObject, int> possibleDestinations = null)

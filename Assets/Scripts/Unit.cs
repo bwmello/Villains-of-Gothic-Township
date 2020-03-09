@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;  // for [Serializable]
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -16,22 +17,14 @@ public class Unit : MonoBehaviour
     public int menace = 1;
     public int reinforcementCost = 1;
 
-    // TODO: melee attack, ranged attack, manipulation, thought
-
-    // Start is called before the first frame update
-    void Start()
+    [Serializable]
+    public class actionProficiency
     {
-        
+        public string action;
+        public GameObject[] dice;
     }
+    public actionProficiency[] actionProficiencies;
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-
-    public void Activate()
-    {
-
-    }
+    // Unity can't expose dictionaries in the inspector, so below not possible without an addon:
+    //public Dictionary<string, GameObject[]> actionProficiencies = new Dictionary<string, GameObject[]>() { { "MELEE", new GameObject[] { } }, { "RANGED", new GameObject[] { } }, { "MANIPULATION", new GameObject[] { } }, { "THOUGHT", new GameObject[] { } } };
 }

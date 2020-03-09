@@ -12,6 +12,7 @@ TagManager:
   - SHOTGUN
   - BARN
   - SUPERBARN
+  - Dice
   layers:
   - Default
   - TransparentFX
