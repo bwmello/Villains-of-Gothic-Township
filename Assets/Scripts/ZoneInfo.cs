@@ -14,8 +14,6 @@ public class ZoneInfo : MonoBehaviour
     public int terrainDifficulty = 0;
     public int terrainDanger = 0;
 
-    public bool has1stHero, has2ndHero, has3rdHero = false;
-
     public int GetCurrentOccupancy()
     {
         int currentOccupancy = 0;
@@ -33,7 +31,7 @@ public class ZoneInfo : MonoBehaviour
     public bool HasToken(string tokenName)
     {
         Transform tokensRow = transform.Find("TokensRow");
-        return tokensRow.Find(tokenName) == null ? false : true;
+        return (tokensRow.gameObject.activeSelf && tokensRow.Find(tokenName) != null && tokensRow.Find(tokenName).gameObject.activeSelf);
     }
 
     public bool HasHeroes()

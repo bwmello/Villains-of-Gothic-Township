@@ -2,8 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using TMPro;  // for updating henchmen quantity from UnitRows
-using System.Linq;  // for dictionary.ElementAt
 
 public class ScenarioMap : MonoBehaviour
 {
@@ -51,18 +49,18 @@ public class ScenarioMap : MonoBehaviour
     //private string[] villainRiver = new string[] { "UZI", "CHAIN", "PISTOLS", "REINFORCEMENT", "CROWBAR", "SHOTGUN", "BARN" };
     public void EndHeroTurn()
     {
-        List<GameObject> computerZones = new List<GameObject>();
-        List<GameObject> bombZones = new List<GameObject>();
-        List<GameObject> primedBombZones = new List<GameObject>();
-        List<GameObject> heroZones = new List<GameObject>();
-        foreach (GameObject zone in GameObject.FindGameObjectsWithTag("ZoneInfoPanel"))
-        {
-            ZoneInfo zoneInfo = zone.GetComponent<ZoneInfo>();
-            if (zoneInfo.HasToken("Computer")) { computerZones.Add(zone); }
-            if (zoneInfo.HasToken("Bomb")) { bombZones.Add(zone); }
-            if (zoneInfo.HasToken("PrimedBomb")) { primedBombZones.Add(zone); }
-            if (zoneInfo.HasHeroes()) { heroZones.Add(zone); }
-        }
+        //List<GameObject> heroZones = new List<GameObject>();
+        //List<GameObject> computerZones = new List<GameObject>();
+        //List<GameObject> bombZones = new List<GameObject>();
+        //List<GameObject> primedBombZones = new List<GameObject>();
+        //foreach (GameObject zone in GameObject.FindGameObjectsWithTag("ZoneInfoPanel"))
+        //{
+        //    ZoneInfo zoneInfo = zone.GetComponent<ZoneInfo>();
+        //    if (zoneInfo.HasHeroes()) { heroZones.Add(zone); }
+        //    if (zoneInfo.HasToken("Computer")) { computerZones.Add(zone); }
+        //    if (zoneInfo.HasToken("Bomb")) { bombZones.Add(zone); }
+        //    if (zoneInfo.HasToken("PrimedBomb")) { primedBombZones.Add(zone); }
+        //}
 
         for (int i = 0; i < 2; i++)
         {
@@ -71,135 +69,10 @@ public class ScenarioMap : MonoBehaviour
             foreach (GameObject unit in GameObject.FindGameObjectsWithTag(unitTag))
             {
                 Unit unitInfo = unit.GetComponent<Unit>();
-                GameObject currentZone = unit.transform.parent.gameObject;
-                ZoneInfo currentZoneInfo = currentZone.GetComponent<ZoneInfo>();
-
-                Dictionary<GameObject, int> possibleDestinations = getPossibleDestinations(currentZone, unitInfo, 0);
-                if (possibleDestinations.Count > 0)
-                {
-                    // // Below for debugging getPossibleDestinations()
-                    //string possibleDestinationsDebugString = unitInfo.name;
-                    //foreach (KeyValuePair<GameObject, int> pair in possibleDestinations)
-                    //{
-                    //    possibleDestinationsDebugString += "  ZONE: " + pair.Key.name + " - " + pair.Value.ToString();
-                    //    //Debug.Log(pair.Key.name + pair.Value.ToString());
-                    //}
-                    //Debug.Log(possibleDestinationsDebugString);
-
-                    // TODO instead of destinationZone being random, choose the one with the highest priority target
-                    GameObject destinationZone = possibleDestinations.ElementAt(random.Next(possibleDestinations.Count)).Key;
-                    Debug.Log("Moving " + unitTag + " from " + currentZone.name + " to " + destinationZone.name);
-                    if (unitTag == "BARN" || unitTag == "SUPERBARN")
-                    {
-                        foreach (Transform row in currentZone.transform)
-                        {
-                            if (row.CompareTag(unitTag))
-                            {
-                                TMP_Text unitNumber = row.Find("UnitNumber").GetComponent<TMP_Text>();
-                                row.gameObject.SetActive(false);
-                                break;
-                            }
-                        }
-                        foreach (Transform row in destinationZone.transform)
-                        {
-                            if (row.CompareTag(unitTag))
-                            {
-                                TMP_Text unitNumber = row.Find("UnitNumber").GetComponent<TMP_Text>();
-                                unitNumber.text = unitInfo.lifePoints.ToString();
-                                row.gameObject.SetActive(true);
-                                break;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        foreach (Transform row in currentZone.transform)
-                        {
-                            if (row.CompareTag(unitTag))
-                            {
-                                TMP_Text unitNumber = row.Find("UnitNumber").GetComponent<TMP_Text>();
-
-                                unitNumber.text = (Int32.Parse(unitNumber.text) - 1).ToString();
-                                if (unitNumber.text == "0")
-                                {
-                                    row.gameObject.SetActive(false);
-                                }
-                                break;
-                            }
-                        }
-                        foreach (Transform row in destinationZone.transform)
-                        {
-                            if (row.CompareTag(unitTag))
-                            {
-                                TMP_Text unitNumber = row.Find("UnitNumber").GetComponent<TMP_Text>();
-                                unitNumber.text = (Int32.Parse(unitNumber.text) + 1).ToString();
-                                row.gameObject.SetActive(true);
-                                break;
-                            }
-                        }
-                    }
-                }
+                unitInfo.TakeUnitTurn();
             }
         }
 
         StartHeroTurn();
-    }
-
-    private Dictionary<GameObject, int> getPossibleDestinations(GameObject currentZone, Unit unitInfo, int movePointsPreviouslyUsed, Dictionary<GameObject, int> possibleDestinations = null)
-    {
-        if (possibleDestinations is null)
-        {
-            possibleDestinations = new Dictionary<GameObject, int>{{ currentZone, 0 }};
-        }
-
-        ZoneInfo currentZoneInfo = currentZone.GetComponent<ZoneInfo>();
-        List<GameObject> reachableZones = new List<GameObject>();
-
-        List<GameObject> allAdjacentZones = currentZoneInfo.adjacentZones;
-        allAdjacentZones.AddRange(currentZoneInfo.steeplyAdjacentZones);
-        foreach (GameObject potentialZone in allAdjacentZones)
-        {
-            ZoneInfo potentialZoneInfo = potentialZone.GetComponent<ZoneInfo>();
-
-            if (potentialZoneInfo.GetCurrentOccupancy() >= potentialZoneInfo.maxOccupancy)
-            {
-                continue;  // Skip this potentialZone if potentialZone is at maxOccupancy
-            }
-
-            int terrainDifficultyCost = 0;
-            if (currentZoneInfo.steeplyAdjacentZones.Contains(potentialZone)) {
-                terrainDifficultyCost = currentZoneInfo.terrainDifficulty >= unitInfo.ignoreTerrainDifficulty ? currentZoneInfo.terrainDifficulty - unitInfo.ignoreTerrainDifficulty : 0;
-            }
-
-            int elevationCost = Math.Abs(currentZoneInfo.elevation - potentialZoneInfo.elevation);
-            elevationCost = elevationCost >= unitInfo.ignoreElevation ? elevationCost - unitInfo.ignoreElevation : 0;
-
-            int sizeCost = currentZoneInfo.GetHeroesCount();  // TODO Stop assuming size 1 for each Hero
-            sizeCost = sizeCost >= unitInfo.ignoreSize ? sizeCost - unitInfo.ignoreSize : 0;
-            int totalMovementCost = 1 + terrainDifficultyCost + elevationCost + sizeCost + movePointsPreviouslyUsed;
-            if (unitInfo.movePoints >= totalMovementCost)  // if unit can move here
-            {
-                if (possibleDestinations.ContainsKey(potentialZone))
-                {
-                    if (possibleDestinations[potentialZone] > totalMovementCost)
-                    {
-                        possibleDestinations[potentialZone] = totalMovementCost;
-                        if (unitInfo.movePoints > totalMovementCost)
-                        {
-                            possibleDestinations = getPossibleDestinations(potentialZone, unitInfo, totalMovementCost, possibleDestinations);
-                        }
-                    }
-                }
-                else
-                {
-                    possibleDestinations[potentialZone] = totalMovementCost;
-                    if (unitInfo.movePoints > totalMovementCost)
-                    {
-                        possibleDestinations = getPossibleDestinations(potentialZone, unitInfo, totalMovementCost, possibleDestinations);
-                    }
-                }
-            }
-        }
-        return possibleDestinations;
     }
 }
