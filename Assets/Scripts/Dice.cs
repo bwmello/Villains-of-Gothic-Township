@@ -20,7 +20,7 @@ public class Dice : MonoBehaviour
     }
 
     // Start is called before the first frame update
-    public int rollDice(int quantity)
+    public int RollDice(int quantity)
     {
         int successes = 0;
         for (int i = 0; i < quantity; i++)

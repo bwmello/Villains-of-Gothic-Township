@@ -20,7 +20,7 @@ public class ZoneInfo : MonoBehaviour
         currentOccupancy += GetHeroesCount();
         foreach (Transform row in transform)
         {
-            if (row.name != "TokensRow" && row.name != "HeroesRow" && row.gameObject.activeSelf)
+            if (row.name != "TokensRow" && row.name != "HeroesRow" && row.name != "ZoneDebugger" && row.gameObject.activeSelf)
             {
                 currentOccupancy += int.Parse(row.Find("UnitNumber").GetComponent<TMP_Text>().text);
             }

@@ -67,8 +67,13 @@ public class Unit : MonoBehaviour
 
             if (chosenDestination != null)
             {
-                Debug.Log("Moving " + tag + " from " + currentZone.name + " to " + chosenDestination.name + " to perform " + chosenAction);
                 MoveToken(currentZone, chosenDestination.gameObject);
+                int actionSuccesses = 0;
+                foreach (GameObject die in actionProficiencies[chosenAction])
+                {
+                    actionSuccesses += die.GetComponent<Dice>().RollDice(1);
+                }
+                Debug.Log("Moved " + tag + " from " + currentZone.name + " to " + chosenDestination.name + " and performed " + chosenAction + " with " + actionSuccesses.ToString() + " successes");
             }
         }
     }
@@ -79,9 +84,7 @@ public class Unit : MonoBehaviour
         {
             possibleDestinations = new Dictionary<GameObject, int> { { currentZone, 0 } };
         }
-
         ZoneInfo currentZoneInfo = currentZone.GetComponent<ZoneInfo>();
-        List<GameObject> reachableZones = new List<GameObject>();
 
         List<GameObject> allAdjacentZones = currentZoneInfo.adjacentZones;
         allAdjacentZones.AddRange(currentZoneInfo.steeplyAdjacentZones);
@@ -176,8 +179,18 @@ public class Unit : MonoBehaviour
                     }
                 }
                 break;
-                //case "RANGED":
-                //    break;
+            case "RANGED":  // TODO: Account for elevation bonuses
+                foreach (ZoneInfo zone in possibleDestinationsInfo)
+                {
+                    foreach (GameObject losZone in zone.lineOfSightZones)
+                    {
+                        if (losZone.GetComponent<ZoneInfo>().HasHeroes())
+                        {
+                            return zone;
+                        }
+                    }
+                }
+                break;
         }
         return null;
     }
