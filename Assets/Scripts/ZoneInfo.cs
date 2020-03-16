@@ -8,24 +8,69 @@ public class ZoneInfo : MonoBehaviour
 {
     public List<GameObject> adjacentZones;
     public List<GameObject> steeplyAdjacentZones;
-    public List<GameObject> lineOfSightZones;  // Use elevation difference between both zones when determining if height bonus
+    public List<GameObject> lineOfSightZones;
+    public GameObject elevationDie;  // Determines fall damage and bonus for ranged attacks made from a higher elevation
     public int elevation;
     public int maxOccupancy;
     public int terrainDifficulty = 0;
     public int terrainDanger = 0;
+    public int supportRerolls = 0;  // Determined by total Unit.supportRerolls of each unit in zone
+
+    private void Start()
+    {
+        List<string>  unitTags = transform.GetComponentInParent<ScenarioMap>().villainRiver;
+        foreach (Transform row in transform)
+        {
+            if (unitTags.Contains(row.tag))
+            {
+                Unit unit = row.gameObject.GetComponent<Unit>();
+                supportRerolls += unit.supportRerolls;
+            }
+        }
+    }
 
     public int GetCurrentOccupancy()
     {
         int currentOccupancy = 0;
         currentOccupancy += GetHeroesCount();
+        List<string> unitTags = transform.GetComponentInParent<ScenarioMap>().villainRiver;
         foreach (Transform row in transform)
         {
-            if (row.name != "TokensRow" && row.name != "HeroesRow" && row.name != "ZoneDebugger" && row.gameObject.activeSelf)
+            if (unitTags.Contains(row.tag) && row.gameObject.activeSelf)
             {
                 currentOccupancy += int.Parse(row.Find("UnitNumber").GetComponent<TMP_Text>().text);
             }
         }
         return currentOccupancy;
+    }
+
+    public int GetCurrentHindrance(bool isMoving, GameObject unitToDiscount)
+    {
+        int currentHindrance = 0;
+        currentHindrance += GetHeroesCount();  // TODO stop assuming size and menace of 1 for each hero
+        List<string> unitTags = transform.GetComponentInParent<ScenarioMap>().villainRiver;
+        foreach (Transform row in transform)
+        {
+            if (unitTags.Contains(row.tag) && row.gameObject.activeSelf)
+            {
+                if (row.gameObject == unitToDiscount)
+                {
+                    continue;  // Unit doesn't count itself for hindrance, so skip it.
+                }
+                int quantity = 1;
+                if (!row.CompareTag("BARN") && !row.CompareTag("SUPERBARN"))
+                {
+                    quantity = int.Parse(row.Find("UnitNumber").GetComponent<TMP_Text>().text);
+                }
+                Unit unitInfo = row.gameObject.GetComponent<Unit>();
+                currentHindrance -= quantity * (isMoving ? unitInfo.size : unitInfo.menace);
+            }
+        }
+        if (currentHindrance < 0)
+        {
+            currentHindrance = 0;
+        }
+        return currentHindrance;
     }
 
     public bool HasToken(string tokenName)
@@ -55,7 +100,6 @@ public class ZoneInfo : MonoBehaviour
 
     public void TokenButtonClicked(Button button)
     {
-        //Debug.Log("TokenButtonClicked!!! button.name: " + button.name);
         CanvasGroup buttonCanvas = button.GetComponent<CanvasGroup>();
         if (buttonCanvas.alpha == 1)
         {

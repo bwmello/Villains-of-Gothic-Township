@@ -9,6 +9,8 @@ public class ScenarioMap : MonoBehaviour
 
     [SerializeField]
     GameObject clockHand;
+    [SerializeField]
+    List<GameObject> spawnZones;
 
     private int currentRound = 1;
     private readonly float uncoverTime = 2.0f;
@@ -45,8 +47,7 @@ public class ScenarioMap : MonoBehaviour
         yield return 0;
     }
 
-    readonly Queue<string> villainRiver = new Queue<string>(new string[] { "UZI", "CHAINS", "PISTOLS", /*"REINFORCEMENT",*/ "CROWBAR", "SHOTGUN", "BARN" });
-    //private string[] villainRiver = new string[] { "UZI", "CHAIN", "PISTOLS", "REINFORCEMENT", "CROWBAR", "SHOTGUN", "BARN" };
+    public List<string> villainRiver = new List<string>() { "UZI", "CHAINS", "PISTOLS", /*"REINFORCEMENT",*/ "CROWBAR", "SHOTGUN", "BARN" };
     public void EndHeroTurn()
     {
         //List<GameObject> heroZones = new List<GameObject>();
@@ -62,17 +63,35 @@ public class ScenarioMap : MonoBehaviour
         //    if (zoneInfo.HasToken("PrimedBomb")) { primedBombZones.Add(zone); }
         //}
 
+
         for (int i = 0; i < 2; i++)
         {
-            string unitTag = villainRiver.Dequeue();
-            villainRiver.Enqueue(unitTag);
-            foreach (GameObject unit in GameObject.FindGameObjectsWithTag(unitTag))
+            string villainRiverString = "";
+            foreach (string unitType in villainRiver)
             {
-                Unit unitInfo = unit.GetComponent<Unit>();
-                unitInfo.TakeUnitTurn();
+                villainRiverString += unitType + ", ";
+            }
+            Debug.Log(villainRiverString);
+
+            for (int j = 0; j < 3; j++)
+            {
+                string unitTag = villainRiver[j];
+                foreach (GameObject unit in GameObject.FindGameObjectsWithTag(unitTag))
+                {
+                    Unit unitInfo = unit.GetComponent<Unit>();
+                    unitInfo.TakeUnitTurn();
+                }
+                villainRiver.Remove(unitTag);
+                villainRiver.Add(unitTag);
+                break;  // TODO Compare and pick most effective unit for turn instead of just the first tile
             }
         }
 
         StartHeroTurn();
+    }
+
+    void CallReinforcements()
+    {
+        // TODO implement after the worthiness of a turn can be evaluated
     }
 }

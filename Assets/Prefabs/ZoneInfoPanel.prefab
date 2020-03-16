@@ -230,10 +230,13 @@ MonoBehaviour:
   adjacentZones: []
   steeplyAdjacentZones: []
   lineOfSightZones: []
+  elevationDie: {fileID: 4378926195687391191, guid: 57078db74302144e8a156c288214f7e9,
+    type: 3}
   elevation: 0
   maxOccupancy: 0
   terrainDifficulty: 0
   terrainDanger: 0
+  supportRerolls: 0
 --- !u!1 &5084421897810169031
 GameObject:
   m_ObjectHideFlags: 0

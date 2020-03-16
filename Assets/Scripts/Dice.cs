@@ -9,29 +9,17 @@ public class Dice : MonoBehaviour
 
     [SerializeField]
     int[] faces;
-    [SerializeField]
-    bool rerollable = false;
 
-    double averageSuccesses;
+    public bool rerollable = false;
+    public double averageSuccesses;
 
     void Start()
     {
         averageSuccesses = Queryable.Average(faces.AsQueryable());
     }
 
-    // Start is called before the first frame update
-    public int RollDice(int quantity)
+    public int Roll()
     {
-        int successes = 0;
-        for (int i = 0; i < quantity; i++)
-        {
-            int currentSuccesses = faces[random.Next(faces.Length)];
-            if (rerollable && currentSuccesses < averageSuccesses)
-            {
-                currentSuccesses = faces[random.Next(faces.Length)];
-            }
-            successes += currentSuccesses;
-        }
-        return successes;
+        return faces[random.Next(faces.Length)];
     }
 }
