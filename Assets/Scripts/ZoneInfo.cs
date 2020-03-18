@@ -44,7 +44,7 @@ public class ZoneInfo : MonoBehaviour
         return currentOccupancy;
     }
 
-    public int GetCurrentHindrance(bool isMoving, GameObject unitToDiscount)
+    public int GetCurrentHindrance(GameObject unitToDiscount, bool isMoving = false)
     {
         int currentHindrance = 0;
         currentHindrance += GetHeroesCount();  // TODO stop assuming size and menace of 1 for each hero
@@ -82,6 +82,32 @@ public class ZoneInfo : MonoBehaviour
     public bool HasHeroes()
     {
         return GetHeroesCount() > 0 ? true : false;
+    }
+
+    public GameObject GetLineOfSightZoneWithHero()
+    {
+        List<ZoneInfo> targetableZones = new List<ZoneInfo>();
+        if (HasHeroes())
+        {
+            targetableZones.Add(this);
+        }
+        foreach (GameObject zone in lineOfSightZones)
+        {
+            ZoneInfo losZoneInfo = zone.GetComponent<ZoneInfo>();
+            if (losZoneInfo.HasHeroes())
+            {
+                if (elevation > losZoneInfo.elevation)
+                {
+                    return zone;
+                }
+                targetableZones.Add(losZoneInfo);
+            }
+        }
+        if (targetableZones.Count > 0)
+        {
+            return targetableZones[0].gameObject;
+        }
+        return null;
     }
 
     public int GetHeroesCount()

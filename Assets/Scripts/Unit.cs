@@ -56,67 +56,72 @@ public class Unit : MonoBehaviour
     readonly List<string> actionPriorities = new List<string>() { "MANIPULATION", "THOUGHT", "MELEE", "RANGED" };
     private Dictionary<string, double> actionsWeightTable = new Dictionary<string, double>()
     {
-        { "MANIPULATE_BOMB", 70 },
-        { "THOUGHT_COMPUTER", 60 },
+        { "MANIPULATION", 70 },
+        { "THOUGHT", 60 },
         { "OBJECTIVE_REROLL", 7 },  // * totalRerolls
-        { "OBJECTIVE_HINDRANCE", -10 },  // * totalHindrance
-        { "RANGED", 40 },
+        { "OBJECTIVE_HINDRANCE", -15 },  // * totalHindrance
         { "MELEE", 40 },
+        { "RANGED", 40 },
         { "ATTACK_BONUSDIE", 10 },  // * totalBonusDice
         { "ATTACK_REROLL", 5 },  // * totalRerolls
-        { "ATTACK_HINDRANCE", -7 },  // * totalHindrance
-        { "GUARD_PRIMEDBOMB", 15 },
+        { "ATTACK_HINDRANCE", -9 },  // * totalHindrance
+        { "GUARD_PRIMEDBOMB", 15 },  // // TODO triple this if there are no more bombs and only 2 primedbombs left
         { "GUARD_BOMB", 10 },
         { "GUARD_COMPUTER", 5 }
     };
+    public class UnitPossibleAction
+    {
+        public Unit myUnit;
+        public string actionType;
+        public double actionWeight;
+        public GameObject destinationZone;
+        public GameObject targetedZone;
+
+        public UnitPossibleAction(Unit theUnit, string unitActionType, double unitActionWeight, GameObject unitDestinationZone, GameObject unitTargetedZone = null)
+        {
+            myUnit = theUnit;
+            actionType = unitActionType;
+            actionWeight = unitActionWeight;
+            destinationZone = unitDestinationZone;
+            targetedZone = unitTargetedZone;
+        }
+    }
 
     void Start()
     {
         validActionProficiencies = GetValidActionProficiencies();
     }
 
-    public void TakeUnitTurn()
+    public void ActivateUnit()
     {
         GameObject currentZone = transform.parent.gameObject;
 
         Dictionary<GameObject, int> possibleDestinations = GetPossibleDestinations(currentZone, 0);
-        if (possibleDestinations.Count > 0)
+        List<ZoneInfo> possibleDestinationsInfo = new List<ZoneInfo>();
+        foreach (GameObject destination in possibleDestinations.Keys)
         {
-            // // Below for debugging GetPossibleDestinations()
-            //string possibleDestinationsDebugString = name;
-            //foreach (KeyValuePair<GameObject, int> pair in possibleDestinations)
-            //{
-            //    possibleDestinationsDebugString += "  ZONE: " + pair.Key.name + " - " + pair.Value.ToString();
-            //    //Debug.Log(pair.Key.name + pair.Value.ToString());
-            //}
+            possibleDestinationsInfo.Add(destination.GetComponent<ZoneInfo>());
+        }
 
-            List<ZoneInfo> possibleDestinationsInfo = new List<ZoneInfo>();
-            foreach (GameObject destination in possibleDestinations.Keys)
-            {
-                possibleDestinationsInfo.Add(destination.GetComponent<ZoneInfo>());
-            }
+        List<UnitPossibleAction> allPossibleUnitActions = GetPossibleActions(possibleDestinationsInfo);
+        if (allPossibleUnitActions != null && allPossibleUnitActions.Count > 0)
+        {
+            Dictionary<string, UnitPossibleAction> uniquePossibleActions = new Dictionary<string, UnitPossibleAction>();
+            UnitPossibleAction chosenAction = null;
 
-            ZoneInfo chosenDestination = null;
-            string chosenAction = "";
-            foreach (string actionType in actionPriorities)
+            foreach (UnitPossibleAction unitAction in allPossibleUnitActions)
             {
-                if (validActionProficiencies.ContainsKey(actionType))
+                if (chosenAction == null || unitAction.actionWeight > chosenAction.actionWeight)
                 {
-                    chosenDestination = GetDestinationForAction(actionType, possibleDestinationsInfo);
-                    if (chosenDestination != null)
-                    {
-                        chosenAction = actionType;
-                        break;
-                    }
+                    chosenAction = unitAction;
                 }
             }
-
-            if (chosenDestination != null)
-            {
-                MoveToken(currentZone, chosenDestination.gameObject);
-                int actionSuccesses = PerformAction(chosenAction);
-                Debug.Log("Moved " + tag + " from " + currentZone.name + " to " + chosenDestination.name + " and performed " + chosenAction + " with " + actionSuccesses.ToString() + " successes");
-            }
+            MoveToken(currentZone, chosenAction.destinationZone);
+            PerformAction(chosenAction);
+        }
+        else
+        {
+            // TODO Make a function which takes possibleDestinations as a parameter and generates the possibleDestinations beyond that.
         }
     }
 
@@ -148,7 +153,7 @@ public class Unit : MonoBehaviour
             int elevationCost = Math.Abs(currentZoneInfo.elevation - potentialZoneInfo.elevation);
             elevationCost = elevationCost >= ignoreElevation ? elevationCost - ignoreElevation : 0;
 
-            int sizeCost = currentZoneInfo.GetCurrentHindrance(true, transform.gameObject);
+            int sizeCost = currentZoneInfo.GetCurrentHindrance(transform.gameObject, true);
             sizeCost = sizeCost >= ignoreSize ? sizeCost - ignoreSize : 0;
 
             int totalMovementCost = 1 + terrainDifficultyCost + elevationCost + sizeCost + movePointsPreviouslyUsed;
@@ -175,7 +180,118 @@ public class Unit : MonoBehaviour
                 }
             }
         }
+        //string possibleDestinationsDebugString = name;
+        //foreach (KeyValuePair<GameObject, int> pair in possibleDestinations)
+        //{
+        //    possibleDestinationsDebugString += "  ZONE: " + pair.Key.name + " - " + pair.Value.ToString();
+        //    //Debug.Log(pair.Key.name + pair.Value.ToString());
+        //}
         return possibleDestinations;
+    }
+
+    private List<UnitPossibleAction> GetPossibleActions(List<ZoneInfo> possibleDestinations)
+    {
+        List<UnitPossibleAction> allPossibleActions = new List<UnitPossibleAction>();
+
+        foreach (ZoneInfo destination in possibleDestinations)
+        {
+            int destinationHindrance = destination.GetCurrentHindrance(this.gameObject);
+            foreach (string actionType in validActionProficiencies.Keys)
+            {
+                double actionWeight = 0;
+
+                if (destination.HasToken("PrimedBomb"))
+                {
+                    actionWeight += actionsWeightTable["GUARD_PRIMEDBOMB"];
+                }
+                if (destination.HasToken("Bomb"))
+                {
+                    actionWeight += actionsWeightTable["GUARD_BOMB"];
+                }
+                if (destination.HasToken("Computer"))
+                {
+                    actionWeight += actionsWeightTable["GUARD_COMPUTER"];
+                }
+
+                switch (actionType)
+                {
+                    case "MANIPULATION":
+                        if (destination.HasToken("Bomb"))
+                        {
+                            actionWeight += actionsWeightTable[actionType];
+                            actionWeight += destination.supportRerolls * actionsWeightTable["OBJECTIVE_REROLL"];
+                            actionWeight += destinationHindrance * actionsWeightTable["OBJECTIVE_HINDRANCE"];
+                            allPossibleActions.Add(new UnitPossibleAction(this, actionType, actionWeight, destination.gameObject));
+                        }
+                        break;
+                    case "THOUGHT":
+                        if (destination.HasToken("Computer"))
+                        {
+                            actionWeight += actionsWeightTable[actionType];
+                            actionWeight += destination.supportRerolls * actionsWeightTable["OBJECTIVE_REROLL"];
+                            actionWeight += destinationHindrance * actionsWeightTable["OBJECTIVE_HINDRANCE"];
+                            allPossibleActions.Add(new UnitPossibleAction(this, actionType, actionWeight, destination.gameObject));
+                        }
+                        break;
+                    case "MELEE":
+                        if (destination.HasHeroes())
+                        {
+                            actionWeight += actionsWeightTable[actionType];
+                            actionWeight += destination.supportRerolls * actionsWeightTable["ATTACK_REROLL"];
+                            allPossibleActions.Add(new UnitPossibleAction(this, actionType, actionWeight, destination.gameObject));
+                        }
+                        break;
+                    case "RANGED":
+                        GameObject targetedZone = destination.GetLineOfSightZoneWithHero();
+                        if (targetedZone != null)
+                        {
+                            actionWeight += actionsWeightTable[actionType];
+                            actionWeight += destination.supportRerolls * actionsWeightTable["ATTACK_REROLL"];
+                            if (pointBlankRerolls > 0 && targetedZone == destination.gameObject)
+                            {
+                                actionWeight += pointBlankRerolls * actionsWeightTable["ATTACK_REROLL"];
+                            }
+                            actionWeight += destinationHindrance * actionsWeightTable["ATTACK_HINDRANCE"];
+                            if (destination.elevation > targetedZone.GetComponent<ZoneInfo>().elevation)
+                            {
+                                actionWeight += actionsWeightTable["ATTACK_BONUSDIE"];
+                            }
+                            allPossibleActions.Add(new UnitPossibleAction(this, actionType, actionWeight, destination.gameObject, targetedZone));
+                        }
+                        break;
+                }
+            }
+        }
+
+        return allPossibleActions;
+    }
+
+    public double GetMostValuableActionWeight()
+    {
+        double mostValuableActionWeight = 0;
+        GameObject currentZone = transform.parent.gameObject;
+
+        Dictionary<GameObject, int> possibleDestinations = GetPossibleDestinations(currentZone, 0);
+        List<ZoneInfo> possibleDestinationsInfo = new List<ZoneInfo>();
+        foreach (GameObject destination in possibleDestinations.Keys)
+        {
+            possibleDestinationsInfo.Add(destination.GetComponent<ZoneInfo>());
+        }
+
+        List<UnitPossibleAction> allPossibleUnitActions = GetPossibleActions(possibleDestinationsInfo);
+        if (allPossibleUnitActions != null && allPossibleUnitActions.Count > 0)
+        {
+            Dictionary<string, UnitPossibleAction> uniquePossibleActions = new Dictionary<string, UnitPossibleAction>();
+
+            foreach (UnitPossibleAction unitAction in allPossibleUnitActions)
+            {
+                if (unitAction.actionWeight > mostValuableActionWeight)
+                {
+                    mostValuableActionWeight = unitAction.actionWeight;
+                }
+            }
+        }
+        return mostValuableActionWeight;
     }
 
     public Dictionary<string, GameObject[]> GetValidActionProficiencies()
@@ -191,55 +307,7 @@ public class Unit : MonoBehaviour
         return validActionProficiencies;
     }
 
-    public ZoneInfo GetDestinationForAction(string action, List<ZoneInfo> possibleDestinationsInfo)
-    {
-        switch (action)
-        {
-            case "MANIPULATION":
-                foreach (ZoneInfo zone in possibleDestinationsInfo)
-                {
-                    if (zone.HasToken("Bomb"))
-                    {
-                        return zone;
-                    }
-                }
-                break;
-            case "THOUGHT":
-                foreach (ZoneInfo zone in possibleDestinationsInfo)
-                {
-                    if (zone.HasToken("Computer"))
-                    {
-                        return zone;
-                    }
-                }
-                break;
-            case "MELEE":
-                foreach (ZoneInfo zone in possibleDestinationsInfo)
-                {
-                    if (zone.HasHeroes())
-                    {
-                        return zone;
-                    }
-                }
-                break;
-            case "RANGED":  // TODO: Account for elevation bonuses
-                foreach (ZoneInfo zone in possibleDestinationsInfo)
-                {
-                    foreach (GameObject losZone in zone.lineOfSightZones)
-                    {
-                        if (losZone.GetComponent<ZoneInfo>().HasHeroes())
-                        {
-                            targetedLineOfSightZone = losZone;  // Not so great way of making this available to PerformAction("RANGED")
-                            return zone;
-                        }
-                    }
-                }
-                break;
-        }
-        return null;
-    }
-
-    public void MoveToken(GameObject origin, GameObject destination)
+    public void MoveToken(GameObject origin, GameObject destination)  // TODO Add wall break movement
     {
         if (CompareTag("BARN") || CompareTag("SUPERBARN"))
         {
@@ -295,7 +363,7 @@ public class Unit : MonoBehaviour
         }
     }
 
-    private int PerformAction(string action)
+    public void PerformAction(UnitPossibleAction unitTurn)
     {
         int actionSuccesses = 0;
         int requiredSuccesses;
@@ -303,34 +371,36 @@ public class Unit : MonoBehaviour
         ZoneInfo currentZoneInfo = currentZone.GetComponent<ZoneInfo>();
         int rerolls = currentZoneInfo.supportRerolls - supportRerolls;
 
-        switch (action)
+        MoveToken(transform.parent.gameObject, unitTurn.destinationZone);
+
+        switch (unitTurn.actionType)
         {
             case "MANIPULATION":
                 requiredSuccesses = 3;
                 actionSuccesses += munitionSpecialist;
-                actionSuccesses = RollAndReroll(validActionProficiencies[action], actionSuccesses, rerolls, requiredSuccesses);
-                actionSuccesses -= currentZoneInfo.GetCurrentHindrance(false, transform.gameObject);
+                actionSuccesses = RollAndReroll(validActionProficiencies[unitTurn.actionType], actionSuccesses, rerolls, requiredSuccesses);
+                actionSuccesses -= currentZoneInfo.GetCurrentHindrance(transform.gameObject);
                 break;
 
             case "THOUGHT":
                 requiredSuccesses = 3;
-                actionSuccesses = RollAndReroll(validActionProficiencies[action], actionSuccesses, rerolls, requiredSuccesses);
-                actionSuccesses -= currentZoneInfo.GetCurrentHindrance(false, transform.gameObject);
+                actionSuccesses = RollAndReroll(validActionProficiencies[unitTurn.actionType], actionSuccesses, rerolls, requiredSuccesses);
+                actionSuccesses -= currentZoneInfo.GetCurrentHindrance(transform.gameObject);
                 break;
 
             case "MELEE":
-                actionSuccesses = RollAndReroll(validActionProficiencies[action], actionSuccesses, rerolls);
+                actionSuccesses = RollAndReroll(validActionProficiencies[unitTurn.actionType], actionSuccesses, rerolls);
                 if (actionSuccesses > 0)
                 {
                     actionSuccesses += martialArtsSuccesses;
                 }
                 break;
 
-            case "RANGED":  // TODO: Account for elevation bonuses and hindrance
-                if  (targetedLineOfSightZone != null)
+            case "RANGED":
+                if (unitTurn.targetedZone != null)
                 {
-                    GameObject[] dicePool = validActionProficiencies[action];
-                    ZoneInfo targetedLineOfSightZoneInfo = targetedLineOfSightZone.GetComponent<ZoneInfo>();
+                    GameObject[] dicePool = validActionProficiencies[unitTurn.actionType];
+                    ZoneInfo targetedLineOfSightZoneInfo = unitTurn.targetedZone.GetComponent<ZoneInfo>();
 
                     if (currentZoneInfo.elevation > targetedLineOfSightZoneInfo.elevation)
                     {
@@ -350,7 +420,7 @@ public class Unit : MonoBehaviour
                     {
                         actionSuccesses += marskmanSuccesses;
                     }
-                    actionSuccesses -= currentZoneInfo.GetCurrentHindrance(false, transform.gameObject);
+                    actionSuccesses -= currentZoneInfo.GetCurrentHindrance(transform.gameObject);
                 }
                 else
                 {
@@ -358,7 +428,7 @@ public class Unit : MonoBehaviour
                 }
                 break;
         }
-        return actionSuccesses;
+        Debug.Log("Moved " + tag + " from " + currentZone.name + " to " + unitTurn.destinationZone.name + " and performed " + unitTurn.actionType + " with " + actionSuccesses.ToString() + " successes");
     }
 
     private int RollAndReroll(GameObject[] dicePool, int actionSuccesses, int rerolls, int requiredSuccesses)

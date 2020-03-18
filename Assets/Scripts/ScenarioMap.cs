@@ -48,46 +48,53 @@ public class ScenarioMap : MonoBehaviour
     }
 
     public List<string> villainRiver = new List<string>() { "UZI", "CHAINS", "PISTOLS", /*"REINFORCEMENT",*/ "CROWBAR", "SHOTGUN", "BARN" };
+
     public void EndHeroTurn()
     {
-        //List<GameObject> heroZones = new List<GameObject>();
-        //List<GameObject> computerZones = new List<GameObject>();
-        //List<GameObject> bombZones = new List<GameObject>();
-        //List<GameObject> primedBombZones = new List<GameObject>();
-        //foreach (GameObject zone in GameObject.FindGameObjectsWithTag("ZoneInfoPanel"))
-        //{
-        //    ZoneInfo zoneInfo = zone.GetComponent<ZoneInfo>();
-        //    if (zoneInfo.HasHeroes()) { heroZones.Add(zone); }
-        //    if (zoneInfo.HasToken("Computer")) { computerZones.Add(zone); }
-        //    if (zoneInfo.HasToken("Bomb")) { bombZones.Add(zone); }
-        //    if (zoneInfo.HasToken("PrimedBomb")) { primedBombZones.Add(zone); }
-        //}
-
-
         for (int i = 0; i < 2; i++)
+        {
+            string unitTypeToActivate = GetVillainTileToActivate();
+            foreach (GameObject unit in GameObject.FindGameObjectsWithTag(unitTypeToActivate))
+            {
+                unit.GetComponent<Unit>().ActivateUnit();
+            }
+
+            villainRiver.Remove(unitTypeToActivate);
+            villainRiver.Add(unitTypeToActivate);
+        }
+
+        StartHeroTurn();
+    }
+
+    string GetVillainTileToActivate()
+    {
+        double totalWeightOfMostValuableUnitTurn = 0;
+        string mostValuableUnitType = null;
+        for (int j = 0; j < 3; j++)  // Only first 3 tiles compared
+        {
+            string unitTag = villainRiver[j];
+            double currentWeightOfUnitTurn = 0;
+            foreach (GameObject unit in GameObject.FindGameObjectsWithTag(unitTag))
+            {
+                currentWeightOfUnitTurn += unit.GetComponent<Unit>().GetMostValuableActionWeight();
+            }
+            if (currentWeightOfUnitTurn > totalWeightOfMostValuableUnitTurn)
+            {
+                totalWeightOfMostValuableUnitTurn = currentWeightOfUnitTurn;
+                mostValuableUnitType = unitTag;
+            }
+            Debug.Log("GetVillainTileToActivate(): Weight of " + unitTag + ": " + currentWeightOfUnitTurn.ToString());
+        }
+        if (mostValuableUnitType == null)
         {
             string villainRiverString = "";
             foreach (string unitType in villainRiver)
             {
                 villainRiverString += unitType + ", ";
             }
-            Debug.Log(villainRiverString);
-
-            for (int j = 0; j < 3; j++)
-            {
-                string unitTag = villainRiver[j];
-                foreach (GameObject unit in GameObject.FindGameObjectsWithTag(unitTag))
-                {
-                    Unit unitInfo = unit.GetComponent<Unit>();
-                    unitInfo.TakeUnitTurn();
-                }
-                villainRiver.Remove(unitTag);
-                villainRiver.Add(unitTag);
-                break;  // TODO Compare and pick most effective unit for turn instead of just the first tile
-            }
+            Debug.LogError("ERROR! ScenarioMap.GetVillainTileToActivate() returned null. Are there no tiles in the river to activate? villainRiver: " + villainRiverString);
         }
-
-        StartHeroTurn();
+        return mostValuableUnitType;
     }
 
     void CallReinforcements()
