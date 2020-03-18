@@ -8,7 +8,13 @@ public class ZoneInfo : MonoBehaviour
 {
     public List<GameObject> adjacentZones;
     public List<GameObject> steeplyAdjacentZones;
+    public List<GameObject> wall1AdjacentZones;
+    public List<GameObject> wall2AdjacentZones;
+    public List<GameObject> wall3AdjacentZones;
+    public List<GameObject> wall4AdjacentZones;
+    public List<GameObject> wall5AdjacentZones;
     public List<GameObject> lineOfSightZones;
+
     public GameObject elevationDie;  // Determines fall damage and bonus for ranged attacks made from a higher elevation
     public int elevation;
     public int maxOccupancy;
