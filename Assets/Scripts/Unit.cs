@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;  // for LayoutRebuilder
 using System.Linq;  // for dictionary.ElementAt
 using TMPro;  // for TMP_Text to update the henchmen quantity from UnitRows
 
@@ -97,6 +98,13 @@ public class Unit : MonoBehaviour
         GameObject currentZone = transform.parent.gameObject;
 
         Dictionary<GameObject, int> possibleDestinations = GetPossibleDestinations(currentZone, 0);
+        //string possibleDestinationsDebugString = tag + " from " + currentZone.name + " possibleDestinations:";
+        //foreach (KeyValuePair<GameObject, int> pair in possibleDestinations)
+        //{
+        //    possibleDestinationsDebugString += "   {" + pair.Key.name + ", " + pair.Value + "},";
+        //}
+        //Debug.Log(possibleDestinationsDebugString);
+
         List<ZoneInfo> possibleDestinationsInfo = new List<ZoneInfo>();
         foreach (GameObject destination in possibleDestinations.Keys)
         {
@@ -133,7 +141,7 @@ public class Unit : MonoBehaviour
         }
         ZoneInfo currentZoneInfo = currentZone.GetComponent<ZoneInfo>();
 
-        List<GameObject> allAdjacentZones = currentZoneInfo.adjacentZones;
+        List<GameObject> allAdjacentZones = new List<GameObject>(currentZoneInfo.adjacentZones);
         allAdjacentZones.AddRange(currentZoneInfo.steeplyAdjacentZones);
         foreach (GameObject potentialZone in allAdjacentZones)
         {
@@ -144,19 +152,17 @@ public class Unit : MonoBehaviour
                 continue;  // Skip this potentialZone if potentialZone is at maxOccupancy
             }
 
-            int terrainDifficultyCost = 0;
-            if (currentZoneInfo.steeplyAdjacentZones.Contains(potentialZone))
-            {
-                terrainDifficultyCost = currentZoneInfo.terrainDifficulty >= ignoreTerrainDifficulty ? currentZoneInfo.terrainDifficulty - ignoreTerrainDifficulty : 0;
-            }
-
-            int elevationCost = Math.Abs(currentZoneInfo.elevation - potentialZoneInfo.elevation);
-            elevationCost = elevationCost >= ignoreElevation ? elevationCost - ignoreElevation : 0;
-
+            int terrainDifficultyCost = currentZoneInfo.terrainDifficulty >= ignoreTerrainDifficulty ? currentZoneInfo.terrainDifficulty - ignoreTerrainDifficulty : 0;
             int sizeCost = currentZoneInfo.GetCurrentHindrance(transform.gameObject, true);
             sizeCost = sizeCost >= ignoreSize ? sizeCost - ignoreSize : 0;
+            int elevationCost = 0;
+            if (currentZoneInfo.steeplyAdjacentZones.Contains(potentialZone))
+            {
+                elevationCost = Math.Abs(currentZoneInfo.elevation - potentialZoneInfo.elevation);
+                elevationCost = elevationCost >= ignoreElevation ? elevationCost - ignoreElevation : 0;
+            }
+            int totalMovementCost = 1 + terrainDifficultyCost + sizeCost + elevationCost + movePointsPreviouslyUsed;
 
-            int totalMovementCost = 1 + terrainDifficultyCost + elevationCost + sizeCost + movePointsPreviouslyUsed;
             if (movePoints >= totalMovementCost)  // if unit can move here
             {
                 if (possibleDestinations.ContainsKey(potentialZone))
@@ -164,6 +170,7 @@ public class Unit : MonoBehaviour
                     if (possibleDestinations[potentialZone] > totalMovementCost)
                     {
                         possibleDestinations[potentialZone] = totalMovementCost;
+                        //Debug.Log("!!!currentZone: " + currentZone.name + "  potentialZone: " + potentialZone.name + " terrainDifficultyCost: " + terrainDifficultyCost + " sizeCost: " + sizeCost + " elevationCost: " + elevationCost + " movePointsPreviouslyUsed: " + movePointsPreviouslyUsed + " totalMovementCost: " + totalMovementCost + " movePoints: " + movePoints);
                         if (movePoints > totalMovementCost)
                         {
                             possibleDestinations = GetPossibleDestinations(potentialZone, totalMovementCost, possibleDestinations);
@@ -173,6 +180,7 @@ public class Unit : MonoBehaviour
                 else
                 {
                     possibleDestinations[potentialZone] = totalMovementCost;
+                    //Debug.Log("!!!currentZone: " + currentZone.name + "  potentialZone: " + potentialZone.name + " terrainDifficultyCost: " + terrainDifficultyCost + " sizeCost: " + sizeCost + " elevationCost: " + elevationCost + " movePointsPreviouslyUsed: " + movePointsPreviouslyUsed + " totalMovementCost: " + totalMovementCost + " movePoints: " + movePoints);
                     if (movePoints > totalMovementCost)
                     {
                         possibleDestinations = GetPossibleDestinations(potentialZone, totalMovementCost, possibleDestinations);
@@ -180,12 +188,6 @@ public class Unit : MonoBehaviour
                 }
             }
         }
-        //string possibleDestinationsDebugString = name;
-        //foreach (KeyValuePair<GameObject, int> pair in possibleDestinations)
-        //{
-        //    possibleDestinationsDebugString += "  ZONE: " + pair.Key.name + " - " + pair.Value.ToString();
-        //    //Debug.Log(pair.Key.name + pair.Value.ToString());
-        //}
         return possibleDestinations;
     }
 
@@ -309,58 +311,65 @@ public class Unit : MonoBehaviour
 
     public void MoveToken(GameObject origin, GameObject destination)  // TODO Add wall break movement
     {
-        if (CompareTag("BARN") || CompareTag("SUPERBARN"))
+        if (origin != destination)
         {
-            foreach (Transform row in origin.transform)
-            {
-                if (row.CompareTag(tag))
-                {
-                    row.gameObject.SetActive(false);
-                    origin.GetComponent<ZoneInfo>().supportRerolls -= supportRerolls;
-                    break;
-                }
-            }
-            foreach (Transform row in destination.transform)
-            {
-                if (row.CompareTag(tag))
-                {
-                    TMP_Text unitNumber = row.Find("UnitNumber").GetComponent<TMP_Text>();
-                    unitNumber.text = lifePoints.ToString();
-                    row.gameObject.SetActive(true);
-                    origin.GetComponent<ZoneInfo>().supportRerolls += supportRerolls;
-                    break;
-                }
-            }
-        }
-        else
-        {
-            foreach (Transform row in origin.transform)
-            {
-                if (row.CompareTag(tag))
-                {
-                    TMP_Text unitNumber = row.Find("UnitNumber").GetComponent<TMP_Text>();
+            StartCoroutine(AnimateMovement(transform.position, destination.transform.position));
+            transform.SetParent(destination.transform);
 
-                    unitNumber.text = (Int32.Parse(unitNumber.text) - 1).ToString();
-                    if (unitNumber.text == "0")
-                    {
-                        row.gameObject.SetActive(false);
-                    }
-                    origin.GetComponent<ZoneInfo>().supportRerolls -= supportRerolls;
-                    break;
-                }
-            }
-            foreach (Transform row in destination.transform)
-            {
-                if (row.CompareTag(tag))
-                {
-                    TMP_Text unitNumber = row.Find("UnitNumber").GetComponent<TMP_Text>();
-                    unitNumber.text = (Int32.Parse(unitNumber.text) + 1).ToString();
-                    row.gameObject.SetActive(true);
-                    origin.GetComponent<ZoneInfo>().supportRerolls += supportRerolls;
-                    break;
-                }
-            }
+            //origin layout fix
+            LayoutRebuilder.ForceRebuildLayoutImmediate(origin.GetComponent<RectTransform>());
+            transform.parent.gameObject.GetComponent<Shapes2D.Shape>().ComputeAndApply();
+
+            //destination layout fix
+            LayoutRebuilder.ForceRebuildLayoutImmediate(destination.GetComponent<RectTransform>());
+            transform.parent.gameObject.GetComponent<Shapes2D.Shape>().ComputeAndApply();
+
+            //  // Below is old way of moving, by modifying and deactivating one zone's unitRow and activating it in the destination zone.
+            //foreach (Transform row in origin.transform)
+            //{
+            //    if (row.CompareTag(tag))
+            //    {
+            //        TMP_Text unitNumber = row.Find("UnitNumber").GetComponent<TMP_Text>();
+
+            //        unitNumber.text = (Int32.Parse(unitNumber.text) - 1).ToString();
+            //        if (unitNumber.text == "0")
+            //        {
+            //            row.gameObject.SetActive(false);
+            //        }
+            //        origin.GetComponent<ZoneInfo>().supportRerolls -= supportRerolls;
+            //        break;
+            //    }
+            //}
+            //foreach (Transform row in destination.transform)
+            //{
+            //    if (row.CompareTag(tag))
+            //    {
+            //        TMP_Text unitNumber = row.Find("UnitNumber").GetComponent<TMP_Text>();
+            //        unitNumber.text = (Int32.Parse(unitNumber.text) + 1).ToString();
+            //        row.gameObject.SetActive(true);
+            //        origin.GetComponent<ZoneInfo>().supportRerolls += supportRerolls;
+            //        break;
+            //    }
+            //}
+            Debug.Log("Moved " + tag + " from " + origin.name + " to " + destination.name);
         }
+    }
+
+    IEnumerator AnimateMovement(Vector3 origin, Vector3 destination)
+    {
+        float uncoverTime = 0.1f;
+        float t = 0;
+
+        while (t < 1f)
+        {
+            t += Time.deltaTime * uncoverTime;
+
+            transform.position = new Vector3(Mathf.Lerp(origin.x, destination.x, t), Mathf.Lerp(origin.y, destination.y, t), 0);
+
+            yield return null;
+        }
+
+        yield return 0;
     }
 
     public void PerformAction(UnitPossibleAction unitTurn)
@@ -370,8 +379,6 @@ public class Unit : MonoBehaviour
         GameObject currentZone = transform.parent.gameObject;
         ZoneInfo currentZoneInfo = currentZone.GetComponent<ZoneInfo>();
         int rerolls = currentZoneInfo.supportRerolls - supportRerolls;
-
-        MoveToken(transform.parent.gameObject, unitTurn.destinationZone);
 
         switch (unitTurn.actionType)
         {
@@ -428,7 +435,13 @@ public class Unit : MonoBehaviour
                 }
                 break;
         }
-        Debug.Log("Moved " + tag + " from " + currentZone.name + " to " + unitTurn.destinationZone.name + " and performed " + unitTurn.actionType + " with " + actionSuccesses.ToString() + " successes");
+        string debugString = tag + " in " + unitTurn.destinationZone.name + " performed " + unitTurn.actionType;
+        if (unitTurn.targetedZone != null)
+        {
+            debugString += " targeting " + unitTurn.targetedZone.name;
+        }
+        debugString += " and got " + actionSuccesses + " successes";
+        Debug.Log(tag + " in " + unitTurn.destinationZone.name + " performed " + unitTurn.actionType + " and got " + actionSuccesses + " successes");
     }
 
     private int RollAndReroll(GameObject[] dicePool, int actionSuccesses, int rerolls, int requiredSuccesses)
