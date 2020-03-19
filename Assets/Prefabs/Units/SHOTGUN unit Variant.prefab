@@ -23,6 +23,11 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2180432876221642290, guid: cbd0eaa5d05564f668459f2b692b2a98,
         type: 3}
+    - target: {fileID: 499749899686709246, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: wallBreaker
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3620712601893847824, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
       propertyPath: m_Sprite
@@ -207,7 +212,7 @@ PrefabInstance:
     - target: {fileID: 3620712603341133459, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
       propertyPath: m_Name
-      value: SHOTGUN unit
+      value: SHOTGUN unit Variant
       objectReference: {fileID: 0}
     - target: {fileID: 3620712603341133459, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}

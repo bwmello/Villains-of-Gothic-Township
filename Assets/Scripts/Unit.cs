@@ -15,13 +15,15 @@ public class Unit : MonoBehaviour
 
     public int size = 1;
     public int menace = 1;
-    public int supportRerolls = 0;  // TODO Barn has 1 here, providing 1 free reroll for each ally in zone (maybe track on ZoneInfo, updating when unit with support moved in/out
+    public int supportRerolls = 0;
 
     public int movePoints;
     public int ignoreTerrainDifficulty = 0;
     public int ignoreElevation = 0;
     public int ignoreSize = 0;
     public int wallBreaker = 0;  // TODO for SuperBarn
+
+    public GameObject wallRubble;
 
     public int munitionSpecialist = 0;
 
@@ -30,8 +32,6 @@ public class Unit : MonoBehaviour
 
     public int marskmanSuccesses = 0;
     public int pointBlankRerolls = 0;
-
-    GameObject targetedLineOfSightZone;
 
     [Serializable]
     public class ActionProficiency
@@ -42,51 +42,6 @@ public class Unit : MonoBehaviour
     public ActionProficiency[] actionProficiencies;  // Unity can't expose dictionaries in the inspector, so Dictionary<string, GameObject[]> actionProficiencies not possible without addon
     private Dictionary<string, GameObject[]> validActionProficiencies;
 
-    class ActionResult
-    {
-        public Dice die;
-        public int successes;
-
-        public ActionResult(Dice resultDie = null, int resultSuccesses = 0)
-        {
-            die = resultDie;
-            successes = resultSuccesses;
-        }
-    }
-
-    readonly List<string> actionPriorities = new List<string>() { "MANIPULATION", "THOUGHT", "MELEE", "RANGED" };
-    private Dictionary<string, double> actionsWeightTable = new Dictionary<string, double>()
-    {
-        { "MANIPULATION", 70 },
-        { "THOUGHT", 60 },
-        { "OBJECTIVE_REROLL", 7 },  // * totalRerolls
-        { "OBJECTIVE_HINDRANCE", -15 },  // * totalHindrance
-        { "MELEE", 40 },
-        { "RANGED", 40 },
-        { "ATTACK_BONUSDIE", 10 },  // * totalBonusDice
-        { "ATTACK_REROLL", 5 },  // * totalRerolls
-        { "ATTACK_HINDRANCE", -9 },  // * totalHindrance
-        { "GUARD_PRIMEDBOMB", 15 },  // // TODO triple this if there are no more bombs and only 2 primedbombs left
-        { "GUARD_BOMB", 10 },
-        { "GUARD_COMPUTER", 5 }
-    };
-    public class UnitPossibleAction
-    {
-        public Unit myUnit;
-        public string actionType;
-        public double actionWeight;
-        public GameObject destinationZone;
-        public GameObject targetedZone;
-
-        public UnitPossibleAction(Unit theUnit, string unitActionType, double unitActionWeight, GameObject unitDestinationZone, GameObject unitTargetedZone = null)
-        {
-            myUnit = theUnit;
-            actionType = unitActionType;
-            actionWeight = unitActionWeight;
-            destinationZone = unitDestinationZone;
-            targetedZone = unitTargetedZone;
-        }
-    }
 
     void Start()
     {
@@ -97,24 +52,23 @@ public class Unit : MonoBehaviour
     {
         GameObject currentZone = transform.parent.gameObject;
 
-        Dictionary<GameObject, int> possibleDestinations = GetPossibleDestinations(currentZone, 0);
-        //string possibleDestinationsDebugString = tag + " from " + currentZone.name + " possibleDestinations:";
-        //foreach (KeyValuePair<GameObject, int> pair in possibleDestinations)
+        Dictionary<GameObject, MovementPath> possibleDestinations = GetPossibleDestinations(currentZone);
+        // // For debugging GetPossibleDestinations()
+        //string possibleDestinationsDebugString = tag + " from " + currentZone.name + " possibleDestinations: {";
+        //foreach (KeyValuePair<GameObject, MovementPath> zonesMovementPath in possibleDestinations)
         //{
-        //    possibleDestinationsDebugString += "   {" + pair.Key.name + ", " + pair.Value + "},";
+        //    possibleDestinationsDebugString += '\"' + zonesMovementPath.Key.name + "\": {" + zonesMovementPath.Value.movementSpent;
+        //    foreach (GameObject zone in zonesMovementPath.Value.zones)
+        //    {
+        //        possibleDestinationsDebugString += " " + zone.name + ",";
+        //    }
+        //    possibleDestinationsDebugString += "},  ";
         //}
         //Debug.Log(possibleDestinationsDebugString);
 
-        List<ZoneInfo> possibleDestinationsInfo = new List<ZoneInfo>();
-        foreach (GameObject destination in possibleDestinations.Keys)
-        {
-            possibleDestinationsInfo.Add(destination.GetComponent<ZoneInfo>());
-        }
-
-        List<UnitPossibleAction> allPossibleUnitActions = GetPossibleActions(possibleDestinationsInfo);
+        List<UnitPossibleAction> allPossibleUnitActions = GetPossibleActions(possibleDestinations);
         if (allPossibleUnitActions != null && allPossibleUnitActions.Count > 0)
         {
-            Dictionary<string, UnitPossibleAction> uniquePossibleActions = new Dictionary<string, UnitPossibleAction>();
             UnitPossibleAction chosenAction = null;
 
             foreach (UnitPossibleAction unitAction in allPossibleUnitActions)
@@ -124,7 +78,11 @@ public class Unit : MonoBehaviour
                     chosenAction = unitAction;
                 }
             }
-            MoveToken(currentZone, chosenAction.destinationZone);
+            if (currentZone != chosenAction.destinationZone)
+            {
+                chosenAction.pathTaken.zones.Add(chosenAction.destinationZone);  // Otherwise token is never animated moving the last zone to the destination
+                MoveToken(chosenAction.pathTaken);
+            }
             PerformAction(chosenAction);
         }
         else
@@ -133,16 +91,44 @@ public class Unit : MonoBehaviour
         }
     }
 
-    private Dictionary<GameObject, int> GetPossibleDestinations(GameObject currentZone, int movePointsPreviouslyUsed, Dictionary<GameObject, int> possibleDestinations = null)
+
+    public class MovementPath
+    {
+        public List<GameObject> zones = new List<GameObject>();
+        public int movementSpent = 0;
+    }
+
+    private Dictionary<GameObject, MovementPath> GetPossibleDestinations(GameObject currentZone, Dictionary<GameObject, MovementPath> possibleDestinations = null)
     {
         if (possibleDestinations is null)
         {
-            possibleDestinations = new Dictionary<GameObject, int> { { currentZone, 0 } };
+            possibleDestinations = new Dictionary<GameObject, MovementPath> { { currentZone, new MovementPath() } };
         }
-        ZoneInfo currentZoneInfo = currentZone.GetComponent<ZoneInfo>();
 
+        ZoneInfo currentZoneInfo = currentZone.GetComponent<ZoneInfo>();
         List<GameObject> allAdjacentZones = new List<GameObject>(currentZoneInfo.adjacentZones);
         allAdjacentZones.AddRange(currentZoneInfo.steeplyAdjacentZones);
+        if (wallBreaker > 0)
+        {
+            allAdjacentZones.AddRange(currentZoneInfo.wall1AdjacentZones);
+            if (wallBreaker > 1)
+            {
+                allAdjacentZones.AddRange(currentZoneInfo.wall2AdjacentZones);
+                if (wallBreaker > 2)
+                {
+                    allAdjacentZones.AddRange(currentZoneInfo.wall3AdjacentZones);
+                    if (wallBreaker > 3)
+                    {
+                        allAdjacentZones.AddRange(currentZoneInfo.wall4AdjacentZones);
+                        if (wallBreaker > 4)
+                        {
+                            allAdjacentZones.AddRange(currentZoneInfo.wall5AdjacentZones);
+                        }
+                    }
+                }
+            }
+        }
+
         foreach (GameObject potentialZone in allAdjacentZones)
         {
             ZoneInfo potentialZoneInfo = potentialZone.GetComponent<ZoneInfo>();
@@ -161,29 +147,37 @@ public class Unit : MonoBehaviour
                 elevationCost = Math.Abs(currentZoneInfo.elevation - potentialZoneInfo.elevation);
                 elevationCost = elevationCost >= ignoreElevation ? elevationCost - ignoreElevation : 0;
             }
-            int totalMovementCost = 1 + terrainDifficultyCost + sizeCost + elevationCost + movePointsPreviouslyUsed;
+            int wallBreakCost = 0;
+            if (currentZoneInfo.wall1AdjacentZones.Contains(potentialZone) || currentZoneInfo.wall2AdjacentZones.Contains(potentialZone) || currentZoneInfo.wall3AdjacentZones.Contains(potentialZone) || currentZoneInfo.wall4AdjacentZones.Contains(potentialZone) || currentZoneInfo.wall5AdjacentZones.Contains(potentialZone))
+            {
+                wallBreakCost = 2;
+            }
+            int totalMovementCost = 1 + terrainDifficultyCost + sizeCost + elevationCost + wallBreakCost + possibleDestinations[currentZone].movementSpent;
 
             if (movePoints >= totalMovementCost)  // if unit can move here
             {
                 if (possibleDestinations.ContainsKey(potentialZone))
                 {
-                    if (possibleDestinations[potentialZone] > totalMovementCost)
+                    if (possibleDestinations[potentialZone].movementSpent > totalMovementCost)
                     {
-                        possibleDestinations[potentialZone] = totalMovementCost;
-                        //Debug.Log("!!!currentZone: " + currentZone.name + "  potentialZone: " + potentialZone.name + " terrainDifficultyCost: " + terrainDifficultyCost + " sizeCost: " + sizeCost + " elevationCost: " + elevationCost + " movePointsPreviouslyUsed: " + movePointsPreviouslyUsed + " totalMovementCost: " + totalMovementCost + " movePoints: " + movePoints);
+                        possibleDestinations[potentialZone].zones = new List<GameObject>(possibleDestinations[currentZone].zones);
+                        possibleDestinations[potentialZone].zones.Add(currentZone);
+                        possibleDestinations[potentialZone].movementSpent = totalMovementCost;
                         if (movePoints > totalMovementCost)
                         {
-                            possibleDestinations = GetPossibleDestinations(potentialZone, totalMovementCost, possibleDestinations);
+                            possibleDestinations = GetPossibleDestinations(potentialZone, possibleDestinations);
                         }
                     }
                 }
                 else
                 {
-                    possibleDestinations[potentialZone] = totalMovementCost;
-                    //Debug.Log("!!!currentZone: " + currentZone.name + "  potentialZone: " + potentialZone.name + " terrainDifficultyCost: " + terrainDifficultyCost + " sizeCost: " + sizeCost + " elevationCost: " + elevationCost + " movePointsPreviouslyUsed: " + movePointsPreviouslyUsed + " totalMovementCost: " + totalMovementCost + " movePoints: " + movePoints);
+                    possibleDestinations.Add(potentialZone, new MovementPath());
+                    possibleDestinations[potentialZone].zones = new List<GameObject>(possibleDestinations[currentZone].zones);
+                    possibleDestinations[potentialZone].zones.Add(currentZone);
+                    possibleDestinations[potentialZone].movementSpent = totalMovementCost;
                     if (movePoints > totalMovementCost)
                     {
-                        possibleDestinations = GetPossibleDestinations(potentialZone, totalMovementCost, possibleDestinations);
+                        possibleDestinations = GetPossibleDestinations(potentialZone, possibleDestinations);
                     }
                 }
             }
@@ -191,12 +185,56 @@ public class Unit : MonoBehaviour
         return possibleDestinations;
     }
 
-    private List<UnitPossibleAction> GetPossibleActions(List<ZoneInfo> possibleDestinations)
+
+    private Dictionary<string, double> actionsWeightTable = new Dictionary<string, double>()
     {
+        { "MANIPULATION", 70 },
+        { "THOUGHT", 60 },
+        { "OBJECTIVE_REROLL", 7 },  // * totalRerolls
+        { "OBJECTIVE_HINDRANCE", -15 },  // * totalHindrance
+        { "MELEE", 40 },
+        { "RANGED", 40 },
+        { "ATTACK_BONUSDIE", 10 },  // * totalBonusDice
+        { "ATTACK_REROLL", 5 },  // * totalRerolls
+        { "ATTACK_HINDRANCE", -9 },  // * totalHindrance
+        { "GUARD_PRIMEDBOMB", 15 },  // // TODO triple this if there are no more bombs and only 2 primedbombs left
+        { "GUARD_BOMB", 10 },
+        { "GUARD_COMPUTER", 5 }
+    };
+
+    public class UnitPossibleAction
+    {
+        public Unit myUnit;
+        public string actionType;
+        public double actionWeight;
+        public GameObject destinationZone;
+        public MovementPath pathTaken;
+        public GameObject targetedZone;
+
+        public UnitPossibleAction(Unit theUnit, string unitActionType, double unitActionWeight, GameObject unitDestinationZone, GameObject unitTargetedZone = null, MovementPath unitPathTaken = null)
+        {
+            myUnit = theUnit;
+            actionType = unitActionType;
+            actionWeight = unitActionWeight;
+            destinationZone = unitDestinationZone;
+            targetedZone = unitTargetedZone;
+            pathTaken = unitPathTaken;
+        }
+    }
+
+    private List<UnitPossibleAction> GetPossibleActions(Dictionary<GameObject, MovementPath> possibleDestinationsAndPaths)
+    {
+        //List<ZoneInfo> possibleDestinationsInfo = new List<ZoneInfo>();
+        //foreach (GameObject destination in possibleDestinations.Keys)
+        //{
+        //    possibleDestinationsInfo.Add(destination.GetComponent<ZoneInfo>());
+        //}
+
         List<UnitPossibleAction> allPossibleActions = new List<UnitPossibleAction>();
 
-        foreach (ZoneInfo destination in possibleDestinations)
+        foreach (GameObject destinationZone in possibleDestinationsAndPaths.Keys)
         {
+            ZoneInfo destination = destinationZone.GetComponent<ZoneInfo>();
             int destinationHindrance = destination.GetCurrentHindrance(this.gameObject);
             foreach (string actionType in validActionProficiencies.Keys)
             {
@@ -223,7 +261,7 @@ public class Unit : MonoBehaviour
                             actionWeight += actionsWeightTable[actionType];
                             actionWeight += destination.supportRerolls * actionsWeightTable["OBJECTIVE_REROLL"];
                             actionWeight += destinationHindrance * actionsWeightTable["OBJECTIVE_HINDRANCE"];
-                            allPossibleActions.Add(new UnitPossibleAction(this, actionType, actionWeight, destination.gameObject));
+                            allPossibleActions.Add(new UnitPossibleAction(this, actionType, actionWeight, destination.gameObject, null, possibleDestinationsAndPaths[destinationZone]));
                         }
                         break;
                     case "THOUGHT":
@@ -232,7 +270,7 @@ public class Unit : MonoBehaviour
                             actionWeight += actionsWeightTable[actionType];
                             actionWeight += destination.supportRerolls * actionsWeightTable["OBJECTIVE_REROLL"];
                             actionWeight += destinationHindrance * actionsWeightTable["OBJECTIVE_HINDRANCE"];
-                            allPossibleActions.Add(new UnitPossibleAction(this, actionType, actionWeight, destination.gameObject));
+                            allPossibleActions.Add(new UnitPossibleAction(this, actionType, actionWeight, destination.gameObject, null, possibleDestinationsAndPaths[destinationZone]));
                         }
                         break;
                     case "MELEE":
@@ -240,7 +278,7 @@ public class Unit : MonoBehaviour
                         {
                             actionWeight += actionsWeightTable[actionType];
                             actionWeight += destination.supportRerolls * actionsWeightTable["ATTACK_REROLL"];
-                            allPossibleActions.Add(new UnitPossibleAction(this, actionType, actionWeight, destination.gameObject));
+                            allPossibleActions.Add(new UnitPossibleAction(this, actionType, actionWeight, destination.gameObject, null, possibleDestinationsAndPaths[destinationZone]));
                         }
                         break;
                     case "RANGED":
@@ -258,7 +296,7 @@ public class Unit : MonoBehaviour
                             {
                                 actionWeight += actionsWeightTable["ATTACK_BONUSDIE"];
                             }
-                            allPossibleActions.Add(new UnitPossibleAction(this, actionType, actionWeight, destination.gameObject, targetedZone));
+                            allPossibleActions.Add(new UnitPossibleAction(this, actionType, actionWeight, destination.gameObject, targetedZone, possibleDestinationsAndPaths[destinationZone]));
                         }
                         break;
                 }
@@ -273,14 +311,8 @@ public class Unit : MonoBehaviour
         double mostValuableActionWeight = 0;
         GameObject currentZone = transform.parent.gameObject;
 
-        Dictionary<GameObject, int> possibleDestinations = GetPossibleDestinations(currentZone, 0);
-        List<ZoneInfo> possibleDestinationsInfo = new List<ZoneInfo>();
-        foreach (GameObject destination in possibleDestinations.Keys)
-        {
-            possibleDestinationsInfo.Add(destination.GetComponent<ZoneInfo>());
-        }
-
-        List<UnitPossibleAction> allPossibleUnitActions = GetPossibleActions(possibleDestinationsInfo);
+        Dictionary<GameObject, MovementPath> possibleDestinations = GetPossibleDestinations(currentZone);
+        List<UnitPossibleAction> allPossibleUnitActions = GetPossibleActions(possibleDestinations);
         if (allPossibleUnitActions != null && allPossibleUnitActions.Count > 0)
         {
             Dictionary<string, UnitPossibleAction> uniquePossibleActions = new Dictionary<string, UnitPossibleAction>();
@@ -309,66 +341,60 @@ public class Unit : MonoBehaviour
         return validActionProficiencies;
     }
 
-    public void MoveToken(GameObject origin, GameObject destination)  // TODO Add wall break movement
+    public void MoveToken(MovementPath pathToMove)  // TODO Add wall break movement
     {
-        if (origin != destination)
+        StartCoroutine(AnimateMovementPath(pathToMove));
+        string debugString = "Moved " + tag;
+        for (int i = 1; i < pathToMove.zones.Count; i++)
         {
-            StartCoroutine(AnimateMovement(transform.position, destination.transform.position));
-            transform.SetParent(destination.transform);
-
-            //origin layout fix
-            LayoutRebuilder.ForceRebuildLayoutImmediate(origin.GetComponent<RectTransform>());
-            transform.parent.gameObject.GetComponent<Shapes2D.Shape>().ComputeAndApply();
-
-            //destination layout fix
-            LayoutRebuilder.ForceRebuildLayoutImmediate(destination.GetComponent<RectTransform>());
-            transform.parent.gameObject.GetComponent<Shapes2D.Shape>().ComputeAndApply();
-
-            //  // Below is old way of moving, by modifying and deactivating one zone's unitRow and activating it in the destination zone.
-            //foreach (Transform row in origin.transform)
-            //{
-            //    if (row.CompareTag(tag))
-            //    {
-            //        TMP_Text unitNumber = row.Find("UnitNumber").GetComponent<TMP_Text>();
-
-            //        unitNumber.text = (Int32.Parse(unitNumber.text) - 1).ToString();
-            //        if (unitNumber.text == "0")
-            //        {
-            //            row.gameObject.SetActive(false);
-            //        }
-            //        origin.GetComponent<ZoneInfo>().supportRerolls -= supportRerolls;
-            //        break;
-            //    }
-            //}
-            //foreach (Transform row in destination.transform)
-            //{
-            //    if (row.CompareTag(tag))
-            //    {
-            //        TMP_Text unitNumber = row.Find("UnitNumber").GetComponent<TMP_Text>();
-            //        unitNumber.text = (Int32.Parse(unitNumber.text) + 1).ToString();
-            //        row.gameObject.SetActive(true);
-            //        origin.GetComponent<ZoneInfo>().supportRerolls += supportRerolls;
-            //        break;
-            //    }
-            //}
-            Debug.Log("Moved " + tag + " from " + origin.name + " to " + destination.name);
+            debugString += " from " + pathToMove.zones[i - 1].name + " to " + pathToMove.zones[i].name;
         }
+        Debug.Log(debugString);
     }
 
-    IEnumerator AnimateMovement(Vector3 origin, Vector3 destination)
+    IEnumerator AnimateMovementPath(MovementPath movementPath)
     {
-        float uncoverTime = 0.1f;
+        for (int i = 1; i < movementPath.zones.Count; i++)
+        {
+            GameObject origin = movementPath.zones[i - 1];
+            GameObject destination = movementPath.zones[i];
+            if (wallBreaker > 0)
+            {
+                ZoneInfo originInfo = origin.GetComponent<ZoneInfo>();
+                if (!originInfo.adjacentZones.Contains(destination) && !originInfo.steeplyAdjacentZones.Contains(destination))
+                {  // TODO Prevent animation overlap  when multiples units move together between zones. Also animate wallRubble correctly instead of just assuming halway point.
+                    Vector3 halfwayPoint = new Vector3((origin.transform.position.x + destination.transform.position.x) / 2, (origin.transform.position.y + destination.transform.position.y) / 2, 0);
+                    Instantiate(wallRubble, halfwayPoint, new Quaternion(), origin.transform.parent);
+                    ZoneInfo destinationInfo = destination.GetComponent<ZoneInfo>();
+                    originInfo.adjacentZones.Add(destination);
+                    destinationInfo.adjacentZones.Add(origin);
+                    originInfo.lineOfSightZones.Add(destination);
+                    destinationInfo.lineOfSightZones.Add(origin);
+                }
+            }
+            yield return StartCoroutine(AnimateMovement(origin, destination));
+        }
+        yield return 0;
+    }
+
+    IEnumerator AnimateMovement(GameObject origin, GameObject destination)
+    {
+        float uncoverTime = 0.5f;
         float t = 0;
+
+        Vector3 oldPosition = origin.transform.position;
+        Vector3 newPosition = destination.transform.position;
 
         while (t < 1f)
         {
             t += Time.deltaTime * uncoverTime;
 
-            transform.position = new Vector3(Mathf.Lerp(origin.x, destination.x, t), Mathf.Lerp(origin.y, destination.y, t), 0);
+            transform.position = new Vector3(Mathf.Lerp(oldPosition.x, newPosition.x, t), Mathf.Lerp(oldPosition.y, newPosition.y, t), 0);
 
             yield return null;
         }
 
+        transform.SetParent(destination.transform);
         yield return 0;
     }
 
@@ -417,7 +443,7 @@ public class Unit : MonoBehaviour
                         dicePool = tempDicePool.ToArray();
                     }
 
-                    if (currentZone == targetedLineOfSightZone)
+                    if (currentZone == unitTurn.targetedZone)
                     {
                         rerolls += pointBlankRerolls;
                     }
@@ -442,6 +468,19 @@ public class Unit : MonoBehaviour
         }
         debugString += " and got " + actionSuccesses + " successes";
         Debug.Log(tag + " in " + unitTurn.destinationZone.name + " performed " + unitTurn.actionType + " and got " + actionSuccesses + " successes");
+    }
+
+
+    class ActionResult
+    {
+        public Dice die;
+        public int successes;
+
+        public ActionResult(Dice resultDie = null, int resultSuccesses = 0)
+        {
+            die = resultDie;
+            successes = resultSuccesses;
+        }
     }
 
     private int RollAndReroll(GameObject[] dicePool, int actionSuccesses, int rerolls, int requiredSuccesses)

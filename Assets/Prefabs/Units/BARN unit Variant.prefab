@@ -68,6 +68,21 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 6261325660192181314, guid: 177f89921d19b404894b89719dbcdfe8,
         type: 3}
+    - target: {fileID: 1073400145209800415, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
+        type: 3}
+      propertyPath: martialArtsSuccesses
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1073400145209800415, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
+        type: 3}
+      propertyPath: munitionSpecialist
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1073400145209800415, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
+        type: 3}
+      propertyPath: supportRerolls
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4194353948598637565, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
         type: 3}
       propertyPath: m_textInfo.characterCount
@@ -196,7 +211,7 @@ PrefabInstance:
     - target: {fileID: 4194353948618237874, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
         type: 3}
       propertyPath: m_Name
-      value: BARN unit
+      value: BARN unit Variant
       objectReference: {fileID: 0}
     - target: {fileID: 4194353948618237874, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
         type: 3}

@@ -51,6 +51,11 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 6261325660192181314, guid: 177f89921d19b404894b89719dbcdfe8,
         type: 3}
+    - target: {fileID: 499749899686709246, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: wallBreaker
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3620712601893847824, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
       propertyPath: m_Sprite
@@ -250,7 +255,7 @@ PrefabInstance:
     - target: {fileID: 3620712603341133459, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
       propertyPath: m_Name
-      value: UZI unit
+      value: UZI unit Variant
       objectReference: {fileID: 0}
     - target: {fileID: 3620712603341133459, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}

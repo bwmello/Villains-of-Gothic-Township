@@ -62,17 +62,17 @@ public class ScenarioMap : MonoBehaviour
             villainRiver.Remove(unitTypeToActivate);
             villainRiver.Add(unitTypeToActivate);
         }
-        //// Below useful for debugging single unit
+        // // Below useful for debugging single unit
         //int i = 0;
-        //foreach (GameObject unit in GameObject.FindGameObjectsWithTag("CROWBAR"))
+        //foreach (GameObject unit in GameObject.FindGameObjectsWithTag("SHOTGUN"))
         //{
-        //    i++;
-        //    if (i == 1)
-        //    {
-        //        continue;
-        //    }
+        //    //i++;
+        //    //if (i < 4)
+        //    //{
+        //    //    continue;
+        //    //}
         //    unit.GetComponent<Unit>().ActivateUnit();
-        //    break;
+        //    //break;
         //}
 
         StartHeroTurn();

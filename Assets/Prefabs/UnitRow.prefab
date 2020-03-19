@@ -979,6 +979,8 @@ MonoBehaviour:
   ignoreElevation: 0
   ignoreSize: 0
   wallBreaker: 0
+  wallRubble: {fileID: 8607730200328278758, guid: f842d0075cb6644c08d66de683104cb4,
+    type: 3}
   munitionSpecialist: 0
   martialArtsSuccesses: 0
   circularStrike: 0
