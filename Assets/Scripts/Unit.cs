@@ -29,6 +29,7 @@ public class Unit : MonoBehaviour
 
     public int martialArtsSuccesses = 0;
     public int circularStrike = 0;  // TODO for CHAINS, if hero removed after MELEE with another hero in that zone, popup prompt saying up to this many additional successes carry over
+    public int counterAttack = 0;  // TODO for SHOTGUN, if hero moves into space with SHOTGUN, reminder that after melee attack against SHOTGUN is resolved, SHOTGUN gets free melee attack vs hero with number of yellow dice = counterattack
 
     public int marskmanSuccesses = 0;
     public int pointBlankRerolls = 0;
@@ -43,7 +44,7 @@ public class Unit : MonoBehaviour
     private Dictionary<string, GameObject[]> validActionProficiencies;
 
 
-    void Start()
+    void Awake()  // Need to happen on Instantiate for potential spawn/reinforcement evaluation, so Start() not good enough
     {
         validActionProficiencies = GetValidActionProficiencies();
     }

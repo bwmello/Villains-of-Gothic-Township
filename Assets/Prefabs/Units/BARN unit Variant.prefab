@@ -83,6 +83,16 @@ PrefabInstance:
       propertyPath: supportRerolls
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 1073400145209800415, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
+        type: 3}
+      propertyPath: reinforcementCost
+      value: -1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1073400145209800415, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
+        type: 3}
+      propertyPath: defense
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 4194353948598637565, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
         type: 3}
       propertyPath: m_textInfo.characterCount

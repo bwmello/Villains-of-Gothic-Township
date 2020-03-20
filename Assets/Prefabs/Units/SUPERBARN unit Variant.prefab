@@ -83,6 +83,21 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 3977603957081343019, guid: d58eb93d5ddbb4ba8a58a52718e7f90a,
         type: 3}
+    - target: {fileID: 1073400145209800415, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
+        type: 3}
+      propertyPath: reinforcementCost
+      value: -1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1073400145209800415, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
+        type: 3}
+      propertyPath: defense
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1073400145209800415, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
+        type: 3}
+      propertyPath: size
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 4194353948598637565, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
         type: 3}
       propertyPath: m_textInfo.characterCount

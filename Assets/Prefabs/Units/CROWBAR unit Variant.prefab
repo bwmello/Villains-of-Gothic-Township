@@ -56,6 +56,11 @@ PrefabInstance:
       propertyPath: wallBreaker
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 499749899686709246, guid: 6dcd349d4280042a1bd85e84b4793140,
+        type: 3}
+      propertyPath: defense
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3620712602402919255, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
       propertyPath: m_textInfo.characterCount
@@ -99,7 +104,7 @@ PrefabInstance:
     - target: {fileID: 3620712603312104156, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
       propertyPath: m_textInfo.characterCount
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3620712603312104156, guid: 6dcd349d4280042a1bd85e84b4793140,
         type: 3}
