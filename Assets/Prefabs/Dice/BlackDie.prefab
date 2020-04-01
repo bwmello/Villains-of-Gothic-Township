@@ -32,10 +32,15 @@ PrefabInstance:
       propertyPath: faces.Array.data[2]
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4026089378909472414, guid: aeba88583a08441e5a97cc905463dc1d,
+        type: 3}
+      propertyPath: averageSuccesses
+      value: 1.5
+      objectReference: {fileID: 0}
     - target: {fileID: 8737123444041974402, guid: aeba88583a08441e5a97cc905463dc1d,
         type: 3}
       propertyPath: m_Name
-      value: Black
+      value: BlackDie
       objectReference: {fileID: 0}
     - target: {fileID: 8757241071473172378, guid: aeba88583a08441e5a97cc905463dc1d,
         type: 3}

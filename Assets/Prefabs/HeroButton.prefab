@@ -325,6 +325,7 @@ GameObject:
   - component: {fileID: 2437008969555922058}
   - component: {fileID: 7575525838997925473}
   - component: {fileID: 4058273388563353047}
+  - component: {fileID: 7121792815459281577}
   m_Layer: 5
   m_Name: HeroButton
   m_TagString: Untagged
@@ -431,7 +432,18 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2437008969555922056}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 7121792815459281577}
+        m_MethodName: HeroButtonClicked
+        m_Mode: 2
+        m_Arguments:
+          m_ObjectArgument: {fileID: 2437008969555922059}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.UI.Button, UnityEngine.UI
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 1
 --- !u!114 &2437008969555922058
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -527,3 +539,15 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!114 &7121792815459281577
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2437008969555922052}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62fe599d547e64e4d988ecb5cf2b9c2c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

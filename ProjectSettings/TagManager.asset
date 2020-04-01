@@ -13,6 +13,10 @@ TagManager:
   - BARN
   - SUPERBARN
   - Dice
+  - 1stHero
+  - 2ndHero
+  - 3rdHero
+  - Bomb
   layers:
   - Default
   - TransparentFX

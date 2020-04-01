@@ -41,7 +41,7 @@ public class Unit : MonoBehaviour
         public GameObject[] dice;
     }
     public ActionProficiency[] actionProficiencies;  // Unity can't expose dictionaries in the inspector, so Dictionary<string, GameObject[]> actionProficiencies not possible without addon
-    private Dictionary<string, GameObject[]> validActionProficiencies;
+    public Dictionary<string, GameObject[]> validActionProficiencies;
 
 
     void Awake()  // Need to happen on Instantiate for potential spawn/reinforcement evaluation, so Start() not good enough
@@ -81,6 +81,8 @@ public class Unit : MonoBehaviour
             }
             if (currentZone != chosenAction.destinationZone)
             {
+                transform.SetParent(chosenAction.destinationZone.transform);
+                currentZone = chosenAction.destinationZone;
                 chosenAction.pathTaken.zones.Add(chosenAction.destinationZone);  // Otherwise token is never animated moving the last zone to the destination
                 MoveToken(chosenAction.pathTaken);
             }
@@ -254,6 +256,7 @@ public class Unit : MonoBehaviour
                     actionWeight += actionsWeightTable["GUARD_COMPUTER"];
                 }
 
+                
                 switch (actionType)
                 {
                     case "MANIPULATION":
@@ -266,7 +269,7 @@ public class Unit : MonoBehaviour
                         }
                         break;
                     case "THOUGHT":
-                        if (destination.HasToken("Computer"))
+                        if (destination.HasToken("Computer") && GameObject.FindGameObjectsWithTag("Bomb").Length > 0)
                         {
                             actionWeight += actionsWeightTable[actionType];
                             actionWeight += destination.supportRerolls * actionsWeightTable["OBJECTIVE_REROLL"];
@@ -342,7 +345,7 @@ public class Unit : MonoBehaviour
         return validActionProficiencies;
     }
 
-    public void MoveToken(MovementPath pathToMove)  // TODO Add wall break movement
+    public void MoveToken(MovementPath pathToMove)
     {
         StartCoroutine(AnimateMovementPath(pathToMove));
         string debugString = "Moved " + tag;
@@ -394,8 +397,8 @@ public class Unit : MonoBehaviour
 
             yield return null;
         }
+        transform.SetParent(destination.transform);  // Needed because otherwise token remains where it was last dragged (in center of zone panel instead of at bottom)
 
-        transform.SetParent(destination.transform);
         yield return 0;
     }
 
@@ -414,12 +417,45 @@ public class Unit : MonoBehaviour
                 actionSuccesses += munitionSpecialist;
                 actionSuccesses = RollAndReroll(validActionProficiencies[unitTurn.actionType], actionSuccesses, rerolls, requiredSuccesses);
                 actionSuccesses -= currentZoneInfo.GetCurrentHindrance(transform.gameObject);
+                if (actionSuccesses >= requiredSuccesses)
+                {
+                    currentZoneInfo.PrimeBomb();
+                }
                 break;
 
             case "THOUGHT":
                 requiredSuccesses = 3;
                 actionSuccesses = RollAndReroll(validActionProficiencies[unitTurn.actionType], actionSuccesses, rerolls, requiredSuccesses);
                 actionSuccesses -= currentZoneInfo.GetCurrentHindrance(transform.gameObject);
+                if (actionSuccesses >= requiredSuccesses)
+                {
+                    List<ZoneInfo> bombZones = new List<ZoneInfo>();
+                    foreach (GameObject bomb in GameObject.FindGameObjectsWithTag("Bomb"))
+                    {
+                        bombZones.Add(bomb.transform.parent.GetComponentInParent<ZoneInfo>());
+                    }
+                    ZoneInfo chosenBombZone = null;
+                    double greatestManipulationChance = -100;
+                    foreach (ZoneInfo bombZone in bombZones)
+                    {
+                        double bombZoneManipulationChance = bombZone.GetOccupantsManipulationLikelihood(transform.gameObject);
+                        if (bombZoneManipulationChance > greatestManipulationChance)
+                        {
+                            greatestManipulationChance = bombZoneManipulationChance;
+                            chosenBombZone = bombZone;
+                        }
+                    }
+                    if (chosenBombZone != null)
+                    {
+                        currentZoneInfo.RemoveComputer();
+                        chosenBombZone.PrimeBomb();
+                        unitTurn.targetedZone = chosenBombZone.transform.gameObject;  // Only useful for DEBUG statement at end of PerformAction()
+                    }
+                    else
+                    {
+                        Debug.LogError("ERROR! Tried to use a computer from " + currentZone.name + " to prime a bomb, but no zones with bombs available. Why was computer able to be used if there are no zones with bombs?");
+                    }
+                }
                 break;
 
             case "MELEE":
@@ -600,5 +636,40 @@ public class Unit : MonoBehaviour
         }
 
         return actionSuccesses;
+    }
+
+    public void LifePointsButtonClicked(int difference)
+    {
+        //Unit unitInfo = button.transform.parent.gameObject.GetComponent<Unit>();
+        lifePoints += difference;
+        transform.Find("UnitNumber").GetComponent<TMP_Text>().text = lifePoints.ToString();
+
+        if (lifePoints > 0)
+        {
+            this.GetComponent<CanvasGroup>().alpha = (float)1;
+        }
+        else
+        {
+            this.GetComponent<CanvasGroup>().alpha = (float).2;
+        }
+    }
+
+    public UnitSave ToJSON()
+    {
+        return new UnitSave(this);
+    }
+}
+
+
+[Serializable]
+public class UnitSave
+{
+    public string tag;
+    public int lifePoints;
+
+    public UnitSave(Unit unit)
+    {
+        tag = unit.tag;
+        lifePoints = unit.lifePoints;
     }
 }

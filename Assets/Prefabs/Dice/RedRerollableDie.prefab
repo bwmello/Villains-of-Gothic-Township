@@ -37,10 +37,15 @@ PrefabInstance:
       propertyPath: faces.Array.data[1]
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 4026089378909472414, guid: aeba88583a08441e5a97cc905463dc1d,
+        type: 3}
+      propertyPath: averageSuccesses
+      value: 1.91666666666667
+      objectReference: {fileID: 0}
     - target: {fileID: 8737123444041974402, guid: aeba88583a08441e5a97cc905463dc1d,
         type: 3}
       propertyPath: m_Name
-      value: RedRerollable
+      value: RedRerollableDie
       objectReference: {fileID: 0}
     - target: {fileID: 8757241071473172378, guid: aeba88583a08441e5a97cc905463dc1d,
         type: 3}
