@@ -41,6 +41,19 @@ public class ZoneInfo : MonoBehaviour
         }
     }
 
+    public int GetZoneID()
+    {
+        try
+        {
+            return Int32.Parse(transform.name.Remove(0, 14));
+        }
+        catch (FormatException err)
+        {
+            Debug.LogError("Failed to Parse " + transform.name + " to an int using: " + transform.name.Remove(0, 14) + "  Error details: " + err.ToString());
+        }
+        return -1;  // An invalid zone id
+    }
+
     public int GetCurrentOccupancy()
     {
         int currentOccupancy = 0;
@@ -132,7 +145,7 @@ public class ZoneInfo : MonoBehaviour
         {
             if (token.gameObject.GetComponent<CanvasGroup>().alpha < 1)
             {
-                Destroy(token.gameObject);
+                DestroyImmediate(token.gameObject);
             }
         }
     }
@@ -182,18 +195,18 @@ public class ZoneInfo : MonoBehaviour
         return heroesCount;
     }
 
-    public void TokenButtonClicked(Button button)
-    {
-        CanvasGroup buttonCanvas = button.GetComponent<CanvasGroup>();
-        if (buttonCanvas.alpha == 1)
-        {
-            buttonCanvas.alpha = (float).2;
-        }
-        else
-        {
-            buttonCanvas.alpha = (float)1;
-        }
-    }
+    //public void TokenButtonClicked(Button button)
+    //{
+    //    CanvasGroup buttonCanvas = button.GetComponent<CanvasGroup>();
+    //    if (buttonCanvas.alpha == 1)
+    //    {
+    //        buttonCanvas.alpha = (float).2;
+    //    }
+    //    else
+    //    {
+    //        buttonCanvas.alpha = (float)1;
+    //    }
+    //}
 
     public void PrimeBomb()
     {
@@ -251,7 +264,7 @@ public class ZoneInfo : MonoBehaviour
 
     public void EmptyOutZone()
     {
-        List<string> unitTagsList = transform.GetComponentInParent<ScenarioMap>().villainRiver;
+        HashSet<string> unitTagsSet = new HashSet<string>(transform.GetComponentInParent<ScenarioMap>().unitTagsMasterList);
         foreach (Transform child in transform)
         {
             switch (child.name)
@@ -270,7 +283,7 @@ public class ZoneInfo : MonoBehaviour
                     }
                     break;
                 default:
-                    if (child.tag != null && unitTagsList.Contains(child.tag))  // If unit, destroy it
+                    if (child.tag != null && unitTagsSet.Contains(child.tag))  // If unit, destroy it. Don't listen to "CompareTag is more efficient". It's bollocks when the tag could be null.
                     {
                         Destroy(child.gameObject);
                     }
@@ -303,6 +316,21 @@ public class ZoneInfo : MonoBehaviour
                     break;
             }
         }
+        foreach (string fadedTokenTag in zoneSave.fadedTokensTags)
+        {
+            switch (fadedTokenTag)
+            {
+                case "Computer":
+                    Instantiate(computerPrefab, tokensRow).GetComponent<CanvasGroup>().alpha = (float).2;
+                    break;
+                case "Bomb":
+                    Instantiate(bombPrefab, tokensRow).GetComponent<CanvasGroup>().alpha = (float).2;
+                    break;
+                case "PrimedBomb":
+                    Instantiate(primedBombPrefab, tokensRow).GetComponent<CanvasGroup>().alpha = (float).2;
+                    break;
+            }
+        }
 
         foreach (UnitSave unit in zoneSave.units)
         {
@@ -310,8 +338,9 @@ public class ZoneInfo : MonoBehaviour
             GameObject unitPrefab = (GameObject) AssetDatabase.LoadAssetAtPath(assetPath, typeof(GameObject));
             if (unitPrefab != null)
             {
-                GameObject spawnedUnit = Instantiate(unitPrefab, transform);
-                spawnedUnit.GetComponent<Unit>().lifePoints = unit.lifePoints;
+                Unit spawnedUnit = Instantiate(unitPrefab, transform).GetComponent<Unit>();
+                //spawnedUnit.GetComponent<Unit>().lifePoints = unit.lifePoints;
+                spawnedUnit.LifePointsButtonClicked((unit.lifePoints - spawnedUnit.lifePoints));
             }
             else
             {
@@ -326,24 +355,22 @@ public class ZoneInfo : MonoBehaviour
 public class ZoneSave
 {
     public List<string> tokensAndHeroesTags = new List<string>();  // Ex: ["Computer", "2ndHero", "3rdHero"]
+    public List<string> fadedTokensTags = new List<string>();
     public List<UnitSave> units = new List<UnitSave>();
-    // TODO track where holes have been punched in walls
 
     public ZoneSave(ZoneInfo zone)
     {
-        List<string> unitTags = zone.transform.GetComponentInParent<ScenarioMap>().villainRiver;
-        foreach (Transform row in zone.transform)
-        {
-            if (unitTags.Contains(row.tag))
-            {
-                units.Add(row.GetComponent<Unit>().ToJSON());
-            }
-        }
-
         Transform tokensRow = zone.transform.Find("TokensRow");
         foreach (Transform row in tokensRow)
         {
-            tokensAndHeroesTags.Add(row.tag);  // This should always be a token
+            if (row.GetComponent<CanvasGroup>().alpha == 1)
+            {
+                tokensAndHeroesTags.Add(row.tag);  // This should always be a token
+            }
+            else
+            {
+                fadedTokensTags.Add(row.tag);  // This should always be a token
+            }
         }
 
         Transform heroesRow = zone.transform.Find("HeroesRow");
@@ -352,6 +379,15 @@ public class ZoneSave
             if (row.GetComponent<CanvasGroup>().alpha == 1)
             {
                 tokensAndHeroesTags.Add(row.tag);  // This should always be a hero
+            }
+        }
+
+        List<string> unitTags = zone.transform.GetComponentInParent<ScenarioMap>().villainRiver;
+        foreach (Transform row in zone.transform)
+        {
+            if (unitTags.Contains(row.tag))
+            {
+                units.Add(row.GetComponent<Unit>().ToJSON());
             }
         }
     }

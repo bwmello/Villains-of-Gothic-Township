@@ -10,9 +10,10 @@ GameObject:
   m_Component:
   - component: {fileID: 629974279040813318}
   - component: {fileID: 1013753166418599716}
+  - component: {fileID: 6930110442307545127}
   m_Layer: 5
-  m_Name: RubbleMarker
-  m_TagString: Untagged
+  m_Name: WallRubble
+  m_TagString: WallRubble
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -86,3 +87,17 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &6930110442307545127
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8607730200328278758}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe49018a9ba144b619659ccb772f10ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  zone1: {fileID: 0}
+  zone2: {fileID: 0}

@@ -17,6 +17,9 @@ TagManager:
   - 2ndHero
   - 3rdHero
   - Bomb
+  - PrimedBomb
+  - Computer
+  - WallRubble
   layers:
   - Default
   - TransparentFX

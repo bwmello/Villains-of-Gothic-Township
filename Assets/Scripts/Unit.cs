@@ -21,7 +21,7 @@ public class Unit : MonoBehaviour
     public int ignoreTerrainDifficulty = 0;
     public int ignoreElevation = 0;
     public int ignoreSize = 0;
-    public int wallBreaker = 0;  // TODO for SuperBarn
+    public int wallBreaker = 0;
 
     public GameObject wallRubble;
 
@@ -46,28 +46,17 @@ public class Unit : MonoBehaviour
 
     void Awake()  // Need to happen on Instantiate for potential spawn/reinforcement evaluation, so Start() not good enough
     {
+        transform.name = transform.tag;  // Needed so that when Instantiated is named UZI or CHAINS instead of UZI(Clone) or CHAINS(Clone)
         validActionProficiencies = GetValidActionProficiencies();
     }
 
-    public void ActivateUnit()
+    //public void ActivateUnit()
+    public IEnumerator ActivateUnit()
     {
         GameObject currentZone = transform.parent.gameObject;
-
         Dictionary<GameObject, MovementPath> possibleDestinations = GetPossibleDestinations(currentZone);
-        // // For debugging GetPossibleDestinations()
-        //string possibleDestinationsDebugString = tag + " from " + currentZone.name + " possibleDestinations: {";
-        //foreach (KeyValuePair<GameObject, MovementPath> zonesMovementPath in possibleDestinations)
-        //{
-        //    possibleDestinationsDebugString += '\"' + zonesMovementPath.Key.name + "\": {" + zonesMovementPath.Value.movementSpent;
-        //    foreach (GameObject zone in zonesMovementPath.Value.zones)
-        //    {
-        //        possibleDestinationsDebugString += " " + zone.name + ",";
-        //    }
-        //    possibleDestinationsDebugString += "},  ";
-        //}
-        //Debug.Log(possibleDestinationsDebugString);
-
         List<UnitPossibleAction> allPossibleUnitActions = GetPossibleActions(possibleDestinations);
+
         if (allPossibleUnitActions != null && allPossibleUnitActions.Count > 0)
         {
             UnitPossibleAction chosenAction = null;
@@ -81,17 +70,21 @@ public class Unit : MonoBehaviour
             }
             if (currentZone != chosenAction.destinationZone)
             {
-                transform.SetParent(chosenAction.destinationZone.transform);
-                currentZone = chosenAction.destinationZone;
                 chosenAction.pathTaken.zones.Add(chosenAction.destinationZone);  // Otherwise token is never animated moving the last zone to the destination
-                MoveToken(chosenAction.pathTaken);
+                yield return StartCoroutine(MoveToken(chosenAction.pathTaken));
             }
-            PerformAction(chosenAction);
+            yield return StartCoroutine(PerformAction(chosenAction));
         }
         else
         {
-            // TODO Make a function which takes possibleDestinations as a parameter and generates the possibleDestinations beyond that.
+            GameObject destinationZone = GetPartialMoveAndWeight(possibleDestinations).Item1;
+            if (destinationZone != null && currentZone != destinationZone)
+            {
+                possibleDestinations[destinationZone].zones.Add(destinationZone);  // Otherwise token is never animated moving the last zone to the destination
+                yield return StartCoroutine(MoveToken(possibleDestinations[destinationZone]));
+            }
         }
+        yield return 0;
     }
 
 
@@ -101,7 +94,7 @@ public class Unit : MonoBehaviour
         public int movementSpent = 0;
     }
 
-    private Dictionary<GameObject, MovementPath> GetPossibleDestinations(GameObject currentZone, Dictionary<GameObject, MovementPath> possibleDestinations = null)
+    private Dictionary<GameObject, MovementPath> GetPossibleDestinations(GameObject currentZone, Dictionary<GameObject, MovementPath> possibleDestinations = null, HashSet<GameObject> alreadyPossibleZones = null)
     {
         if (possibleDestinations is null)
         {
@@ -129,6 +122,14 @@ public class Unit : MonoBehaviour
                         }
                     }
                 }
+            }
+        }
+
+        if (alreadyPossibleZones != null)
+        {
+            foreach (GameObject zone in alreadyPossibleZones)
+            {
+                allAdjacentZones.Remove(zone);
             }
         }
 
@@ -168,7 +169,7 @@ public class Unit : MonoBehaviour
                         possibleDestinations[potentialZone].movementSpent = totalMovementCost;
                         if (movePoints > totalMovementCost)
                         {
-                            possibleDestinations = GetPossibleDestinations(potentialZone, possibleDestinations);
+                            possibleDestinations = GetPossibleDestinations(potentialZone, possibleDestinations, alreadyPossibleZones);
                         }
                     }
                 }
@@ -180,12 +181,50 @@ public class Unit : MonoBehaviour
                     possibleDestinations[potentialZone].movementSpent = totalMovementCost;
                     if (movePoints > totalMovementCost)
                     {
-                        possibleDestinations = GetPossibleDestinations(potentialZone, possibleDestinations);
+                        possibleDestinations = GetPossibleDestinations(potentialZone, possibleDestinations, alreadyPossibleZones);
                     }
                 }
             }
         }
         return possibleDestinations;
+    }
+
+    private Tuple<GameObject, double> GetPartialMoveAndWeight(Dictionary<GameObject, MovementPath> reachableDestinations)
+    {
+        double mostValuableActionWeight = 0;
+        GameObject chosenDestination = null;
+
+        foreach (MovementPath movementPath in reachableDestinations.Values)
+        {
+            movementPath.movementSpent = 0;  // In getting nextPossibleDestinations, don't want to account for previously spent movement, so set it to 0.
+        }
+
+        foreach (GameObject reachableZone in reachableDestinations.Keys)
+        {
+            Dictionary<GameObject, MovementPath> nextPossibleDestinations = GetPossibleDestinations(reachableZone, new Dictionary<GameObject, MovementPath>(reachableDestinations), new HashSet<GameObject>(reachableDestinations.Keys));
+            List<UnitPossibleAction> futurePossibleActions = GetPossibleActions(nextPossibleDestinations);
+            if (futurePossibleActions != null && futurePossibleActions.Count > 0)
+            {
+                foreach (UnitPossibleAction unitAction in futurePossibleActions)
+                {
+                    unitAction.actionWeight *= actionsWeightTable["ONEHALF_MOVE"];  // Reduce weight for the fact these actions can't be completed until a second activation.
+                    if (unitAction.actionWeight > mostValuableActionWeight)
+                    {
+                        mostValuableActionWeight = unitAction.actionWeight;
+                        chosenDestination = reachableZone;
+                    }
+                }
+            }
+        }
+        if (chosenDestination != null)
+        {
+            return new Tuple<GameObject, double>(chosenDestination, mostValuableActionWeight);
+        }
+        //else
+        //{  // This Error isn't correct as, in trying out each of the spawn zones, units frequently have nothing reachable within 2 or 3 moves.
+        //    Debug.LogError("ERROR! In Unit.GetPartialMoveAndWeight, " + transform.tag + " in " + transform.parent.name + " has nowhere valuable to move even with three moves. Something must be wrong; No one is this useless.");
+        //}
+        return new Tuple<GameObject, double>(null, 0);
     }
 
 
@@ -202,7 +241,9 @@ public class Unit : MonoBehaviour
         { "ATTACK_HINDRANCE", -9 },  // * totalHindrance
         { "GUARD_PRIMEDBOMB", 15 },  // // TODO triple this if there are no more bombs and only 2 primedbombs left
         { "GUARD_BOMB", 10 },
-        { "GUARD_COMPUTER", 5 }
+        { "GUARD_COMPUTER", 5 },
+        { "ONEHALF_MOVE", .25 },  // * weight of action accomplishable on unit's next turn
+        { "ONETHIRD_MOVE", .0625 }  // * weight of action accomplishable on unit's next next turn  // TODO not yet implemented for GetPartialMoveAndWeight()
     };
 
     public class UnitPossibleAction
@@ -317,10 +358,9 @@ public class Unit : MonoBehaviour
 
         Dictionary<GameObject, MovementPath> possibleDestinations = GetPossibleDestinations(currentZone);
         List<UnitPossibleAction> allPossibleUnitActions = GetPossibleActions(possibleDestinations);
+
         if (allPossibleUnitActions != null && allPossibleUnitActions.Count > 0)
         {
-            Dictionary<string, UnitPossibleAction> uniquePossibleActions = new Dictionary<string, UnitPossibleAction>();
-
             foreach (UnitPossibleAction unitAction in allPossibleUnitActions)
             {
                 if (unitAction.actionWeight > mostValuableActionWeight)
@@ -329,6 +369,11 @@ public class Unit : MonoBehaviour
                 }
             }
         }
+        else
+        {
+            mostValuableActionWeight = GetPartialMoveAndWeight(possibleDestinations).Item2;
+        }
+
         return mostValuableActionWeight;
     }
 
@@ -345,38 +390,40 @@ public class Unit : MonoBehaviour
         return validActionProficiencies;
     }
 
-    public void MoveToken(MovementPath pathToMove)
+    IEnumerator MoveToken(MovementPath pathToMove)
     {
-        StartCoroutine(AnimateMovementPath(pathToMove));
+        yield return StartCoroutine(AnimateMovementPath(pathToMove));
         string debugString = "Moved " + tag;
         for (int i = 1; i < pathToMove.zones.Count; i++)
         {
             debugString += " from " + pathToMove.zones[i - 1].name + " to " + pathToMove.zones[i].name;
         }
         Debug.Log(debugString);
+        yield return 0;
     }
 
     IEnumerator AnimateMovementPath(MovementPath movementPath)
     {
+        GameObject destination = null;  // Needed for transform.SetParent(destination.transform) after loop
         for (int i = 1; i < movementPath.zones.Count; i++)
         {
             GameObject origin = movementPath.zones[i - 1];
-            GameObject destination = movementPath.zones[i];
+            destination = movementPath.zones[i];
             if (wallBreaker > 0)
             {
                 ZoneInfo originInfo = origin.GetComponent<ZoneInfo>();
                 if (!originInfo.adjacentZones.Contains(destination) && !originInfo.steeplyAdjacentZones.Contains(destination))
-                {  // TODO Prevent animation overlap  when multiples units move together between zones. Also animate wallRubble correctly instead of just assuming halway point.
-                    Vector3 halfwayPoint = new Vector3((origin.transform.position.x + destination.transform.position.x) / 2, (origin.transform.position.y + destination.transform.position.y) / 2, 0);
-                    Instantiate(wallRubble, halfwayPoint, new Quaternion(), origin.transform.parent);
-                    ZoneInfo destinationInfo = destination.GetComponent<ZoneInfo>();
-                    originInfo.adjacentZones.Add(destination);
-                    destinationInfo.adjacentZones.Add(origin);
-                    originInfo.lineOfSightZones.Add(destination);
-                    destinationInfo.lineOfSightZones.Add(origin);
+                {  // TODO Animate wallRubble correctly instead of just assuming halway point.
+                    GameObject brokenWall = Instantiate(wallRubble, origin.transform.parent);
+                    brokenWall.GetComponent<WallRubble>().Initialize(origin, destination);
                 }
             }
             yield return StartCoroutine(AnimateMovement(origin, destination));
+        }
+        if (destination != null)
+        {
+            //yield return StartCoroutine(FinalMovementPlacement(destination));
+            transform.SetParent(destination.transform);
         }
         yield return 0;
     }
@@ -397,12 +444,18 @@ public class Unit : MonoBehaviour
 
             yield return null;
         }
-        transform.SetParent(destination.transform);  // Needed because otherwise token remains where it was last dragged (in center of zone panel instead of at bottom)
-
+        //transform.SetParent(destination.transform);  // Needed because otherwise token remains where it was last dragged (in center of zone panel instead of at bottom)
+        // Above doesn't seem to work when put at end of AnimateMovementPath, even if as Coroutine FinalMovementPlacement. But sometimes (like with Superbarn) this doesn't always correctly place the unit token.
         yield return 0;
     }
 
-    public void PerformAction(UnitPossibleAction unitTurn)
+    IEnumerator FinalMovementPlacement(GameObject destination)
+    {
+        transform.SetParent(destination.transform);  // Needed because otherwise token remains where it was last dragged (in center of zone panel instead of at bottom)
+        yield return 0;
+    }
+
+    IEnumerator PerformAction(UnitPossibleAction unitTurn)
     {
         int actionSuccesses = 0;
         int requiredSuccesses;
@@ -505,6 +558,7 @@ public class Unit : MonoBehaviour
         }
         debugString += " and got " + actionSuccesses + " successes";
         Debug.Log(tag + " in " + unitTurn.destinationZone.name + " performed " + unitTurn.actionType + " and got " + actionSuccesses + " successes");
+        yield return 0;
     }
 
 

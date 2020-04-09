@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;  // For File.ReadAllText for loading json save files
 using UnityEngine;
+using UnityEngine.UI;  // For button
 using UnityEditor;  // For AssetDatabase.LoadAssetAtPath() for getting unit prefabs
 
 public class ScenarioMap : MonoBehaviour
@@ -13,9 +14,9 @@ public class ScenarioMap : MonoBehaviour
     GameObject clockHand;
     [SerializeField]
     List<GameObject> spawnZones;
-    [SerializeField]
-    GameObject sceneHandler;
     public List<string> villainRiver;
+    public List<string> unitTagsMasterList;
+    public GameObject wallRubble;
 
     [Serializable]
     public class UnitPool
@@ -36,8 +37,15 @@ public class ScenarioMap : MonoBehaviour
     public int reinforcementPoints = 5;
 
 
+    void Awake()
+    {
+        ScenarioSave scenarioSave = JsonUtility.FromJson<ScenarioSave>(File.ReadAllText(Application.persistentDataPath + "/" + missionName + ".json"));
+        LoadScenarioSave(scenarioSave);
+    }
+
     void Start()
     {
+        //SaveIntoJson();  // Used along with SaveIntoJson commented out file path for setting initial game state save json (loaded in Awake())
         float startingClockHandAngle = -(currentRound * 30) + 2;
         clockHand.transform.eulerAngles = new Vector3(0, 0, startingClockHandAngle);
     }
@@ -45,6 +53,12 @@ public class ScenarioMap : MonoBehaviour
     // The flow: Player uses UI to end turn -> EndHeroTurn() -> StartVillainTurn() -> StartHeroTurn() -> Player takes their next turn
     public void EndHeroTurn()
     {
+        // Disable all UI so Villain turn isn't interrupted
+        foreach (Button button in transform.GetComponentsInChildren<Button>())
+        {
+            button.enabled = false;
+        }
+
         // Dredge the river, removing any tiles with 0 units on the map
         foreach (string unitTag in new List<string>(villainRiver))
         {
@@ -57,52 +71,59 @@ public class ScenarioMap : MonoBehaviour
 
         SaveIntoJson();  // Do this before CleanupZones() in case player wants to go back to just before they ended their turn.
         CleanupZones();
-        StartVillainTurn();
+        StartCoroutine(StartVillainTurn());
     }
 
-    public void StartVillainTurn()
+    IEnumerator StartVillainTurn()
+    {
+        yield return StartCoroutine(ActivateRiverTiles());
+        yield return StartCoroutine(StartHeroTurn());
+        yield return 0;
+    }
+
+    IEnumerator ActivateRiverTiles()
     {
         for (int i = 0; i < 2; i++)
         {
             string unitTypeToActivate = GetVillainTileToActivate(i);
             if (unitTypeToActivate == "REINFORCEMENT")
             {
-                CallReinforcements();
+                yield return StartCoroutine(CallReinforcements());
             }
             else
             {
-                foreach (GameObject unit in GameObject.FindGameObjectsWithTag(unitTypeToActivate))
-                {
-                    unit.GetComponent<Unit>().ActivateUnit();
-                }
+                yield return StartCoroutine(ActivateUnitsWithTag(unitTypeToActivate));
             }
 
             villainRiver.Remove(unitTypeToActivate);
             villainRiver.Add(unitTypeToActivate);
         }
-        // // Below useful for debugging single unit
-        //int i = 0;
-        //foreach (GameObject unit in GameObject.FindGameObjectsWithTag("SHOTGUN"))
-        //{
-        //    //i++;
-        //    //if (i < 4)
-        //    //{
-        //    //    continue;
-        //    //}
-        //    unit.GetComponent<Unit>().ActivateUnit();
-        //    //break;
-        //}
-
-        StartHeroTurn();
+        yield return 0;
     }
 
-    public void StartHeroTurn()
+    IEnumerator ActivateUnitsWithTag(string unitTypeToActivate)
+    {
+        foreach (GameObject unit in GameObject.FindGameObjectsWithTag(unitTypeToActivate))
+        {
+            yield return StartCoroutine(unit.GetComponent<Unit>().ActivateUnit());
+        }
+        yield return 0;
+    }
+
+    IEnumerator StartHeroTurn()
     {
         CleanupZones();
         float currentClockHandAngle = -(currentRound * 30) + 2;
         currentRound += 1;
         float newClockHandAngle = -(currentRound * 30) + 2;
-        StartCoroutine(TurnClockHand(currentClockHandAngle, newClockHandAngle));
+        yield return StartCoroutine(TurnClockHand(currentClockHandAngle, newClockHandAngle));
+
+        // Re-Enable all the UI buttons which were disabled at EndHeroTurn()
+        foreach (Button button in transform.GetComponentsInChildren<Button>())
+        {
+            button.enabled = true;
+        }
+        yield return 0;
     }
 
     string GetVillainTileToActivate(int unitsAlreadyActivated)
@@ -179,7 +200,7 @@ public class ScenarioMap : MonoBehaviour
         return mostValuableUnitType;
     }
 
-    void CallReinforcements()
+    IEnumerator CallReinforcements()
     {
         List<Tuple<UnitPool, double, GameObject>> reinforcementsAvailable = GetAvailableReinforcements();
         int reinforcementPointsRemaining = reinforcementPoints;
@@ -200,8 +221,29 @@ public class ScenarioMap : MonoBehaviour
             reinforcementPointsRemaining -= numToReinforce * unitInfo.reinforcementCost;
             i++;
         }
+
         GameObject superBarn = GameObject.FindGameObjectWithTag("SUPERBARN");
-        if (superBarn != null)
+        if (superBarn == null)
+        {
+            GameObject barn = GameObject.FindGameObjectWithTag("BARN");
+            if (barn != null)
+            {
+                string assetPath = "Assets/Prefabs/Units/SUPERBARN.prefab";
+                GameObject superbarnPrefab = (GameObject)AssetDatabase.LoadAssetAtPath(assetPath, typeof(GameObject));
+                if (superbarnPrefab != null)
+                {
+                    Instantiate(superbarnPrefab, barn.transform.parent);
+                    DestroyImmediate(barn);
+                    int barnRiverIndex = villainRiver.IndexOf("BARN");
+                    villainRiver[barnRiverIndex] = "SUPERBARN";
+                }
+                else
+                {
+                    Debug.LogError("ERROR! In ScenarioMap.CallReinforcements(), unable to find prefab asset for SUPERBARN at " + assetPath);
+                }
+            }
+        }
+        else
         {
             Unit superBarnInfo = superBarn.GetComponent<Unit>();
             superBarnInfo.ActivateUnit();
@@ -211,6 +253,7 @@ public class ScenarioMap : MonoBehaviour
                 Destroy(superBarn);
             }
         }
+        yield return 0;
     }
 
     List<Tuple<UnitPool, double, GameObject>> GetAvailableReinforcements()
@@ -240,7 +283,7 @@ public class ScenarioMap : MonoBehaviour
                         }
                         foreach (GameObject spawnZone in spawnZones)
                         {
-                            GameObject tempUnit = Instantiate(unitPool.unit, spawnZone.transform);  // TODO maybe make this invisible in case it flickers
+                            GameObject tempUnit = Instantiate(unitPool.unit, spawnZone.transform);
                             double currentSpawnActionWeight = tempUnit.GetComponent<Unit>().GetMostValuableActionWeight();
                             DestroyImmediate(tempUnit);
                             if (currentSpawnActionWeight > highestSpawnActionWeight)
@@ -248,6 +291,10 @@ public class ScenarioMap : MonoBehaviour
                                 chosenSpawnZone = spawnZone;
                                 highestSpawnActionWeight = currentSpawnActionWeight;
                             }
+                        }
+                        if (chosenSpawnZone == null)  // If can't decide between spawnZones, randomly pick one
+                        {
+                            chosenSpawnZone = spawnZones[random.Next(spawnZones.Count)];
                         }
                         if (!activateableThisTurn)
                         {
@@ -314,7 +361,7 @@ public class ScenarioMap : MonoBehaviour
                                 unitsPool[i].total -= 1;
                             }
                         }
-                        Destroy(unit);
+                        DestroyImmediate(unit);
                     }
                 }
             }
@@ -323,7 +370,6 @@ public class ScenarioMap : MonoBehaviour
 
     public void GoBackATurn()
     {
-        //sceneHandler.GetComponent<SceneHandler>().LoadScene();
         ScenarioSave scenarioSave = JsonUtility.FromJson<ScenarioSave>(File.ReadAllText(Application.persistentDataPath + "/" +  (currentRound-1).ToString() + missionName +   ".json"));
         LoadScenarioSave(scenarioSave);
     }
@@ -333,8 +379,9 @@ public class ScenarioMap : MonoBehaviour
         ScenarioSave scenarioToSave = new ScenarioSave(this);
         string scenarioAsJson = JsonUtility.ToJson(scenarioToSave);
 
-        Debug.Log("ScenarioAsJson: " + JsonUtility.ToJson(scenarioToSave, true));  // scenarioAsJson is minimum size, this one is pretty printed.
+        //Debug.Log("ScenarioAsJson: " + JsonUtility.ToJson(scenarioToSave, true));  // scenarioAsJson is minimum size, this one is pretty printed.
         string filename = "/" + currentRound.ToString() + missionName + ".json";
+        //string filename = "/" + missionName + ".json";  // This file path (without being prepended by round number) is the initial game state for this scenario.
         System.IO.File.WriteAllText(Application.persistentDataPath + filename, scenarioAsJson);
     }
 
@@ -346,6 +393,7 @@ public class ScenarioMap : MonoBehaviour
         float startingClockHandAngle = -(currentRound * 30) + 2;
         clockHand.transform.eulerAngles = new Vector3(0, 0, startingClockHandAngle);  // Fix clockhand without animation. Not sure if this is needed though.
         villainRiver = new List<string>(scenarioSave.villainRiver);
+        unitTagsMasterList = new List<string>(scenarioSave.unitTagsMasterList);
 
         unitsPool = new UnitPool[scenarioSave.unitsPool.Count];
         for (int i = 0; i < scenarioSave.unitsPool.Count; i++)
@@ -359,6 +407,27 @@ public class ScenarioMap : MonoBehaviour
             else
             {
                 Debug.LogError("ERROR! In ZoneInfo.LoadZoneSave(), unable to find prefab asset for " + scenarioSave.unitsPool[i].tag + " for " + transform.name + " at " + assetPath);
+            }
+        }
+
+        foreach (GameObject brokenWall in GameObject.FindGameObjectsWithTag("WallRubble"))
+        {
+            WallRubble wallRubble = brokenWall.GetComponent<WallRubble>();
+            wallRubble.RemoveRubbleAndRebuildWall();  // Restores zone adjacency mapping and Destroy(brokenWall)
+        }
+
+        foreach (WallRubbleSave wallRubbleSave in scenarioSave.brokenWalls)
+        {
+            GameObject brokenWall = Instantiate(wallRubble, transform);
+            Transform zone1 = transform.Find(wallRubbleSave.zone1);
+            Transform zone2 = transform.Find(wallRubbleSave.zone2);
+            if (zone1 != null && zone2 != null)
+            {
+                brokenWall.GetComponent<WallRubble>().Initialize(zone1.gameObject, zone2.gameObject);
+            }
+            else
+            {
+                Debug.LogError("ERROR! In ScenarioMap.LoadScenarioSave(), bungled loading in the brokenWalls. Can't find GameObject for " + wallRubbleSave.zone1 + " and/or " + wallRubbleSave.zone2);
             }
         }
 
@@ -380,7 +449,9 @@ public class ScenarioSave
     public int currentRound;
     public int reinforcementPoints;
     public List<string> villainRiver = new List<string>();
+    public List<string> unitTagsMasterList = new List<string>();
     public List<ZoneSave> zones = new List<ZoneSave>();
+    public List<WallRubbleSave> brokenWalls = new List<WallRubbleSave>();
 
     // public Dictionary<string, int> unitsPool = new Dictionary<string, int>();  // Ex: {"UZI": 2, "CROWBAR": 0,...}
     [Serializable]  // But dictionaries aren't serializable so here we are again. Still calling this __Dict as it does have a string and a value, just not key-value relationship.
@@ -403,9 +474,16 @@ public class ScenarioSave
         currentRound = scenarioMap.currentRound;
         reinforcementPoints = scenarioMap.reinforcementPoints;
         villainRiver.AddRange(scenarioMap.villainRiver);
+        unitTagsMasterList.AddRange(scenarioMap.unitTagsMasterList);
         foreach (GameObject zone in GameObject.FindGameObjectsWithTag("ZoneInfoPanel"))
         {
             zones.Add(new ZoneSave(zone.GetComponent<ZoneInfo>()));
+        }
+
+        foreach (GameObject brokenWall in GameObject.FindGameObjectsWithTag("WallRubble"))
+        {
+            WallRubble wallRubble = brokenWall.GetComponent<WallRubble>();
+            brokenWalls.Add(new WallRubbleSave(wallRubble));
         }
 
         foreach (ScenarioMap.UnitPool unitPool in scenarioMap.unitsPool)
