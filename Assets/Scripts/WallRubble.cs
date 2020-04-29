@@ -2,16 +2,37 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;  // For button
 
 public class WallRubble : MonoBehaviour
 {
     public GameObject zone1, zone2;
 
-    public void Initialize(GameObject newZone1, GameObject newZone2)
+    public Boolean WallIsBroken()
     {
-        zone1 = newZone1;
-        zone2 = newZone2;
+        CanvasGroup transparencyCanvas = this.GetComponent<CanvasGroup>();
+        return (transparencyCanvas.alpha == 1);
+    }
 
+    void OnMouseDown()  // Necessary to determine when polygon collider is clicked and not the image itself.
+    {
+        WallRubbleClicked();
+    }
+
+    public void WallRubbleClicked()
+    {
+        if (WallIsBroken())  // Mistake was made in breaking wall, so deactivate WallRubble
+        {
+            RebuildWall();
+        }
+        else  // Breaking wall, so activate WallRubble
+        {
+            BreakWall();
+        }
+    }
+
+    public void BreakWall()
+    {
         ZoneInfo zone1Info = zone1.GetComponent<ZoneInfo>();
         ZoneInfo zone2Info = zone2.GetComponent<ZoneInfo>();
         zone1Info.adjacentZones.Add(zone2);
@@ -19,10 +40,11 @@ public class WallRubble : MonoBehaviour
         zone1Info.lineOfSightZones.Add(zone2);
         zone2Info.lineOfSightZones.Add(zone1);
 
-        transform.position = new Vector3((zone1.transform.position.x + zone2.transform.position.x) / 2, (zone1.transform.position.y + zone2.transform.position.y) / 2, 0);
+        CanvasGroup transparencyCanvas = this.GetComponent<CanvasGroup>();
+        transparencyCanvas.alpha = (float)1;
     }
 
-    public void RemoveRubbleAndRebuildWall()
+    public void RebuildWall()
     {
         ZoneInfo zone1Info = zone1.GetComponent<ZoneInfo>();
         ZoneInfo zone2Info = zone2.GetComponent<ZoneInfo>();
@@ -31,23 +53,7 @@ public class WallRubble : MonoBehaviour
         zone1Info.lineOfSightZones.Remove(zone2);
         zone2Info.lineOfSightZones.Remove(zone1);
 
-        Destroy(transform.gameObject);
-    }
-
-    public WallRubbleSave ToJSON()
-    {
-        return new WallRubbleSave(this);
-    }
-}
-
-[Serializable]
-public class WallRubbleSave
-{
-    public string zone1, zone2;
-
-    public WallRubbleSave(WallRubble wallRubble)
-    {
-        zone1 = wallRubble.zone1.name;
-        zone2 = wallRubble.zone2.name;
+        CanvasGroup transparencyCanvas = this.GetComponent<CanvasGroup>();
+        transparencyCanvas.alpha = (float).2;
     }
 }

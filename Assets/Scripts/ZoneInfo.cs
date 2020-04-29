@@ -2,8 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
-using UnityEditor;  // For AssetDatabase.LoadAssetAtPath() for getting unit prefabs
 using TMPro;  // For getting henchmen quantity from UnitRows
 
 public class ZoneInfo : MonoBehaviour
@@ -195,19 +193,6 @@ public class ZoneInfo : MonoBehaviour
         return heroesCount;
     }
 
-    //public void TokenButtonClicked(Button button)
-    //{
-    //    CanvasGroup buttonCanvas = button.GetComponent<CanvasGroup>();
-    //    if (buttonCanvas.alpha == 1)
-    //    {
-    //        buttonCanvas.alpha = (float).2;
-    //    }
-    //    else
-    //    {
-    //        buttonCanvas.alpha = (float)1;
-    //    }
-    //}
-
     public void PrimeBomb()
     {
         Transform tokensRow = transform.Find("TokensRow");
@@ -334,17 +319,15 @@ public class ZoneInfo : MonoBehaviour
 
         foreach (UnitSave unit in zoneSave.units)
         {
-            string assetPath = "Assets/Prefabs/Units/" + unit.tag + ".prefab";
-            GameObject unitPrefab = (GameObject) AssetDatabase.LoadAssetAtPath(assetPath, typeof(GameObject));
+            GameObject unitPrefab = transform.GetComponentInParent<ScenarioMap>().unitPrefabsMasterDict[unit.tag];
             if (unitPrefab != null)
             {
                 Unit spawnedUnit = Instantiate(unitPrefab, transform).GetComponent<Unit>();
-                //spawnedUnit.GetComponent<Unit>().lifePoints = unit.lifePoints;
                 spawnedUnit.LifePointsButtonClicked((unit.lifePoints - spawnedUnit.lifePoints));
             }
             else
             {
-                Debug.LogError("ERROR! In ZoneInfo.LoadZoneSave(), unable to find prefab asset for " + unit.tag + " for " + transform.name + " at " + assetPath);
+                Debug.LogError("ERROR! In ZoneInfo.LoadZoneSave(), unable to find prefab asset for " + unit.tag + " for " + transform.name);
             }
         }
     }

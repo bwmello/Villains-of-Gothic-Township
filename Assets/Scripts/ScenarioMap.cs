@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;  // For File.ReadAllText for loading json save files
 using UnityEngine;
 using UnityEngine.UI;  // For button
-using UnityEditor;  // For AssetDatabase.LoadAssetAtPath() for getting unit prefabs
+//using UnityEditor;  // For AssetDatabase.LoadAssetAtPath() for getting unit prefabs
 
 public class ScenarioMap : MonoBehaviour
 {
@@ -14,6 +14,9 @@ public class ScenarioMap : MonoBehaviour
     GameObject clockHand;
     [SerializeField]
     List<GameObject> spawnZones;
+    [SerializeField]
+    List<GameObject> unitPrefabsMasterList;
+    public Dictionary<string, GameObject> unitPrefabsMasterDict;
     public List<string> villainRiver;
     public List<string> unitTagsMasterList;
     public GameObject wallRubble;
@@ -39,6 +42,11 @@ public class ScenarioMap : MonoBehaviour
 
     void Awake()
     {
+        unitPrefabsMasterDict = new Dictionary<string, GameObject>();
+        foreach (GameObject unitPrefab in unitPrefabsMasterList)
+        {
+            unitPrefabsMasterDict[unitPrefab.name] = unitPrefab;
+        }
         ScenarioSave scenarioSave = JsonUtility.FromJson<ScenarioSave>(File.ReadAllText(Application.persistentDataPath + "/" + missionName + ".json"));
         LoadScenarioSave(scenarioSave);
     }
@@ -228,8 +236,7 @@ public class ScenarioMap : MonoBehaviour
             GameObject barn = GameObject.FindGameObjectWithTag("BARN");
             if (barn != null)
             {
-                string assetPath = "Assets/Prefabs/Units/SUPERBARN.prefab";
-                GameObject superbarnPrefab = (GameObject)AssetDatabase.LoadAssetAtPath(assetPath, typeof(GameObject));
+                GameObject superbarnPrefab = unitPrefabsMasterDict["SUPERBARN"];
                 if (superbarnPrefab != null)
                 {
                     Instantiate(superbarnPrefab, barn.transform.parent);
@@ -239,7 +246,7 @@ public class ScenarioMap : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogError("ERROR! In ScenarioMap.CallReinforcements(), unable to find prefab asset for SUPERBARN at " + assetPath);
+                    Debug.LogError("ERROR! In ScenarioMap.CallReinforcements(), unable to find prefab asset for SUPERBARN at UnitPrefabs/SUPERBARN.prefab");
                 }
             }
         }
@@ -398,36 +405,28 @@ public class ScenarioMap : MonoBehaviour
         unitsPool = new UnitPool[scenarioSave.unitsPool.Count];
         for (int i = 0; i < scenarioSave.unitsPool.Count; i++)
         {
-            string assetPath = "Assets/Prefabs/Units/" + scenarioSave.unitsPool[i].tag + ".prefab";
-            GameObject unitPrefab = (GameObject)AssetDatabase.LoadAssetAtPath(assetPath, typeof(GameObject));
+            GameObject unitPrefab = unitPrefabsMasterDict[scenarioSave.unitsPool[i].tag];
             if (unitPrefab != null)
             {
                 unitsPool[i] = new UnitPool(unitPrefab, scenarioSave.unitsPool[i].total);
             }
             else
             {
-                Debug.LogError("ERROR! In ZoneInfo.LoadZoneSave(), unable to find prefab asset for " + scenarioSave.unitsPool[i].tag + " for " + transform.name + " at " + assetPath);
+                Debug.LogError("ERROR! In ZoneInfo.LoadZoneSave(), unable to find prefab asset for " + scenarioSave.unitsPool[i].tag + " for " + transform.name);
             }
         }
 
-        foreach (GameObject brokenWall in GameObject.FindGameObjectsWithTag("WallRubble"))
+        GameObject[] allWallRubbleList = GameObject.FindGameObjectsWithTag("WallRubble");
+        foreach (GameObject brokenWall in allWallRubbleList)
         {
             WallRubble wallRubble = brokenWall.GetComponent<WallRubble>();
-            wallRubble.RemoveRubbleAndRebuildWall();  // Restores zone adjacency mapping and Destroy(brokenWall)
-        }
-
-        foreach (WallRubbleSave wallRubbleSave in scenarioSave.brokenWalls)
-        {
-            GameObject brokenWall = Instantiate(wallRubble, transform);
-            Transform zone1 = transform.Find(wallRubbleSave.zone1);
-            Transform zone2 = transform.Find(wallRubbleSave.zone2);
-            if (zone1 != null && zone2 != null)
+            if (scenarioSave.brokenWalls.Contains(brokenWall.name))
             {
-                brokenWall.GetComponent<WallRubble>().Initialize(zone1.gameObject, zone2.gameObject);
+                wallRubble.BreakWall();
             }
             else
             {
-                Debug.LogError("ERROR! In ScenarioMap.LoadScenarioSave(), bungled loading in the brokenWalls. Can't find GameObject for " + wallRubbleSave.zone1 + " and/or " + wallRubbleSave.zone2);
+                wallRubble.RebuildWall();  // Restores zone adjacency mapping and Destroy(brokenWall)
             }
         }
 
@@ -451,7 +450,7 @@ public class ScenarioSave
     public List<string> villainRiver = new List<string>();
     public List<string> unitTagsMasterList = new List<string>();
     public List<ZoneSave> zones = new List<ZoneSave>();
-    public List<WallRubbleSave> brokenWalls = new List<WallRubbleSave>();
+    public List<string> brokenWalls = new List<string>();
 
     // public Dictionary<string, int> unitsPool = new Dictionary<string, int>();  // Ex: {"UZI": 2, "CROWBAR": 0,...}
     [Serializable]  // But dictionaries aren't serializable so here we are again. Still calling this __Dict as it does have a string and a value, just not key-value relationship.
@@ -483,7 +482,10 @@ public class ScenarioSave
         foreach (GameObject brokenWall in GameObject.FindGameObjectsWithTag("WallRubble"))
         {
             WallRubble wallRubble = brokenWall.GetComponent<WallRubble>();
-            brokenWalls.Add(new WallRubbleSave(wallRubble));
+            if (wallRubble.WallIsBroken())
+            {
+                brokenWalls.Add(brokenWall.name);
+            }
         }
 
         foreach (ScenarioMap.UnitPool unitPool in scenarioMap.unitsPool)

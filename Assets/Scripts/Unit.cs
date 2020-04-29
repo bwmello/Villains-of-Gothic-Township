@@ -2,8 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;  // for LayoutRebuilder
-using System.Linq;  // for dictionary.ElementAt
 using TMPro;  // for TMP_Text to update the henchmen quantity from UnitRows
 
 public class Unit : MonoBehaviour
@@ -50,7 +48,6 @@ public class Unit : MonoBehaviour
         validActionProficiencies = GetValidActionProficiencies();
     }
 
-    //public void ActivateUnit()
     public IEnumerator ActivateUnit()
     {
         GameObject currentZone = transform.parent.gameObject;
@@ -413,16 +410,23 @@ public class Unit : MonoBehaviour
             {
                 ZoneInfo originInfo = origin.GetComponent<ZoneInfo>();
                 if (!originInfo.adjacentZones.Contains(destination) && !originInfo.steeplyAdjacentZones.Contains(destination))
-                {  // TODO Animate wallRubble correctly instead of just assuming halway point.
-                    GameObject brokenWall = Instantiate(wallRubble, origin.transform.parent);
-                    brokenWall.GetComponent<WallRubble>().Initialize(origin, destination);
+                {
+                    foreach (GameObject wallRubble in GameObject.FindGameObjectsWithTag("WallRubble"))
+                    {
+                        WallRubble wallRubbleInfo = wallRubble.GetComponent<WallRubble>();
+                        // TODO Below condition could be replaced with dictionary style lookup built by ScenarioMap on Awake() just like unitPrefabsMasterDict
+                        if ((origin == wallRubbleInfo.zone1 && destination == wallRubbleInfo.zone2) || (origin == wallRubbleInfo.zone2 && destination == wallRubbleInfo.zone1))
+                        {
+                            wallRubbleInfo.BreakWall();
+                            break;
+                        }
+                    }
                 }
             }
             yield return StartCoroutine(AnimateMovement(origin, destination));
         }
         if (destination != null)
         {
-            //yield return StartCoroutine(FinalMovementPlacement(destination));
             transform.SetParent(destination.transform);
         }
         yield return 0;
@@ -444,14 +448,6 @@ public class Unit : MonoBehaviour
 
             yield return null;
         }
-        //transform.SetParent(destination.transform);  // Needed because otherwise token remains where it was last dragged (in center of zone panel instead of at bottom)
-        // Above doesn't seem to work when put at end of AnimateMovementPath, even if as Coroutine FinalMovementPlacement. But sometimes (like with Superbarn) this doesn't always correctly place the unit token.
-        yield return 0;
-    }
-
-    IEnumerator FinalMovementPlacement(GameObject destination)
-    {
-        transform.SetParent(destination.transform);  // Needed because otherwise token remains where it was last dragged (in center of zone panel instead of at bottom)
         yield return 0;
     }
 
@@ -694,7 +690,6 @@ public class Unit : MonoBehaviour
 
     public void LifePointsButtonClicked(int difference)
     {
-        //Unit unitInfo = button.transform.parent.gameObject.GetComponent<Unit>();
         lifePoints += difference;
         transform.Find("UnitNumber").GetComponent<TMP_Text>().text = lifePoints.ToString();
 

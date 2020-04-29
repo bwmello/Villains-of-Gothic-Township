@@ -221,7 +221,7 @@ PrefabInstance:
     - target: {fileID: 4194353948618237874, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
         type: 3}
       propertyPath: m_Name
-      value: BARN unit Variant
+      value: BARN
       objectReference: {fileID: 0}
     - target: {fileID: 4194353948618237874, guid: 03d4eadb7c52741b2830ed3dc2ed4de6,
         type: 3}
