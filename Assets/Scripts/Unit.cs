@@ -7,6 +7,7 @@ using TMPro;  // for TMP_Text to update the henchmen quantity from UnitRows
 public class Unit : MonoBehaviour
 {
     public int lifePoints = 1;
+    public int lifePointsMax = 1;
     public int defense;
     public int reinforcementCost = 1;
     public int protectedByAllies = 0;  // TODO for PISTOLS, popup prompt if removing protected Unit while they have this many allies in their zone OR auto redirect attack and alert player
@@ -20,8 +21,6 @@ public class Unit : MonoBehaviour
     public int ignoreElevation = 0;
     public int ignoreSize = 0;
     public int wallBreaker = 0;
-
-    public GameObject wallRubble;
 
     public int munitionSpecialist = 0;
 
@@ -688,10 +687,32 @@ public class Unit : MonoBehaviour
         return actionSuccesses;
     }
 
-    public void LifePointsButtonClicked(int difference)
+    public void TokenClicked()
+    {
+        if (lifePoints > 0)
+        {
+            ModifyLifePoints(-1);
+        }
+        else
+        {
+            ModifyLifePoints(1);
+        }
+    }
+
+    public void ModifyLifePoints(int difference)
     {
         lifePoints += difference;
-        transform.Find("UnitNumber").GetComponent<TMP_Text>().text = lifePoints.ToString();
+        if (lifePointsMax > 1)  // Will be a VillainRow with a UnitNumber object instead of just a token button like Unit.
+        {
+            try
+            {
+                transform.Find("UnitNumber").GetComponent<TMP_Text>().text = lifePoints.ToString();
+            }
+            catch (Exception err)
+            {
+                Debug.LogError("Failed to get/adjust UnitNumber representing lifePoints from unit " + transform.name + ".  Error details: " + err.ToString());
+            }
+        }
 
         if (lifePoints > 0)
         {

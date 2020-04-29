@@ -323,7 +323,7 @@ public class ZoneInfo : MonoBehaviour
             if (unitPrefab != null)
             {
                 Unit spawnedUnit = Instantiate(unitPrefab, transform).GetComponent<Unit>();
-                spawnedUnit.LifePointsButtonClicked((unit.lifePoints - spawnedUnit.lifePoints));
+                spawnedUnit.ModifyLifePoints((unit.lifePoints - spawnedUnit.lifePoints));
             }
             else
             {

@@ -19,7 +19,6 @@ public class ScenarioMap : MonoBehaviour
     public Dictionary<string, GameObject> unitPrefabsMasterDict;
     public List<string> villainRiver;
     public List<string> unitTagsMasterList;
-    public GameObject wallRubble;
 
     [Serializable]
     public class UnitPool
@@ -254,7 +253,8 @@ public class ScenarioMap : MonoBehaviour
         {
             Unit superBarnInfo = superBarn.GetComponent<Unit>();
             superBarnInfo.ActivateUnit();
-            superBarnInfo.lifePoints -= 2;
+            superBarnInfo.ModifyLifePoints(-2);
+            //superBarnInfo.lifePoints -= 2;
             if (superBarnInfo.lifePoints < 1)
             {
                 Destroy(superBarn);
