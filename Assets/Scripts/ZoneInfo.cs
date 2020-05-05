@@ -14,6 +14,7 @@ public class ZoneInfo : MonoBehaviour
     public List<GameObject> wall4AdjacentZones;
     public List<GameObject> wall5AdjacentZones;
     public List<GameObject> lineOfSightZones;
+    public Vector2[] unitPositions;
 
     public GameObject computerPrefab;
     public GameObject bombPrefab;
@@ -220,6 +221,48 @@ public class ZoneInfo : MonoBehaviour
         }
     }
 
+    public void ReorganizeTokens()
+    {
+        Transform tokensRow = transform.Find("TokensRow");
+        int totalTokens = tokensRow.childCount;
+        if (totalTokens > 2)
+        {
+            tokensRow.GetChild(0).localPosition = new Vector2((float)-7.5, 7);  // Upper left
+            tokensRow.GetChild(1).localPosition = new Vector2((float)7.5, 7);  // Upper right
+
+            if (totalTokens == 3)
+            {
+                tokensRow.GetChild(2).localPosition = new Vector2(0, -7);  // Bottom center
+            }
+            else  // Supports up to 4 tokens
+            {
+                tokensRow.GetChild(2).localPosition = new Vector2((float)-7.5, -7);  // Bottom left
+                tokensRow.GetChild(3).localPosition = new Vector2((float)7.5, -7);  // Bottom right
+            }
+        }
+        else if (totalTokens == 2)
+        {
+            tokensRow.GetChild(0).localPosition = new Vector2((float)-7.5, 0);  // Left
+            tokensRow.GetChild(1).localPosition = new Vector2((float)7.5, 0);  // Right
+        }
+    }
+
+    public void ReorganizeUnits()
+    {
+        int counter = 0;
+        foreach (Transform child in transform.Find("UnitsContainer"))
+        {
+            child.localPosition = unitPositions[counter];
+            counter++;
+        }
+    }
+
+    public Vector2 GetNextUnitCoordinates()
+    {
+        int currentUnitCount = transform.Find("UnitsContainer").childCount;
+        return unitPositions[currentUnitCount];
+    }
+
     public void AddHeroToZone(string heroTag)
     {
         Transform heroesRow = transform.Find("HeroesRow");
@@ -255,11 +298,12 @@ public class ZoneInfo : MonoBehaviour
             switch (child.name)
             {
                 case "TokensRow":
-                    foreach (Transform token in child)
+                    for (int i = child.childCount-1; i >= 0; i--)
                     {
-                        Destroy(token.gameObject);
+                        DestroyImmediate(child.GetChild(i).gameObject);
                     }
                     break;
+
                 case "HeroesRow":
                     foreach (Transform hero in child)
                     {
@@ -267,10 +311,11 @@ public class ZoneInfo : MonoBehaviour
                         hero.GetComponent<CanvasGroup>().alpha = (float).2;
                     }
                     break;
-                default:
-                    if (child.tag != null && unitTagsSet.Contains(child.tag))  // If unit, destroy it. Don't listen to "CompareTag is more efficient". It's bollocks when the tag could be null.
+
+                case "UnitsContainer":
+                    for (int i = child.childCount-1; i >= 0; i--)
                     {
-                        Destroy(child.gameObject);
+                        DestroyImmediate(child.GetChild(i).gameObject);
                     }
                     break;
             }
@@ -316,20 +361,28 @@ public class ZoneInfo : MonoBehaviour
                     break;
             }
         }
+        ReorganizeTokens();
 
+        Transform unitsContainer = transform.Find("UnitsContainer");
         foreach (UnitSave unit in zoneSave.units)
         {
             GameObject unitPrefab = transform.GetComponentInParent<ScenarioMap>().unitPrefabsMasterDict[unit.tag];
             if (unitPrefab != null)
             {
-                Unit spawnedUnit = Instantiate(unitPrefab, transform).GetComponent<Unit>();
-                spawnedUnit.ModifyLifePoints((unit.lifePoints - spawnedUnit.lifePoints));
+                GameObject spawnedUnit = Instantiate(unitPrefab, unitsContainer);
+                Unit spawnedUnitInfo = spawnedUnit.GetComponent<Unit>();
+                spawnedUnitInfo.ModifyLifePoints((unit.lifePoints - spawnedUnitInfo.lifePoints));
+                if (spawnedUnitInfo.lifePoints < 1)
+                {
+                    spawnedUnit.GetComponent<CanvasGroup>().alpha = (float).2;
+                }
             }
             else
             {
                 Debug.LogError("ERROR! In ZoneInfo.LoadZoneSave(), unable to find prefab asset for " + unit.tag + " for " + transform.name);
             }
         }
+        ReorganizeUnits();
     }
 }
 
@@ -365,13 +418,10 @@ public class ZoneSave
             }
         }
 
-        List<string> unitTags = zone.transform.GetComponentInParent<ScenarioMap>().villainRiver;
-        foreach (Transform row in zone.transform)
+        Transform unitsContainer = zone.transform.Find("UnitsContainer");
+        foreach (Transform row in unitsContainer)
         {
-            if (unitTags.Contains(row.tag))
-            {
-                units.Add(row.GetComponent<Unit>().ToJSON());
-            }
+            units.Add(row.GetComponent<Unit>().ToJSON());
         }
     }
 }

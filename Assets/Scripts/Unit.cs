@@ -47,9 +47,14 @@ public class Unit : MonoBehaviour
         validActionProficiencies = GetValidActionProficiencies();
     }
 
+    GameObject GetZone()
+    {
+        return transform.parent.parent.gameObject;  // Grabs ZoneInfoPanel instead of UnitsContainer. If changes in future, only need to change this function.
+    }
+
     public IEnumerator ActivateUnit()
     {
-        GameObject currentZone = transform.parent.gameObject;
+        GameObject currentZone = GetZone();
         Dictionary<GameObject, MovementPath> possibleDestinations = GetPossibleDestinations(currentZone);
         List<UnitPossibleAction> allPossibleUnitActions = GetPossibleActions(possibleDestinations);
 
@@ -350,7 +355,7 @@ public class Unit : MonoBehaviour
     public double GetMostValuableActionWeight()
     {
         double mostValuableActionWeight = 0;
-        GameObject currentZone = transform.parent.gameObject;
+        GameObject currentZone = GetZone();
 
         Dictionary<GameObject, MovementPath> possibleDestinations = GetPossibleDestinations(currentZone);
         List<UnitPossibleAction> allPossibleUnitActions = GetPossibleActions(possibleDestinations);
@@ -426,7 +431,8 @@ public class Unit : MonoBehaviour
         }
         if (destination != null)
         {
-            transform.SetParent(destination.transform);
+            transform.SetParent(destination.transform.Find("UnitsContainer"));
+            destination.GetComponent<ZoneInfo>().ReorganizeUnits();  // Needed so existing unit gets out of this unit's spot.
         }
         yield return 0;
     }
@@ -436,8 +442,19 @@ public class Unit : MonoBehaviour
         float uncoverTime = 0.5f;
         float t = 0;
 
-        Vector3 oldPosition = origin.transform.position;
-        Vector3 newPosition = destination.transform.position;
+        Vector3 oldPosition = transform.position;
+        Vector2 newLocalPosition = destination.GetComponent<ZoneInfo>().GetNextUnitCoordinates();
+        Vector3 newPosition = destination.transform.TransformPoint(newLocalPosition.x, newLocalPosition.y, 0);
+
+        // Below is needed so unit animating is always drawn last (above everything it might pass over).
+        if (origin.transform.GetSiblingIndex() > destination.transform.GetSiblingIndex())
+        {
+            transform.SetAsLastSibling();
+        }
+        else
+        {
+            transform.SetParent(destination.transform.Find("UnitsContainer").transform);
+        }
 
         while (t < 1f)
         {
@@ -454,7 +471,7 @@ public class Unit : MonoBehaviour
     {
         int actionSuccesses = 0;
         int requiredSuccesses;
-        GameObject currentZone = transform.parent.gameObject;
+        GameObject currentZone = GetZone();
         ZoneInfo currentZoneInfo = currentZone.GetComponent<ZoneInfo>();
         int rerolls = currentZoneInfo.supportRerolls - supportRerolls;
 
@@ -480,7 +497,7 @@ public class Unit : MonoBehaviour
                     List<ZoneInfo> bombZones = new List<ZoneInfo>();
                     foreach (GameObject bomb in GameObject.FindGameObjectsWithTag("Bomb"))
                     {
-                        bombZones.Add(bomb.transform.parent.GetComponentInParent<ZoneInfo>());
+                        bombZones.Add(bomb.transform.parent.parent.GetComponentInParent<ZoneInfo>());
                     }
                     ZoneInfo chosenBombZone = null;
                     double greatestManipulationChance = -100;
