@@ -49,7 +49,7 @@ public class Unit : MonoBehaviour
 
     GameObject GetZone()
     {
-        return transform.parent.parent.gameObject;  // Grabs ZoneInfoPanel instead of UnitsContainer. If changes in future, only need to change this function.
+        return transform.parent.parent.parent.gameObject;  // Grabs ZoneInfoPanel instead of UnitsContainer. If changes in future, only need to change this function.
     }
 
     public IEnumerator ActivateUnit()
@@ -431,8 +431,8 @@ public class Unit : MonoBehaviour
         }
         if (destination != null)
         {
-            transform.SetParent(destination.transform.Find("UnitsContainer"));
-            destination.GetComponent<ZoneInfo>().ReorganizeUnits();  // Needed so existing unit gets out of this unit's spot.
+            ZoneInfo destinationInfo = destination.GetComponent<ZoneInfo>();
+            transform.SetParent(destinationInfo.GetAvailableUnitSlot().transform);
         }
         yield return 0;
     }
@@ -442,19 +442,13 @@ public class Unit : MonoBehaviour
         float uncoverTime = 0.5f;
         float t = 0;
 
-        Vector3 oldPosition = transform.position;
-        Vector2 newLocalPosition = destination.GetComponent<ZoneInfo>().GetNextUnitCoordinates();
-        Vector3 newPosition = destination.transform.TransformPoint(newLocalPosition.x, newLocalPosition.y, 0);
+        ZoneInfo destinationInfo = destination.GetComponent<ZoneInfo>();
+        GameObject destinationUnitSlot = destinationInfo.GetAvailableUnitSlot();
 
-        // Below is needed so unit animating is always drawn last (above everything it might pass over).
-        if (origin.transform.GetSiblingIndex() > destination.transform.GetSiblingIndex())
-        {
-            transform.SetAsLastSibling();
-        }
-        else
-        {
-            transform.SetParent(destination.transform.Find("UnitsContainer").transform);
-        }
+        Vector3 oldPosition = transform.position;
+        Vector3 newPosition = destinationUnitSlot.transform.position;
+
+        transform.SetParent(GameObject.FindGameObjectWithTag("AnimationContainer").transform);  // Needed so unit animating is always drawn last (above everything it might pass over).
 
         while (t < 1f)
         {

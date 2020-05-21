@@ -14,7 +14,6 @@ public class ZoneInfo : MonoBehaviour
     public List<GameObject> wall4AdjacentZones;
     public List<GameObject> wall5AdjacentZones;
     public List<GameObject> lineOfSightZones;
-    public Vector2[] unitPositions;
 
     public GameObject computerPrefab;
     public GameObject bombPrefab;
@@ -29,8 +28,8 @@ public class ZoneInfo : MonoBehaviour
 
     private void Start()
     {
-        List<string>  unitTags = transform.GetComponentInParent<ScenarioMap>().villainRiver;  // Fetch this list every time you need it as ScenarioMap removes unit tiles by dredging river
-        foreach (Transform row in transform)
+        List<string> unitTags = transform.GetComponentInParent<ScenarioMap>().villainRiver;  // Fetch this list every time you need it as ScenarioMap removes unit tiles by dredging river
+        foreach (Transform row in transform.Find("UnitsContainer"))
         {
             if (unitTags.Contains(row.tag))
             {
@@ -53,17 +52,28 @@ public class ZoneInfo : MonoBehaviour
         return -1;  // An invalid zone id
     }
 
+    public Unit[] GetUnitsInfo()
+    {
+        return transform.GetComponentsInChildren<Unit>();
+    }
+
+    public List<GameObject> GetUnits()
+    {
+        List<GameObject> units = new List<GameObject>();
+        foreach (Unit unit in GetUnitsInfo())
+        {
+            units.Add(unit.gameObject);
+        }
+        return units;
+    }
+
     public int GetCurrentOccupancy()
     {
         int currentOccupancy = 0;
-        currentOccupancy += GetHeroesCount();
-        List<string> unitTags = transform.GetComponentInParent<ScenarioMap>().villainRiver;
-        foreach (Transform row in transform)
+        currentOccupancy += GetHeroesCount();  // TODO stop assuming size and menace of 1 for each hero
+        foreach (Unit unit in GetUnitsInfo())
         {
-            if (unitTags.Contains(row.tag) && row.gameObject.activeSelf)
-            {
-                currentOccupancy += row.gameObject.GetComponent<Unit>().size;
-            }
+            currentOccupancy += unit.size;
         }
         return currentOccupancy;
     }
@@ -72,19 +82,15 @@ public class ZoneInfo : MonoBehaviour
     {
         int currentHindrance = 0;
         currentHindrance += GetHeroesCount();  // TODO stop assuming size and menace of 1 for each hero
-        List<string> unitTags = transform.GetComponentInParent<ScenarioMap>().villainRiver;
-        foreach (Transform row in transform)
+
+        foreach (Unit unit in GetUnitsInfo())
         {
-            if (unitTags.Contains(row.tag) && row.gameObject.activeSelf)
+            if (unit.gameObject != unitToDiscount)  // Unit doesn't count itself for hindrance.
             {
-                if (row.gameObject == unitToDiscount)
-                {
-                    continue;  // Unit doesn't count itself for hindrance, so skip it.
-                }
-                Unit unitInfo = row.gameObject.GetComponent<Unit>();
-                currentHindrance -= isMoving ? unitInfo.size : unitInfo.menace;
+                currentHindrance -= isMoving ? unit.size : unit.menace;
             }
         }
+
         if (currentHindrance < 0)
         {
             currentHindrance = 0;
@@ -247,20 +253,20 @@ public class ZoneInfo : MonoBehaviour
         }
     }
 
-    public void ReorganizeUnits()
+    public GameObject GetAvailableUnitSlot()
     {
-        int counter = 0;
-        foreach (Transform child in transform.Find("UnitsContainer"))
+        GameObject availableUnitSlot = null;
+        Debug.Log("GetAvailableUnitSlot for " + this.name);
+        foreach (Transform unitSlot in transform.Find("UnitsContainer"))
         {
-            child.localPosition = unitPositions[counter];
-            counter++;
+            Debug.Log(unitSlot.name + "   childCount: " + unitSlot.childCount);
+            if (unitSlot.childCount == 0)  // If unitSlot is empty
+            {
+                availableUnitSlot = unitSlot.gameObject;
+                break;
+            }
         }
-    }
-
-    public Vector2 GetNextUnitCoordinates()
-    {
-        int currentUnitCount = transform.Find("UnitsContainer").childCount;
-        return unitPositions[currentUnitCount];
+        return availableUnitSlot;
     }
 
     public void AddHeroToZone(string heroTag)
@@ -292,33 +298,23 @@ public class ZoneInfo : MonoBehaviour
 
     public void EmptyOutZone()
     {
-        HashSet<string> unitTagsSet = new HashSet<string>(transform.GetComponentInParent<ScenarioMap>().unitTagsMasterList);
-        foreach (Transform child in transform)
+        Transform tokensContainer = transform.Find("TokensRow");
+        for (int i = tokensContainer.childCount - 1; i >= 0; i--)
         {
-            switch (child.name)
-            {
-                case "TokensRow":
-                    for (int i = child.childCount-1; i >= 0; i--)
-                    {
-                        DestroyImmediate(child.GetChild(i).gameObject);
-                    }
-                    break;
+            DestroyImmediate(tokensContainer.GetChild(i).gameObject);
+        }  // Must use DestroyImmediate as Destroy doesn't kick in until after the rest of LoadZoneSave(), so you're instantiating new tokens/units before having deleted the old ones
 
-                case "HeroesRow":
-                    foreach (Transform hero in child)
-                    {
-                        hero.tag = "Untagged";
-                        hero.GetComponent<CanvasGroup>().alpha = (float).2;
-                    }
-                    break;
+        Transform heroesContainer = transform.Find("HeroesRow");
+        foreach (Transform hero in heroesContainer)
+        {
+            hero.tag = "Untagged";
+            hero.GetComponent<CanvasGroup>().alpha = (float).2;
+        }
 
-                case "UnitsContainer":
-                    for (int i = child.childCount-1; i >= 0; i--)
-                    {
-                        DestroyImmediate(child.GetChild(i).gameObject);
-                    }
-                    break;
-            }
+        List<GameObject> units = GetUnits();
+        for (int i = units.Count - 1; i >= 0; i--)
+        {
+            DestroyImmediate(units[i]);
         }
     }
 
@@ -363,13 +359,12 @@ public class ZoneInfo : MonoBehaviour
         }
         ReorganizeTokens();
 
-        Transform unitsContainer = transform.Find("UnitsContainer");
         foreach (UnitSave unit in zoneSave.units)
         {
             GameObject unitPrefab = transform.GetComponentInParent<ScenarioMap>().unitPrefabsMasterDict[unit.tag];
             if (unitPrefab != null)
             {
-                GameObject spawnedUnit = Instantiate(unitPrefab, unitsContainer);
+                GameObject spawnedUnit = Instantiate(unitPrefab, GetAvailableUnitSlot().transform);
                 Unit spawnedUnitInfo = spawnedUnit.GetComponent<Unit>();
                 spawnedUnitInfo.ModifyLifePoints((unit.lifePoints - spawnedUnitInfo.lifePoints));
                 if (spawnedUnitInfo.lifePoints < 1)
@@ -382,7 +377,6 @@ public class ZoneInfo : MonoBehaviour
                 Debug.LogError("ERROR! In ZoneInfo.LoadZoneSave(), unable to find prefab asset for " + unit.tag + " for " + transform.name);
             }
         }
-        ReorganizeUnits();
     }
 }
 
@@ -418,10 +412,9 @@ public class ZoneSave
             }
         }
 
-        Transform unitsContainer = zone.transform.Find("UnitsContainer");
-        foreach (Transform row in unitsContainer)
+        foreach (Unit unit in zone.GetUnitsInfo())
         {
-            units.Add(row.GetComponent<Unit>().ToJSON());
+            units.Add(unit.ToJSON());
         }
     }
 }

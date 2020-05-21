@@ -20,6 +20,7 @@ TagManager:
   - PrimedBomb
   - Computer
   - WallRubble
+  - AnimationContainer
   layers:
   - Default
   - TransparentFX
@@ -59,4 +60,7 @@ TagManager:
     locked: 0
   - name: Background
     uniqueID: 2556324275
+    locked: 0
+  - name: Animation
+    uniqueID: 3469284183
     locked: 0
