@@ -6,6 +6,8 @@ using TMPro;  // For getting henchmen quantity from UnitRows
 
 public class ZoneInfo : MonoBehaviour
 {
+    readonly System.Random random = new System.Random();
+
     public List<GameObject> adjacentZones;
     public List<GameObject> steeplyAdjacentZones;
     public List<GameObject> wall1AdjacentZones;
@@ -18,6 +20,7 @@ public class ZoneInfo : MonoBehaviour
     public GameObject computerPrefab;
     public GameObject bombPrefab;
     public GameObject primedBombPrefab;
+    public GameObject woundPrefab;
     public GameObject elevationDie;  // Determines fall damage and bonus for ranged attacks made from a higher elevation
 
     public int elevation;
@@ -190,14 +193,28 @@ public class ZoneInfo : MonoBehaviour
     {
         int heroesCount = 0;
         Transform heroesRow = transform.Find("HeroesRow");
-        foreach (CanvasGroup heroButtonCanvasGroup in heroesRow.GetComponentsInChildren<CanvasGroup>())
+        foreach (Transform hero in heroesRow)
         {
-            if (heroButtonCanvasGroup.alpha == 1)  // If button isn't transparent
+            if (hero.GetComponent<CanvasGroup>().alpha == 1)  // If button isn't transparent
             {
                 heroesCount += 1;
             }
         }
         return heroesCount;
+    }
+
+    public GameObject GetRandomHero()
+    {
+        Transform heroesRow = transform.Find("HeroesRow");
+        List<GameObject> heroes = new List<GameObject>();
+        foreach (Transform hero in heroesRow)
+        {
+            if (hero.GetComponent<CanvasGroup>().alpha == 1)  // If button isn't transparent
+            {
+                heroes.Add(hero.gameObject);
+            }
+        }
+        return heroes[random.Next(heroes.Count)];
     }
 
     public void PrimeBomb()
@@ -256,10 +273,8 @@ public class ZoneInfo : MonoBehaviour
     public GameObject GetAvailableUnitSlot()
     {
         GameObject availableUnitSlot = null;
-        Debug.Log("GetAvailableUnitSlot for " + this.name);
         foreach (Transform unitSlot in transform.Find("UnitsContainer"))
         {
-            Debug.Log(unitSlot.name + "   childCount: " + unitSlot.childCount);
             if (unitSlot.childCount == 0)  // If unitSlot is empty
             {
                 availableUnitSlot = unitSlot.gameObject;
@@ -294,6 +309,54 @@ public class ZoneInfo : MonoBehaviour
                 break;
             }
         }
+    }
+
+    private readonly Vector2[] woundPlacement = new[] { new Vector2(7f, 6f), new Vector2(7f, 0f), new Vector2(7f, -6f), new Vector2(-7f, 6f), new Vector2(-7f, 0f), new Vector2(-7f, -6f), new Vector2(-2.5f, 7f), new Vector2(2.5f, 7f), new Vector2(-2.5f, -7f), new Vector2(2.5f, -7f) };
+    public IEnumerator ApplyWounds(int wounds_num, GameObject unit)
+    {
+        GameObject targetedHero = GetRandomHero();
+        GameObject animationContainer = GameObject.FindGameObjectWithTag("AnimationContainer");
+
+        for (int i = 0; i < wounds_num; i++)
+        {
+            GameObject wound = Instantiate(woundPrefab, unit.transform);
+            Vector3 oldPosition = wound.transform.position;
+            Vector3 newPosition = targetedHero.transform.TransformPoint(woundPlacement[i].x, woundPlacement[i].y, 0);
+            wound.transform.SetParent(animationContainer.transform);  // Needed so unit animating is always drawn last (above everything it might pass over).
+
+            // Animating wounds from enemy to hero
+            float incrementCoefficient = .7f;
+            float timeIncrement = 0;
+            while (timeIncrement < 1f)
+            {
+                timeIncrement += Time.deltaTime * incrementCoefficient;
+
+                wound.transform.position = new Vector3(Mathf.Lerp(oldPosition.x, newPosition.x, timeIncrement), Mathf.Lerp(oldPosition.y, newPosition.y, timeIncrement), 0);
+
+                yield return null;  // TODO Instead of pausing execution here, move this into a coroutine and call it for each successive wound at half second intervals. Ex: 0 first wound animates, .5 first and second wound animates, 1 first three wounds animate...
+            }
+        }
+
+        // Fading the wounds out
+        float fadeoutTime = 0.2f;
+        float t = 0;
+        CanvasGroup animationContainerTransparency = animationContainer.GetComponent<CanvasGroup>();
+        while (t < 1f)
+        {
+            t += Time.deltaTime * fadeoutTime;
+
+            float transparency = Mathf.Lerp(1, 0, t);
+            animationContainerTransparency.alpha = transparency;
+
+            yield return null;
+        }
+
+        for (int i = wounds_num - 1; i >= 0; i--)
+        {
+            DestroyImmediate(animationContainer.transform.GetChild(i).gameObject);
+        }
+        animationContainerTransparency.alpha = 1f;  // Reset animationContainer transparency
+        yield return 0;
     }
 
     public void EmptyOutZone()

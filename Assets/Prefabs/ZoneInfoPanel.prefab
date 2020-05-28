@@ -106,6 +106,8 @@ MonoBehaviour:
     type: 3}
   primedBombPrefab: {fileID: 1237332250277100696, guid: 1ab30b78c61aa4f62985dff6fc3c2f7e,
     type: 3}
+  woundPrefab: {fileID: 8577637518863107775, guid: a332cd3d704d445d79ed44f08ac3811b,
+    type: 3}
   elevationDie: {fileID: 4378926195687391191, guid: 57078db74302144e8a156c288214f7e9,
     type: 3}
   elevation: 0

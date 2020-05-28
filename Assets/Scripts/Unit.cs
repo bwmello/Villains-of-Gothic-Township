@@ -523,6 +523,7 @@ public class Unit : MonoBehaviour
                 {
                     actionSuccesses += martialArtsSuccesses;
                 }
+                yield return currentZoneInfo.ApplyWounds(actionSuccesses, transform.gameObject);
                 break;
 
             case "RANGED":
@@ -550,6 +551,7 @@ public class Unit : MonoBehaviour
                         actionSuccesses += marskmanSuccesses;
                     }
                     actionSuccesses -= currentZoneInfo.GetCurrentHindrance(transform.gameObject);
+                    yield return targetedLineOfSightZoneInfo.ApplyWounds(actionSuccesses, transform.gameObject);
                 }
                 else
                 {
