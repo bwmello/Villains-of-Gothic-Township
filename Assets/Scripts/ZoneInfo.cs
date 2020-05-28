@@ -21,6 +21,9 @@ public class ZoneInfo : MonoBehaviour
     public GameObject bombPrefab;
     public GameObject primedBombPrefab;
     public GameObject woundPrefab;
+    public GameObject successVsFailurePrefab;
+    public GameObject successPrefab;
+    public GameObject failurePrefab;
     public GameObject elevationDie;  // Determines fall damage and bonus for ranged attacks made from a higher elevation
 
     public int elevation;
@@ -353,7 +356,7 @@ public class ZoneInfo : MonoBehaviour
 
         for (int i = wounds_num - 1; i >= 0; i--)
         {
-            DestroyImmediate(animationContainer.transform.GetChild(i).gameObject);
+            Destroy(animationContainer.transform.GetChild(i).gameObject);
         }
         animationContainerTransparency.alpha = 1f;  // Reset animationContainer transparency
         yield return 0;

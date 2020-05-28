@@ -66,6 +66,12 @@ public class ScenarioMap : MonoBehaviour
             button.enabled = false;
         }
 
+        // Disable camera controls
+        PanAndZoom panAndZoom = this.GetComponent<PanAndZoom>();
+        panAndZoom.controlCamera = false;
+        Camera mainCamera = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
+        mainCamera.orthographicSize = 2.2f;
+
         // Dredge the river, removing any tiles with 0 units on the map
         foreach (string unitTag in new List<string>(villainRiver))
         {
@@ -79,6 +85,9 @@ public class ScenarioMap : MonoBehaviour
         SaveIntoJson();  // Do this before CleanupZones() in case player wants to go back to just before they ended their turn.
         CleanupZones();
         StartCoroutine(StartVillainTurn());
+
+        // Reactivate camera controls
+        panAndZoom.controlCamera = true;
     }
 
     IEnumerator StartVillainTurn()
@@ -120,6 +129,8 @@ public class ScenarioMap : MonoBehaviour
     IEnumerator StartHeroTurn()
     {
         CleanupZones();
+        GameObject mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
+        mainCamera.transform.position = new Vector3(clockHand.transform.position.x, clockHand.transform.position.y, mainCamera.transform.position.z);
         float currentClockHandAngle = -(currentRound * 30) + 2;
         currentRound += 1;
         float newClockHandAngle = -(currentRound * 30) + 2;
@@ -209,6 +220,7 @@ public class ScenarioMap : MonoBehaviour
 
     IEnumerator CallReinforcements()
     {
+        GameObject mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
         List<Tuple<UnitPool, double, GameObject>> reinforcementsAvailable = GetAvailableReinforcements();
         int reinforcementPointsRemaining = reinforcementPoints;
         int i = 0;
@@ -222,7 +234,11 @@ public class ScenarioMap : MonoBehaviour
             }
             for (int j = 0; j < numToReinforce; j++)
             {
-                Instantiate(reinforcementsAvailable[i].Item1.unit, reinforcementsAvailable[i].Item3.transform);  // spawn Unit
+                GameObject availableUnitSlot = reinforcementsAvailable[i].Item3.GetComponent<ZoneInfo>().GetAvailableUnitSlot();
+                mainCamera.transform.position = new Vector3(availableUnitSlot.transform.position.x, availableUnitSlot.transform.position.y, mainCamera.transform.position.z);
+                yield return new WaitForSecondsRealtime(1);
+                Instantiate(reinforcementsAvailable[i].Item1.unit, availableUnitSlot.transform);  // spawn Unit
+                yield return new WaitForSecondsRealtime(1);
                 Debug.Log("CallReinforcements() spawning " + reinforcementsAvailable[i].Item1.unit.tag + " at " + reinforcementsAvailable[i].Item3.name);
             }
             reinforcementPointsRemaining -= numToReinforce * unitInfo.reinforcementCost;
@@ -254,7 +270,6 @@ public class ScenarioMap : MonoBehaviour
             Unit superBarnInfo = superBarn.GetComponent<Unit>();
             superBarnInfo.ActivateUnit();
             superBarnInfo.ModifyLifePoints(-2);
-            //superBarnInfo.lifePoints -= 2;
             if (superBarnInfo.lifePoints < 1)
             {
                 Destroy(superBarn);
@@ -290,7 +305,8 @@ public class ScenarioMap : MonoBehaviour
                         }
                         foreach (GameObject spawnZone in spawnZones)
                         {
-                            GameObject tempUnit = Instantiate(unitPool.unit, spawnZone.transform);
+                            GameObject availableUnitSlot = spawnZone.GetComponent<ZoneInfo>().GetAvailableUnitSlot();
+                            GameObject tempUnit = Instantiate(unitPool.unit, availableUnitSlot.transform);
                             double currentSpawnActionWeight = tempUnit.GetComponent<Unit>().GetMostValuableActionWeight();
                             DestroyImmediate(tempUnit);
                             if (currentSpawnActionWeight > highestSpawnActionWeight)

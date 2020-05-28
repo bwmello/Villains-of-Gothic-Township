@@ -222,7 +222,6 @@ public class PanAndZoom : MonoBehaviour
 
     void OnClick(Vector2 position)
     {
-        //Debug.Log("!!!OnClick called, onTap: " + onTap.ToString() + "   IsPointerOverUIObject(): " + IsPointerOverUIObject().ToString());
         if (onTap != null && (ignoreUI || !IsPointerOverUIObject()))
         {
             onTap(position);
@@ -258,6 +257,11 @@ public class PanAndZoom : MonoBehaviour
                 var currentPinchPosition = cam.ScreenToWorldPoint(center);
 
                 cam.orthographicSize = Mathf.Max(0.1f, cam.orthographicSize * oldDistance / newDistance);
+                // Brent's max zoom restriction:
+                if (cam.orthographicSize < 1)
+                {
+                    cam.orthographicSize = 1f;
+                }
 
                 var newPinchPosition = cam.ScreenToWorldPoint(center);
 

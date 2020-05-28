@@ -108,6 +108,12 @@ MonoBehaviour:
     type: 3}
   woundPrefab: {fileID: 8577637518863107775, guid: a332cd3d704d445d79ed44f08ac3811b,
     type: 3}
+  successVsFailurePrefab: {fileID: 5210211658972486827, guid: e9b633e10e4434545851d94e9604e0f6,
+    type: 3}
+  successPrefab: {fileID: 4664736772994716644, guid: f4c08cdc6bc3047d3ae7f51101aadc45,
+    type: 3}
+  failurePrefab: {fileID: 3989726647576400915, guid: 32f0cdfb10ff446298d70758741e0a6f,
+    type: 3}
   elevationDie: {fileID: 4378926195687391191, guid: 57078db74302144e8a156c288214f7e9,
     type: 3}
   elevation: 0

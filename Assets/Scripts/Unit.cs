@@ -439,23 +439,21 @@ public class Unit : MonoBehaviour
 
     IEnumerator AnimateMovement(GameObject origin, GameObject destination)
     {
-        float uncoverTime = 0.5f;
-        float t = 0;
-
         ZoneInfo destinationInfo = destination.GetComponent<ZoneInfo>();
         GameObject destinationUnitSlot = destinationInfo.GetAvailableUnitSlot();
-
         Vector3 oldPosition = transform.position;
         Vector3 newPosition = destinationUnitSlot.transform.position;
+        GameObject mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
 
         transform.SetParent(GameObject.FindGameObjectWithTag("AnimationContainer").transform);  // Needed so unit animating is always drawn last (above everything it might pass over).
 
+        float uncoverTime = 0.5f;
+        float t = 0;
         while (t < 1f)
         {
             t += Time.deltaTime * uncoverTime;
-
             transform.position = new Vector3(Mathf.Lerp(oldPosition.x, newPosition.x, t), Mathf.Lerp(oldPosition.y, newPosition.y, t), 0);
-
+            mainCamera.transform.position = new Vector3(transform.position.x, transform.position.y, mainCamera.transform.position.z);
             yield return null;
         }
         yield return 0;
@@ -469,6 +467,11 @@ public class Unit : MonoBehaviour
         ZoneInfo currentZoneInfo = currentZone.GetComponent<ZoneInfo>();
         int rerolls = currentZoneInfo.supportRerolls - supportRerolls;
 
+        GameObject mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
+        mainCamera.transform.position = new Vector3(transform.position.x, transform.position.y, mainCamera.transform.position.z);
+        GameObject animationContainer = GameObject.FindGameObjectWithTag("AnimationContainer");
+        GameObject successContainer;
+
         switch (unitTurn.actionType)
         {
             case "MANIPULATION":
@@ -476,6 +479,24 @@ public class Unit : MonoBehaviour
                 actionSuccesses += munitionSpecialist;
                 actionSuccesses = RollAndReroll(validActionProficiencies[unitTurn.actionType], actionSuccesses, rerolls, requiredSuccesses);
                 actionSuccesses -= currentZoneInfo.GetCurrentHindrance(transform.gameObject);
+
+                // Animate success vs failure UI
+                successContainer = Instantiate(currentZoneInfo.successVsFailurePrefab, animationContainer.transform);
+                successContainer.transform.position = transform.TransformPoint(new Vector3(0, 12, 0));
+                for (int i = -1; i < actionSuccesses; i++)
+                {
+                    if (i == requiredSuccesses - 1)  // Otherwise there can be more results (checks/x's) displayed than requiredSuccesses
+                    {
+                        break;
+                    }
+                    GameObject successOrFailurePrefab = i + 1 < actionSuccesses ? currentZoneInfo.successPrefab : currentZoneInfo.failurePrefab;
+                    GameObject successOrFailureMarker = Instantiate(successOrFailurePrefab, successContainer.transform);
+                    successOrFailureMarker.transform.localPosition = new Vector3(i * 10, 0, 0);
+                    yield return new WaitForSecondsRealtime(1);
+                }
+                yield return new WaitForSecondsRealtime(1);
+                Destroy(successContainer);
+
                 if (actionSuccesses >= requiredSuccesses)
                 {
                     currentZoneInfo.PrimeBomb();
@@ -486,6 +507,20 @@ public class Unit : MonoBehaviour
                 requiredSuccesses = 3;
                 actionSuccesses = RollAndReroll(validActionProficiencies[unitTurn.actionType], actionSuccesses, rerolls, requiredSuccesses);
                 actionSuccesses -= currentZoneInfo.GetCurrentHindrance(transform.gameObject);
+
+                // Animate success vs failure UI
+                successContainer = Instantiate(currentZoneInfo.successVsFailurePrefab, animationContainer.transform);
+                successContainer.transform.position = transform.TransformPoint(new Vector3(0, 12, 0));
+                for (int i = -1; i < actionSuccesses; i++)
+                {
+                    GameObject successOrFailurePrefab = i + 1 < actionSuccesses ? currentZoneInfo.successPrefab : currentZoneInfo.failurePrefab;
+                    GameObject successOrFailureMarker = Instantiate(successOrFailurePrefab, successContainer.transform);
+                    successOrFailureMarker.transform.localPosition = new Vector3(i * 10, 0, 0);
+                    yield return new WaitForSecondsRealtime(1);
+                }
+                yield return new WaitForSecondsRealtime(1);
+                Destroy(successContainer);
+
                 if (actionSuccesses >= requiredSuccesses)
                 {
                     List<ZoneInfo> bombZones = new List<ZoneInfo>();
