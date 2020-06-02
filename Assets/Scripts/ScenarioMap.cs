@@ -65,10 +65,11 @@ public class ScenarioMap : MonoBehaviour
         {
             button.enabled = false;
         }
+        foreach (GameObject wallRubble in GameObject.FindGameObjectsWithTag("WallRubble"))
+        {
+            wallRubble.GetComponent<WallRubble>().isClickable = false;
+        }
 
-        // Disable camera controls
-        PanAndZoom panAndZoom = this.GetComponent<PanAndZoom>();
-        panAndZoom.controlCamera = false;
         Camera mainCamera = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
         mainCamera.orthographicSize = 2.2f;
 
@@ -85,15 +86,19 @@ public class ScenarioMap : MonoBehaviour
         SaveIntoJson();  // Do this before CleanupZones() in case player wants to go back to just before they ended their turn.
         CleanupZones();
         StartCoroutine(StartVillainTurn());
-
-        // Reactivate camera controls
-        panAndZoom.controlCamera = true;
     }
 
     IEnumerator StartVillainTurn()
     {
+        // Disable camera controls
+        PanAndZoom panAndZoom = this.GetComponent<PanAndZoom>();
+        panAndZoom.controlCamera = false;
+
         yield return StartCoroutine(ActivateRiverTiles());
         yield return StartCoroutine(StartHeroTurn());
+
+        // Reactivate camera controls
+        panAndZoom.controlCamera = true;
         yield return 0;
     }
 
@@ -140,6 +145,10 @@ public class ScenarioMap : MonoBehaviour
         foreach (Button button in transform.GetComponentsInChildren<Button>())
         {
             button.enabled = true;
+        }
+        foreach (GameObject wallRubble in GameObject.FindGameObjectsWithTag("WallRubble"))
+        {
+            wallRubble.GetComponent<WallRubble>().isClickable = true;
         }
         yield return 0;
     }

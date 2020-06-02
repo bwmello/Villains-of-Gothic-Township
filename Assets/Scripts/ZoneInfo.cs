@@ -225,7 +225,10 @@ public class ZoneInfo : MonoBehaviour
         Transform tokensRow = transform.Find("TokensRow");
         try
         {
-            tokensRow.Find("Bomb").GetComponent<CanvasGroup>().alpha = (float).2;
+            Transform bomb = tokensRow.Find("Bomb");
+            bomb.GetComponent<CanvasGroup>().alpha = (float).2;  // Still exists to be primed by someone else
+            bomb.tag = "Untagged";
+            //Destroy(tokensRow.Find("Bomb"));  // When Destroy() or DestroyImmediate(), throws error: Can't remove RectTransform because Image (Script), Image (Script), Image (Script) depends on it
         }
         catch (NullReferenceException err)
         {
@@ -234,12 +237,29 @@ public class ZoneInfo : MonoBehaviour
         Instantiate(primedBombPrefab, tokensRow);
     }
 
+    public GameObject GetBomb()
+    {
+        Transform tokensRow = transform.Find("TokensRow");
+        GameObject bomb = null;
+        try
+        {
+            bomb = tokensRow.Find("Bomb").gameObject;
+        }
+        catch (NullReferenceException err)
+        {
+            Debug.LogError("ERROR! Tried to get a bomb in " + transform.name + " without a bomb there. Error details: " + err.ToString());
+        }
+        return bomb;
+    }
+
     public void RemoveComputer()
     {
         Transform tokensRow = transform.Find("TokensRow");
         try
         {
-            tokensRow.Find("Computer").GetComponent<CanvasGroup>().alpha = (float).2;
+            Transform computer = tokensRow.Find("Computer");
+            computer.GetComponent<CanvasGroup>().alpha = (float).2;
+            computer.tag = "Untagged";
         }
         catch (NullReferenceException err)
         {
@@ -312,54 +332,6 @@ public class ZoneInfo : MonoBehaviour
                 break;
             }
         }
-    }
-
-    private readonly Vector2[] woundPlacement = new[] { new Vector2(7f, 6f), new Vector2(7f, 0f), new Vector2(7f, -6f), new Vector2(-7f, 6f), new Vector2(-7f, 0f), new Vector2(-7f, -6f), new Vector2(-2.5f, 7f), new Vector2(2.5f, 7f), new Vector2(-2.5f, -7f), new Vector2(2.5f, -7f) };
-    public IEnumerator ApplyWounds(int wounds_num, GameObject unit)
-    {
-        GameObject targetedHero = GetRandomHero();
-        GameObject animationContainer = GameObject.FindGameObjectWithTag("AnimationContainer");
-
-        for (int i = 0; i < wounds_num; i++)
-        {
-            GameObject wound = Instantiate(woundPrefab, unit.transform);
-            Vector3 oldPosition = wound.transform.position;
-            Vector3 newPosition = targetedHero.transform.TransformPoint(woundPlacement[i].x, woundPlacement[i].y, 0);
-            wound.transform.SetParent(animationContainer.transform);  // Needed so unit animating is always drawn last (above everything it might pass over).
-
-            // Animating wounds from enemy to hero
-            float incrementCoefficient = .7f;
-            float timeIncrement = 0;
-            while (timeIncrement < 1f)
-            {
-                timeIncrement += Time.deltaTime * incrementCoefficient;
-
-                wound.transform.position = new Vector3(Mathf.Lerp(oldPosition.x, newPosition.x, timeIncrement), Mathf.Lerp(oldPosition.y, newPosition.y, timeIncrement), 0);
-
-                yield return null;  // TODO Instead of pausing execution here, move this into a coroutine and call it for each successive wound at half second intervals. Ex: 0 first wound animates, .5 first and second wound animates, 1 first three wounds animate...
-            }
-        }
-
-        // Fading the wounds out
-        float fadeoutTime = 0.2f;
-        float t = 0;
-        CanvasGroup animationContainerTransparency = animationContainer.GetComponent<CanvasGroup>();
-        while (t < 1f)
-        {
-            t += Time.deltaTime * fadeoutTime;
-
-            float transparency = Mathf.Lerp(1, 0, t);
-            animationContainerTransparency.alpha = transparency;
-
-            yield return null;
-        }
-
-        for (int i = wounds_num - 1; i >= 0; i--)
-        {
-            Destroy(animationContainer.transform.GetChild(i).gameObject);
-        }
-        animationContainerTransparency.alpha = 1f;  // Reset animationContainer transparency
-        yield return 0;
     }
 
     public void EmptyOutZone()

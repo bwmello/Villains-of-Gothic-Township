@@ -7,6 +7,7 @@ using UnityEngine.UI;  // For button
 public class WallRubble : MonoBehaviour
 {
     public GameObject zone1, zone2;
+    public Boolean isClickable = true;
 
     public Boolean WallIsBroken()
     {
@@ -16,7 +17,10 @@ public class WallRubble : MonoBehaviour
 
     void OnMouseDown()  // Necessary to determine when polygon collider is clicked and not the image itself.
     {
-        WallRubbleClicked();
+        if (isClickable)
+        {
+            WallRubbleClicked();
+        }
     }
 
     public void WallRubbleClicked()

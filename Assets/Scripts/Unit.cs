@@ -439,21 +439,73 @@ public class Unit : MonoBehaviour
 
     IEnumerator AnimateMovement(GameObject origin, GameObject destination)
     {
-        ZoneInfo destinationInfo = destination.GetComponent<ZoneInfo>();
-        GameObject destinationUnitSlot = destinationInfo.GetAvailableUnitSlot();
-        Vector3 oldPosition = transform.position;
-        Vector3 newPosition = destinationUnitSlot.transform.position;
+        GameObject destinationUnitSlot = destination.GetComponent<ZoneInfo>().GetAvailableUnitSlot();
         GameObject mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
-
         transform.SetParent(GameObject.FindGameObjectWithTag("AnimationContainer").transform);  // Needed so unit animating is always drawn last (above everything it might pass over).
 
-        float uncoverTime = 0.5f;
+        yield return StartCoroutine(MoveObjectOverTime(new List<GameObject>() { transform.gameObject, mainCamera }, transform.position, destinationUnitSlot.transform.position));
+        yield return 0;
+    }
+
+    private readonly Vector2[] woundPlacement = new[] { new Vector2(7f, 6f), new Vector2(7f, 0f), new Vector2(7f, -6f), new Vector2(-7f, 6f), new Vector2(-7f, 0f), new Vector2(-7f, -6f), new Vector2(-2.5f, 7f), new Vector2(2.5f, 7f), new Vector2(-2.5f, -7f), new Vector2(2.5f, -7f) };
+    public IEnumerator AnimateWounds(ZoneInfo targetedZoneInfo, int woundsTotal)
+    {
+        GameObject targetedHero = targetedZoneInfo.GetRandomHero();
+        GameObject animationContainer = GameObject.FindGameObjectWithTag("AnimationContainer");
+        GameObject mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
+
+        for (int i = 0; i < woundsTotal; i++)
+        {
+            if (i == (woundsTotal - 1) / 2)  // If halfway or less through woundsTotal
+            {
+                StartCoroutine(MoveObjectOverTime(new List<GameObject>() { mainCamera }, mainCamera.transform.position, targetedHero.transform.position));  // If only one wound, AnimateWounds() will return before camera finished panning
+            }
+            GameObject wound = Instantiate(targetedZoneInfo.woundPrefab, transform);
+            Vector3 newDestination = targetedHero.transform.TransformPoint(woundPlacement[i].x, woundPlacement[i].y, 0);
+            wound.transform.SetParent(animationContainer.transform);  // Needed so unit animating is always drawn last (above everything it might pass over).
+            if (i < woundsTotal - 1)
+            {
+                StartCoroutine(MoveObjectOverTime(new List<GameObject>() { wound }, wound.transform.position, newDestination, .7f));
+                yield return new WaitForSecondsRealtime(.5f);
+            }
+            else  // If last wound
+            {
+                yield return StartCoroutine(MoveObjectOverTime(new List<GameObject>() { wound }, wound.transform.position, newDestination, .7f));
+            }
+        }
+
+        // Fading the wounds out
+        float fadeoutTime = 0.2f;
+        float t = 0;
+        CanvasGroup animationContainerTransparency = animationContainer.GetComponent<CanvasGroup>();
+        while (t < 1f)
+        {
+            t += Time.deltaTime * fadeoutTime;
+
+            float transparency = Mathf.Lerp(1, .2f, t);
+            animationContainerTransparency.alpha = transparency;
+
+            yield return null;
+        }
+
+        for (int i = woundsTotal - 1; i >= 0; i--)
+        {
+            Destroy(animationContainer.transform.GetChild(i).gameObject);
+        }
+        animationContainerTransparency.alpha = 1f;  // Reset animationContainer transparency
+        yield return 0;
+    }
+
+    IEnumerator MoveObjectOverTime(List<GameObject> objectsToMove, Vector3 origin, Vector3 destination, float timeCoefficient = .5f)
+    {
         float t = 0;
         while (t < 1f)
         {
-            t += Time.deltaTime * uncoverTime;
-            transform.position = new Vector3(Mathf.Lerp(oldPosition.x, newPosition.x, t), Mathf.Lerp(oldPosition.y, newPosition.y, t), 0);
-            mainCamera.transform.position = new Vector3(transform.position.x, transform.position.y, mainCamera.transform.position.z);
+            t += Time.deltaTime * timeCoefficient;
+            foreach( GameObject currentObject in objectsToMove)
+            {
+                currentObject.transform.position = new Vector3(Mathf.Lerp(origin.x, destination.x, t), Mathf.Lerp(origin.y, destination.y, t), currentObject.transform.position.z);
+            }
             yield return null;
         }
         yield return 0;
@@ -483,8 +535,10 @@ public class Unit : MonoBehaviour
                 // Animate success vs failure UI
                 successContainer = Instantiate(currentZoneInfo.successVsFailurePrefab, animationContainer.transform);
                 successContainer.transform.position = transform.TransformPoint(new Vector3(0, 12, 0));
+
                 for (int i = -1; i < actionSuccesses; i++)
                 {
+                    yield return new WaitForSecondsRealtime(1);
                     if (i == requiredSuccesses - 1)  // Otherwise there can be more results (checks/x's) displayed than requiredSuccesses
                     {
                         break;
@@ -492,15 +546,18 @@ public class Unit : MonoBehaviour
                     GameObject successOrFailurePrefab = i + 1 < actionSuccesses ? currentZoneInfo.successPrefab : currentZoneInfo.failurePrefab;
                     GameObject successOrFailureMarker = Instantiate(successOrFailurePrefab, successContainer.transform);
                     successOrFailureMarker.transform.localPosition = new Vector3(i * 10, 0, 0);
-                    yield return new WaitForSecondsRealtime(1);
                 }
                 yield return new WaitForSecondsRealtime(1);
-                Destroy(successContainer);
 
                 if (actionSuccesses >= requiredSuccesses)
                 {
+                    // Move camera to bomb being armed
+                    //yield return StartCoroutine(MoveObjectOverTime(new List<GameObject>() { mainCamera }, transform.position, currentZoneInfo.GetBomb().transform.position));  // Move camera over slightly is more jarring than anything else
+
                     currentZoneInfo.PrimeBomb();
+                    yield return new WaitForSecondsRealtime(2);
                 }
+                Destroy(successContainer);
                 break;
 
             case "THOUGHT":
@@ -513,10 +570,14 @@ public class Unit : MonoBehaviour
                 successContainer.transform.position = transform.TransformPoint(new Vector3(0, 12, 0));
                 for (int i = -1; i < actionSuccesses; i++)
                 {
+                    yield return new WaitForSecondsRealtime(1);
+                    if (i == requiredSuccesses - 1)  // Otherwise there can be more results (checks/x's) displayed than requiredSuccesses
+                    {
+                        break;
+                    }
                     GameObject successOrFailurePrefab = i + 1 < actionSuccesses ? currentZoneInfo.successPrefab : currentZoneInfo.failurePrefab;
                     GameObject successOrFailureMarker = Instantiate(successOrFailurePrefab, successContainer.transform);
                     successOrFailureMarker.transform.localPosition = new Vector3(i * 10, 0, 0);
-                    yield return new WaitForSecondsRealtime(1);
                 }
                 yield return new WaitForSecondsRealtime(1);
                 Destroy(successContainer);
@@ -542,7 +603,12 @@ public class Unit : MonoBehaviour
                     if (chosenBombZone != null)
                     {
                         currentZoneInfo.RemoveComputer();
+
+                        // Move camera to bomb being armed
+                        yield return StartCoroutine(MoveObjectOverTime(new List<GameObject>() { mainCamera }, transform.position, chosenBombZone.GetBomb().transform.position));
+
                         chosenBombZone.PrimeBomb();
+                        yield return new WaitForSecondsRealtime(2);
                         unitTurn.targetedZone = chosenBombZone.transform.gameObject;  // Only useful for DEBUG statement at end of PerformAction()
                     }
                     else
@@ -558,7 +624,10 @@ public class Unit : MonoBehaviour
                 {
                     actionSuccesses += martialArtsSuccesses;
                 }
-                yield return currentZoneInfo.ApplyWounds(actionSuccesses, transform.gameObject);
+                if (actionSuccesses > 0)
+                {
+                    yield return AnimateWounds(currentZoneInfo, actionSuccesses);
+                }
                 break;
 
             case "RANGED":
@@ -586,7 +655,10 @@ public class Unit : MonoBehaviour
                         actionSuccesses += marskmanSuccesses;
                     }
                     actionSuccesses -= currentZoneInfo.GetCurrentHindrance(transform.gameObject);
-                    yield return targetedLineOfSightZoneInfo.ApplyWounds(actionSuccesses, transform.gameObject);
+                    if (actionSuccesses > 0)
+                    {
+                        yield return AnimateWounds(targetedLineOfSightZoneInfo, actionSuccesses);
+                    }
                 }
                 else
                 {
