@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;  // For File.ReadAllText for loading json save files
 using UnityEngine;
 using UnityEngine.UI;  // For button
+using UnityEngine.SceneManagement;  // For SceneManager
 //using UnityEditor;  // For AssetDatabase.LoadAssetAtPath() for getting unit prefabs
 
 public class ScenarioMap : MonoBehaviour
@@ -34,13 +35,14 @@ public class ScenarioMap : MonoBehaviour
     }
     public UnitPool[] unitsPool;  // Unity can't expose dictionaries in the inspector, so Dictionary<string, GameObject[]> actionProficiencies not possible without addon
 
-    public string missionName = "To Sink A City";
+    public string missionName;
     public int currentRound = 1;  // Used by ScenarioMapSave at bottom
     public int reinforcementPoints = 5;
 
 
     void Awake()
     {
+        missionName = SceneManager.GetActiveScene().name;
         unitPrefabsMasterDict = new Dictionary<string, GameObject>();
         foreach (GameObject unitPrefab in unitPrefabsMasterList)
         {

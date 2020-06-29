@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;  // For button
 using TMPro;  // for TMP_Text to update the henchmen quantity from UnitRows
 
 public class Unit : MonoBehaviour
@@ -447,6 +448,21 @@ public class Unit : MonoBehaviour
         yield return 0;
     }
 
+    Boolean waitingOnPlayerInput = false;
+    IEnumerator PauseUntilPlayerPushesContinue(GameObject animationContainer, ZoneInfo targetedZoneInfo, GameObject targetedHero)
+    {
+        Button heroButton = targetedHero.GetComponent<Button>();
+        heroButton.enabled = true;
+        waitingOnPlayerInput = true;
+        GameObject continueButton = Instantiate(targetedZoneInfo.confirmButtonPrefab, targetedZoneInfo.transform.parent.transform);
+        continueButton.transform.position = targetedHero.transform.TransformPoint(0, 20f, 0);
+        continueButton.GetComponent<Button>().onClick.AddListener(delegate { waitingOnPlayerInput = false; });
+        yield return new WaitUntil(() => !waitingOnPlayerInput);
+        heroButton.enabled = false;
+        Destroy(continueButton);
+        yield return 0;
+    }
+
     private readonly Vector2[] woundPlacement = new[] { new Vector2(7f, 6f), new Vector2(7f, 0f), new Vector2(7f, -6f), new Vector2(-7f, 6f), new Vector2(-7f, 0f), new Vector2(-7f, -6f), new Vector2(-2.5f, 7f), new Vector2(2.5f, 7f), new Vector2(-2.5f, -7f), new Vector2(2.5f, -7f) };
     public IEnumerator AnimateWounds(ZoneInfo targetedZoneInfo, int woundsTotal)
     {
@@ -473,9 +489,10 @@ public class Unit : MonoBehaviour
                 yield return StartCoroutine(MoveObjectOverTime(new List<GameObject>() { wound }, wound.transform.position, newDestination, .7f));
             }
         }
+        yield return StartCoroutine(PauseUntilPlayerPushesContinue(animationContainer, targetedZoneInfo, targetedHero));
 
         // Fading the wounds out
-        float fadeoutTime = 0.2f;
+        float fadeoutTime = 0.7f;
         float t = 0;
         CanvasGroup animationContainerTransparency = animationContainer.GetComponent<CanvasGroup>();
         while (t < 1f)
