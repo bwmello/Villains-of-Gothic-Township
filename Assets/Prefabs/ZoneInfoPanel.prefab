@@ -116,6 +116,8 @@ MonoBehaviour:
     type: 3}
   elevationDie: {fileID: 4378926195687391191, guid: 57078db74302144e8a156c288214f7e9,
     type: 3}
+  confirmButtonPrefab: {fileID: 6339903062524070627, guid: 4740639e9a8e342afbe919da07b3e180,
+    type: 3}
   elevation: 0
   maxOccupancy: 0
   terrainDifficulty: 0

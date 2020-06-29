@@ -25,6 +25,7 @@ public class ZoneInfo : MonoBehaviour
     public GameObject successPrefab;
     public GameObject failurePrefab;
     public GameObject elevationDie;  // Determines fall damage and bonus for ranged attacks made from a higher elevation
+    public GameObject confirmButtonPrefab;
 
     public int elevation;
     public int maxOccupancy;
