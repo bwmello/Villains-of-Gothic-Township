@@ -21,6 +21,7 @@ TagManager:
   - Computer
   - WallRubble
   - AnimationContainer
+  - OTTERPOP
   layers:
   - Default
   - TransparentFX

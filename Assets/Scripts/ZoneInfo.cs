@@ -27,6 +27,7 @@ public class ZoneInfo : MonoBehaviour
     public GameObject elevationDie;  // Determines fall damage and bonus for ranged attacks made from a higher elevation
     public GameObject confirmButtonPrefab;
 
+    public Boolean isSpawnZone = false;
     public int elevation;
     public int maxOccupancy;
     public int terrainDifficulty = 0;
@@ -335,6 +336,22 @@ public class ZoneInfo : MonoBehaviour
         }
     }
 
+    public void RemoveHeroesToMatchTotal(int totalHeroes)  // Used by LoadZoneSave
+    {
+        if (totalHeroes < 3)
+        {
+            Transform heroesRow = transform.Find("HeroesRow");
+            if (heroesRow.childCount > 2)
+            {
+                Destroy(heroesRow.GetChild(2).gameObject);
+            }
+            if (totalHeroes < 2 && heroesRow.childCount > 1)
+            {
+                Destroy(heroesRow.GetChild(1).gameObject);
+            }
+        }
+    }
+
     public void EmptyOutZone()
     {
         Transform tokensContainer = transform.Find("TokensRow");
@@ -357,8 +374,11 @@ public class ZoneInfo : MonoBehaviour
         }
     }
 
-    public void LoadZoneSave(ZoneSave zoneSave)
+    public void LoadZoneSave(ZoneSave zoneSave, int totalHeroes)
     {
+        isSpawnZone = zoneSave.isSpawnZone;
+        RemoveHeroesToMatchTotal(totalHeroes);
+
         EmptyOutZone();
         Transform tokensRow = transform.Find("TokensRow");
         foreach (string tokenOrHeroTag in zoneSave.tokensAndHeroesTags)
@@ -423,12 +443,15 @@ public class ZoneInfo : MonoBehaviour
 [Serializable]
 public class ZoneSave
 {
+    public Boolean isSpawnZone = false;
     public List<string> tokensAndHeroesTags = new List<string>();  // Ex: ["Computer", "2ndHero", "3rdHero"]
     public List<string> fadedTokensTags = new List<string>();
     public List<UnitSave> units = new List<UnitSave>();
 
     public ZoneSave(ZoneInfo zone)
     {
+        isSpawnZone = zone.isSpawnZone;
+
         Transform tokensRow = zone.transform.Find("TokensRow");
         foreach (Transform row in tokensRow)
         {

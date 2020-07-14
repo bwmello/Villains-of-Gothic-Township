@@ -19,18 +19,32 @@ public class Unit : MonoBehaviour
 
     public int movePoints;
     public int ignoreTerrainDifficulty = 0;
-    public int ignoreElevation = 0;
+    public int ignoreElevation = 0;  // TODO Also ignores this many wounds caused by a fall
     public int ignoreSize = 0;
+    // TODO public int ignoreMenace = 0;  // NervesOfSteel (The Joker and Riddler's Gang w/ Handgun)
     public int wallBreaker = 0;
 
-    public int munitionSpecialist = 0;
-
     public int martialArtsSuccesses = 0;
+    // TODO public int reach = 0;  // Reach (Clayface and Penguin's Gang) Melee attacks can target heroes/miniatures this far away with LoS
+    // TODO public int berserk = 0;  // Berserk (Killer Croc) If lifePoints <= lifePointsMax/2, add this many white dice to each attack
     public int circularStrike = 0;  // TODO for CHAINS, if hero removed after MELEE with another hero in that zone, popup prompt saying up to this many additional successes carry over
     public int counterAttack = 0;  // TODO for SHOTGUN, if hero moves into space with SHOTGUN, reminder that after melee attack against SHOTGUN is resolved, SHOTGUN gets free melee attack vs hero with number of yellow dice = counterattack
 
     public int marskmanSuccesses = 0;
     public int pointBlankRerolls = 0;
+    // TODO public int counterRangedAttack = 0;  // Retaliation (Riddler's Gang w/ Handgun) if hero not in unit's space, reminder that after ranged attack against unit is resolved, unit gets free ranged attack vs hero with this number of yellow dice
+
+    // TODO TODO public int frost = 0;  // Frost (Mr. Freeze) During attack or explosion from unit, place Frost Token in targeted area, which increases difficult terrain by number of Frost Tokens (except Mr. Freeze)
+
+    public int munitionSpecialist = 0;
+
+    // Actions
+    // TODO TODO public int blast = 0;  // Blast (Mr. Freeze) auto manipulation to trigger this level of explosion in unit's area and adjacent area with LoS
+    // TODO TODO public int grenade = 0;  // Grenade (Mr. Freeze) Complex manipulation to trigger this level of explosion in targeted area with LoS w/ difficulty = distance, failure has explosion triggered at distance equal to number of successes
+    // TODO public int moveCommand = 0;  // Tactician (Two-Face) auto thought to immediately grant this many free move points to an ally (unit can only receive this once per turn in case multiple units have moveCommand > 0). If ally is character, they also get their Move Point Bonus for the First Movement (but not again if activated later in the turn, I assume)
+
+    // Remainder TODO Harmless, Reduced Mobility, Attraction, Shackle, Hacking, Gas Immunity, Misfortune, Horror, Regeneration, Fly, Impenetrable Defense, Untouchable, Burst, Luck, Flame, Toxic Gas, Poison, Body Guard, Investigation, Sneak Attack, Imaginary Friend
+
 
     [Serializable]
     public class ActionProficiency
@@ -229,6 +243,62 @@ public class Unit : MonoBehaviour
         return new Tuple<GameObject, double>(null, 0);
     }
 
+    private double GetAverageSuccesses(List<Dice> dice, int rerolls = 0)
+    {
+        double averageSuccesses = 0;
+        //if (rerolls > 0)
+        //{
+        //    // TODO now how do you calculate the improved averageSuccesses from rerolls? Have to make all possible combinations of all dieResults lists and reroll the most below average die number.
+        //    // Sum the values multiplied by their odds
+        //    // For a YellowDie, dieResults = [0,0,0,1,1,2], average = 0/6 + 0/6 + 0/6 + 1/6 + 1/6 + 2/6 = 2/3.  For a YellowRerollableDie, dieResults = [[0,0,0,1,1,2],[0,0,0,1,1,2],[0,0,0,1,1,2],1,1,2], average = (0/6 + 0/6 + 0/6 + 1/6 + 1/6 + 2/6)/6 + 2/3/6 + 2/3/6 + 1/6 + 1/6 + 2/6 = 1.
+        //    List<List<(double, List<int>)>> diceCombinations = new List<List<(double, List<int>)>>();  // probably not, though
+        //    // averageSuccesses = sum over all[result * probability of result]
+        //    // For two YellowDice, totalCombinations = 6*6 = 36,  average = dieResults * occurences / totalCombinations = (0,0)*9/36 + (0,1)*6*2/36 + (0,2)*3*2/36 + (1,1)*4/36 + (1,2)*2*2/36 + (2,2)*1/36 = 4/3
+        //    // For two YellowDice with one reroll, average = ((0,0)*3/6 + (0,1)*2/6 + (0,2)*1/6)*9/36 + ((0,1)*3 + (1,1)*2 + (1,2)*1)*12/216 + ((0,2)*3 + (1,2)*2 + (2,2)*1)*6/216 + (1,1)*4/36 + (1,2)*2*2/36 + (2,2)*1/36 = 1.95238095238?
+
+        //    foreach (Dice die in dice)
+        //    {
+        //        //List<double> dieResults = new List<double>(Array.ConvertAll<int, double>(die.faces, num => (double)num));
+        //        List<int> dieResults = new List<int>();
+        //        if (die.rerollable)
+        //        {
+        //            for (int i = 0; i < dieResults.Count; i++)
+        //            {
+        //                if (dieResults[i] < die.averageSuccesses)
+        //                {
+        //                    //    dieResults[i] = die.averageSuccesses;  // I think this only works when rerolls = 0. Otherwise, have to inject die.faces into this result and calculate yet more possible combinations in next step (assuming rerolls > 0).
+        //                }
+        //                else
+        //                {
+        //                    break;
+        //                }
+        //            }
+        //        }
+        //    }
+        //}
+        //else  // No generic rerolls, so getting the average is easy
+        //{
+        //    foreach (Dice die in dice)
+        //    {
+        //        averageSuccesses += die.averageSuccessesWithReroll;  // Accounts for dice specific rerolls, but not generic rerolls
+        //    }
+        //}
+        foreach (Dice die in dice)
+        {
+            averageSuccesses += die.averageSuccessesWithReroll;  // Accounts for dice specific rerolls, but not generic rerolls
+        }
+
+        averageSuccesses += dice.Count * rerolls / 3;  // For two YellowDice average = 1.33333333333, with reroll average = 1.95238095238, this func's estimation = 1.33333339 + 2 * 1 / 3 =  1.999999999
+        return averageSuccesses;
+    }
+
+    private double GetChanceOfSuccess(int requiredSuccesses, List<Dice> dice, int rerolls = 0)
+    {
+        double chanceOfSuccess = 0;
+        // TODO proper method from NiceToHaves vs this incredibly rough estimation
+        chanceOfSuccess = GetAverageSuccesses(dice, rerolls) / requiredSuccesses;
+        return chanceOfSuccess;
+    }
 
     private Dictionary<string, double> actionsWeightTable = new Dictionary<string, double>()
     {
@@ -756,8 +826,9 @@ public class Unit : MonoBehaviour
                 }
                 int rerolledDieSuccesses = mostDisappointingResult.die.Roll();
                 actionSuccesses = actionSuccesses - mostDisappointingResult.successes + rerolledDieSuccesses;
-                currentActionResults.RemoveAt(mostDisappointingResultIndex);
-                currentActionResults.Insert(mostDisappointingResultIndex, new ActionResult(mostDisappointingResult.die, rerolledDieSuccesses));
+                currentActionResults[mostDisappointingResultIndex] = new ActionResult(mostDisappointingResult.die, rerolledDieSuccesses);
+                //currentActionResults.RemoveAt(mostDisappointingResultIndex);  // Above is quite a bit more efficient instead of shifting the list twice. TODO remove these two lines once confirmed that this works.
+                //currentActionResults.Insert(mostDisappointingResultIndex, new ActionResult(mostDisappointingResult.die, rerolledDieSuccesses));
             }
         }
 

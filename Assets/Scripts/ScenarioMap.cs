@@ -14,9 +14,8 @@ public class ScenarioMap : MonoBehaviour
     [SerializeField]
     GameObject clockHand;
     [SerializeField]
-    List<GameObject> spawnZones;
-    [SerializeField]
     List<GameObject> unitPrefabsMasterList;
+    private List<GameObject> spawnZones = new List<GameObject>();
     public Dictionary<string, GameObject> unitPrefabsMasterDict;
     public List<string> villainRiver;
     public List<string> unitTagsMasterList;
@@ -38,11 +37,13 @@ public class ScenarioMap : MonoBehaviour
     public string missionName;
     public int currentRound = 1;  // Used by ScenarioMapSave at bottom
     public int reinforcementPoints = 5;
+    public int totalHeroes;
+
+    public Dictionary<string, List<(string, int, double)>> missionSpecificActionsWeightTable = new Dictionary<string, List<(string, int, double)>>();
 
 
     void Awake()
     {
-        missionName = SceneManager.GetActiveScene().name;
         unitPrefabsMasterDict = new Dictionary<string, GameObject>();
         foreach (GameObject unitPrefab in unitPrefabsMasterList)
         {
@@ -57,6 +58,19 @@ public class ScenarioMap : MonoBehaviour
         //SaveIntoJson();  // Used along with SaveIntoJson commented out file path for setting initial game state save json (loaded in Awake())
         float startingClockHandAngle = -(currentRound * 30) + 2;
         clockHand.transform.eulerAngles = new Vector3(0, 0, startingClockHandAngle);
+    }
+
+    void SetMissionSpecificActionsWeightTable()
+    {
+        switch (missionName)
+        {
+            case "ASinkingFeeling":
+                missionSpecificActionsWeightTable["MANIPULATION"] = new List<(string, int, double)>() { ("Bomb", 3, 70) };
+                missionSpecificActionsWeightTable["THOUGHT"] = new List<(string, int, double)>() { ("Computer", 3, 60) };
+                break;
+            case "IceToSeeYou":
+                break;
+        }
     }
 
     // The flow: Player uses UI to end turn -> EndHeroTurn() -> StartVillainTurn() -> StartHeroTurn() -> Player takes their next turn
@@ -192,11 +206,7 @@ public class ScenarioMap : MonoBehaviour
                             break;
                         }
                     }
-                    GameObject superBarn = GameObject.FindGameObjectWithTag("SUPERBARN");
-                    if (superBarn != null)
-                    {
-                        currentWeightOfUnitTurn += superBarn.GetComponent<Unit>().GetMostValuableActionWeight();
-                    }
+                    currentWeightOfUnitTurn += GetMissionSpecificReinforcementWeight();
                 }
             }
             else
@@ -256,36 +266,7 @@ public class ScenarioMap : MonoBehaviour
             i++;
         }
 
-        GameObject superBarn = GameObject.FindGameObjectWithTag("SUPERBARN");
-        if (superBarn == null)
-        {
-            GameObject barn = GameObject.FindGameObjectWithTag("BARN");
-            if (barn != null)
-            {
-                GameObject superbarnPrefab = unitPrefabsMasterDict["SUPERBARN"];
-                if (superbarnPrefab != null)
-                {
-                    Instantiate(superbarnPrefab, barn.transform.parent);
-                    DestroyImmediate(barn);
-                    int barnRiverIndex = villainRiver.IndexOf("BARN");
-                    villainRiver[barnRiverIndex] = "SUPERBARN";
-                }
-                else
-                {
-                    Debug.LogError("ERROR! In ScenarioMap.CallReinforcements(), unable to find prefab asset for SUPERBARN at UnitPrefabs/SUPERBARN.prefab");
-                }
-            }
-        }
-        else
-        {
-            Unit superBarnInfo = superBarn.GetComponent<Unit>();
-            superBarnInfo.ActivateUnit();
-            superBarnInfo.ModifyLifePoints(-2);
-            if (superBarnInfo.lifePoints < 1)
-            {
-                Destroy(superBarn);
-            }
-        }
+        yield return StartCoroutine(ActivateMissionSpecificReinforcement());
         yield return 0;
     }
 
@@ -352,7 +333,61 @@ public class ScenarioMap : MonoBehaviour
         return reinforcementsAvailable;
     }
 
+    double GetMissionSpecificReinforcementWeight()
+    {
+        double weight = 0;
+        switch (missionName)
+        {
+            case "ASinkingFeeling":
+                GameObject superBarn = GameObject.FindGameObjectWithTag("SUPERBARN");
+                if (superBarn != null)
+                {
+                    weight = superBarn.GetComponent<Unit>().GetMostValuableActionWeight();
+                }
+                break;
+        }
+        return weight;
+    }
 
+    IEnumerator ActivateMissionSpecificReinforcement()
+    {
+        switch (missionName)
+        {
+            case "ASinkingFeeling":
+                GameObject superBarn = GameObject.FindGameObjectWithTag("SUPERBARN");
+                if (superBarn == null)
+                {
+                    GameObject barn = GameObject.FindGameObjectWithTag("BARN");
+                    if (barn != null)
+                    {
+                        GameObject superbarnPrefab = unitPrefabsMasterDict["SUPERBARN"];
+                        if (superbarnPrefab != null)
+                        {
+                            Instantiate(superbarnPrefab, barn.transform.parent);
+                            DestroyImmediate(barn);
+                            int barnRiverIndex = villainRiver.IndexOf("BARN");
+                            villainRiver[barnRiverIndex] = "SUPERBARN";
+                        }
+                        else
+                        {
+                            Debug.LogError("ERROR! In ScenarioMap.CallReinforcements(), unable to find prefab asset for SUPERBARN at UnitPrefabs/SUPERBARN.prefab");
+                        }
+                    }
+                }
+                else
+                {
+                    Unit superBarnInfo = superBarn.GetComponent<Unit>();
+                    yield return StartCoroutine(superBarnInfo.ActivateUnit());
+                    superBarnInfo.ModifyLifePoints(-2);
+                    if (superBarnInfo.lifePoints < 1)
+                    {
+                        Destroy(superBarn);
+                    }
+                }
+                break;
+        }
+        yield return 0;
+    }
 
     IEnumerator TurnClockHand(float currentAngle, float newAngle)
     {
@@ -422,8 +457,9 @@ public class ScenarioMap : MonoBehaviour
     public void LoadScenarioSave(ScenarioSave scenarioSave)
     {
         missionName = scenarioSave.missionName;
-        reinforcementPoints = scenarioSave.reinforcementPoints;
         currentRound = scenarioSave.currentRound;
+        reinforcementPoints = scenarioSave.reinforcementPoints;
+        totalHeroes = scenarioSave.totalHeroes;
         float startingClockHandAngle = -(currentRound * 30) + 2;
         clockHand.transform.eulerAngles = new Vector3(0, 0, startingClockHandAngle);  // Fix clockhand without animation. Not sure if this is needed though.
         villainRiver = new List<string>(scenarioSave.villainRiver);
@@ -461,7 +497,12 @@ public class ScenarioMap : MonoBehaviour
         int zoneIndex = 0;
         foreach (ZoneSave zoneSave in scenarioSave.zones)
         {
-            zones[zoneIndex].GetComponent<ZoneInfo>().LoadZoneSave(zoneSave);
+            GameObject currentZone = zones[zoneIndex];
+            currentZone.GetComponent<ZoneInfo>().LoadZoneSave(zoneSave, totalHeroes);
+            if (currentZone.GetComponent<ZoneInfo>().isSpawnZone)
+            {
+                spawnZones.Add(currentZone);
+            }
             zoneIndex++;
         }
     }
@@ -474,10 +515,11 @@ public class ScenarioSave
     public string missionName;
     public int currentRound;
     public int reinforcementPoints;
+    public int totalHeroes;
     public List<string> villainRiver = new List<string>();
     public List<string> unitTagsMasterList = new List<string>();
-    public List<ZoneSave> zones = new List<ZoneSave>();
     public List<string> brokenWalls = new List<string>();
+    public List<ZoneSave> zones = new List<ZoneSave>();
 
     // public Dictionary<string, int> unitsPool = new Dictionary<string, int>();  // Ex: {"UZI": 2, "CROWBAR": 0,...}
     [Serializable]  // But dictionaries aren't serializable so here we are again. Still calling this __Dict as it does have a string and a value, just not key-value relationship.
@@ -499,11 +541,12 @@ public class ScenarioSave
         missionName = scenarioMap.missionName;
         currentRound = scenarioMap.currentRound;
         reinforcementPoints = scenarioMap.reinforcementPoints;
+        totalHeroes = scenarioMap.totalHeroes;
         villainRiver.AddRange(scenarioMap.villainRiver);
         unitTagsMasterList.AddRange(scenarioMap.unitTagsMasterList);
-        foreach (GameObject zone in GameObject.FindGameObjectsWithTag("ZoneInfoPanel"))
-        {
-            zones.Add(new ZoneSave(zone.GetComponent<ZoneInfo>()));
+        foreach (ScenarioMap.UnitPool unitPool in scenarioMap.unitsPool)
+        {  // Must be added one at a time because List<UnitPool> can't convert its GameObject unit to JSON, so need List<UnitPoolDict> with strings instead.
+            unitsPool.Add(new UnitPoolDict(unitPool.unit.tag, unitPool.total));
         }
 
         foreach (GameObject brokenWall in GameObject.FindGameObjectsWithTag("WallRubble"))
@@ -515,9 +558,9 @@ public class ScenarioSave
             }
         }
 
-        foreach (ScenarioMap.UnitPool unitPool in scenarioMap.unitsPool)
-        {  // Must be added one at a time because List<UnitPool> can't convert its GameObject unit to JSON, so need List<UnitPoolDict> with strings instead.
-            unitsPool.Add(new UnitPoolDict(unitPool.unit.tag, unitPool.total));
+        foreach (GameObject zone in GameObject.FindGameObjectsWithTag("ZoneInfoPanel"))
+        {
+            zones.Add(new ZoneSave(zone.GetComponent<ZoneInfo>()));
         }
     }
 }
