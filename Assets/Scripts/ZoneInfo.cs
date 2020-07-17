@@ -106,44 +106,45 @@ public class ZoneInfo : MonoBehaviour
         return currentHindrance;
     }
 
-    public double GetOccupantsManipulationLikelihood(GameObject unitToDiscount)  // TODO get the odds of success instead of just adding up each unit's average successes
-    {
-        double manipulationOdds = 0;
+    // TODO Replace this because it's dumb
+    //public double GetOccupantsManipulationLikelihood(GameObject unitToDiscount)  // TODO get the odds of success instead of just adding up each unit's average successes
+    //{
+    //    double manipulationOdds = 0;
 
-        int currentHindrance = 0;
-        currentHindrance += GetHeroesCount();  // TODO stop assuming size and menace of 1 for each hero
-        List<string> unitTags = transform.GetComponentInParent<ScenarioMap>().villainRiver;
-        foreach (Transform row in transform)
-        {
-            if (unitTags.Contains(row.tag))
-            {
-                if (row.gameObject == unitToDiscount)
-                {
-                    continue;  // Unit doesn't count itself for hindrance, so skip it.
-                }
-                Unit unitInfo = row.gameObject.GetComponent<Unit>();
-                if (unitInfo.validActionProficiencies.ContainsKey("MANIPULATION"))
-                {
-                    foreach (GameObject die in unitInfo.validActionProficiencies["MANIPULATION"])
-                    {
-                        manipulationOdds += die.GetComponent<Dice>().averageSuccesses;
-                    }
-                }
-                currentHindrance -= unitInfo.menace;
-            }
-        }
-        if (currentHindrance < 0)
-        {
-            currentHindrance = 0;
-        }
-        manipulationOdds -= currentHindrance;
-        if (manipulationOdds < 0)
-        {
-            manipulationOdds = 0;
-        }
+    //    int currentHindrance = 0;
+    //    currentHindrance += GetHeroesCount();  // TODO stop assuming size and menace of 1 for each hero
+    //    List<string> unitTags = transform.GetComponentInParent<ScenarioMap>().villainRiver;
+    //    foreach (Transform row in transform)
+    //    {
+    //        if (unitTags.Contains(row.tag))
+    //        {
+    //            if (row.gameObject == unitToDiscount)
+    //            {
+    //                continue;  // Unit doesn't count itself for hindrance, so skip it.
+    //            }
+    //            Unit unitInfo = row.gameObject.GetComponent<Unit>();
+    //            if (unitInfo.validActionProficiencies.ContainsKey("MANIPULATION"))
+    //            {
+    //                foreach (GameObject die in unitInfo.validActionProficiencies["MANIPULATION"])
+    //                {
+    //                    manipulationOdds += die.GetComponent<Dice>().averageSuccesses;
+    //                }
+    //            }
+    //            currentHindrance -= unitInfo.menace;
+    //        }
+    //    }
+    //    if (currentHindrance < 0)
+    //    {
+    //        currentHindrance = 0;
+    //    }
+    //    manipulationOdds -= currentHindrance;
+    //    if (manipulationOdds < 0)
+    //    {
+    //        manipulationOdds = 0;
+    //    }
 
-        return manipulationOdds;
-    }
+    //    return manipulationOdds;
+    //}
 
     public bool HasToken(string tokenName)
     {
@@ -165,7 +166,7 @@ public class ZoneInfo : MonoBehaviour
 
     public bool HasHeroes()
     {
-        return GetHeroesCount() > 0 ? true : false;
+        return GetHeroesCount() > 0;
     }
 
     public GameObject GetLineOfSightZoneWithHero()
@@ -219,7 +220,7 @@ public class ZoneInfo : MonoBehaviour
                 heroes.Add(hero.gameObject);
             }
         }
-        return heroes[random.Next(heroes.Count)];
+        return heroes.Count > 0 ? heroes[random.Next(heroes.Count)] : null;
     }
 
     public void PrimeBomb()

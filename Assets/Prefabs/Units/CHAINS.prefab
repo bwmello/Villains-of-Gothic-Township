@@ -14,6 +14,16 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
         type: 3}
+      propertyPath: actionProficiencies.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[0].proficiencyDice.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
+        type: 3}
       propertyPath: defense
       value: 2
       objectReference: {fileID: 0}
@@ -52,6 +62,34 @@ PrefabInstance:
     - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
         type: 3}
       propertyPath: actionProficiencies.Array.data[0].dice.Array.data[2]
+      value: 
+      objectReference: {fileID: 4378926195687391191, guid: 57078db74302144e8a156c288214f7e9,
+        type: 3}
+    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[0].actionType
+      value: MELEE
+      objectReference: {fileID: 0}
+    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[0].actionMultiplier
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[0].proficiencyDice.Array.data[0]
+      value: 
+      objectReference: {fileID: 3977603957081343019, guid: d58eb93d5ddbb4ba8a58a52718e7f90a,
+        type: 3}
+    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[0].proficiencyDice.Array.data[1]
+      value: 
+      objectReference: {fileID: 3977603957081343019, guid: d58eb93d5ddbb4ba8a58a52718e7f90a,
+        type: 3}
+    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[0].proficiencyDice.Array.data[2]
       value: 
       objectReference: {fileID: 4378926195687391191, guid: 57078db74302144e8a156c288214f7e9,
         type: 3}
@@ -163,7 +201,7 @@ PrefabInstance:
     - target: {fileID: 6549735627474174590, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
         type: 3}
       propertyPath: m_Name
-      value: CHAINSnew
+      value: CHAINS
       objectReference: {fileID: 0}
     - target: {fileID: 6549735627474174590, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
         type: 3}

@@ -19,6 +19,21 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
         type: 3}
+      propertyPath: actionProficiencies.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[0].proficiencyDice.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[1].proficiencyDice.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
+        type: 3}
       propertyPath: movePoints
       value: 2
       objectReference: {fileID: 0}
@@ -56,6 +71,50 @@ PrefabInstance:
       propertyPath: defense
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[0].actionType
+      value: RANGED
+      objectReference: {fileID: 0}
+    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[0].actionMultiplier
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[1].actionType
+      value: MANIPULATION
+      objectReference: {fileID: 0}
+    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[1].actionMultiplier
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[0].proficiencyDice.Array.data[0]
+      value: 
+      objectReference: {fileID: 1773269283665178559, guid: aa0fc3e42c3524d48b85b5bd367e31b7,
+        type: 3}
+    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[0].proficiencyDice.Array.data[1]
+      value: 
+      objectReference: {fileID: 1773269283665178559, guid: aa0fc3e42c3524d48b85b5bd367e31b7,
+        type: 3}
+    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[1].proficiencyDice.Array.data[0]
+      value: 
+      objectReference: {fileID: 3977603957081343019, guid: d58eb93d5ddbb4ba8a58a52718e7f90a,
+        type: 3}
+    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[1].proficiencyDice.Array.data[1]
+      value: 
+      objectReference: {fileID: 6261325660192181314, guid: 177f89921d19b404894b89719dbcdfe8,
+        type: 3}
     - target: {fileID: 6549735627474174585, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -169,7 +228,7 @@ PrefabInstance:
     - target: {fileID: 6549735627474174590, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
         type: 3}
       propertyPath: m_Name
-      value: UZInew
+      value: UZI
       objectReference: {fileID: 0}
     - target: {fileID: 6549735627474174590, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
         type: 3}

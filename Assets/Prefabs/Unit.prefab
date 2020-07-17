@@ -75,21 +75,13 @@ MonoBehaviour:
   ignoreElevation: 0
   ignoreSize: 0
   wallBreaker: 0
-  munitionSpecialist: 0
   martialArtsSuccesses: 0
   circularStrike: 0
   counterAttack: 0
   marskmanSuccesses: 0
   pointBlankRerolls: 0
-  actionProficiencies:
-  - action: MELEE
-    dice: []
-  - action: RANGED
-    dice: []
-  - action: MANIPULATION
-    dice: []
-  - action: THOUGHT
-    dice: []
+  munitionSpecialist: 0
+  actionProficiencies: []
 --- !u!114 &6549735627474174586
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -105,6 +97,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -302,6 +295,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []

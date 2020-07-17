@@ -24,6 +24,26 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
         type: 3}
+      propertyPath: actionProficiencies.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[0].proficiencyDice.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[1].proficiencyDice.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[2].proficiencyDice.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
+        type: 3}
       propertyPath: lifePoints
       value: 4
       objectReference: {fileID: 0}
@@ -98,6 +118,72 @@ PrefabInstance:
       propertyPath: lifePointsMax
       value: 4
       objectReference: {fileID: 0}
+    - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[0].actionType
+      value: MELEE
+      objectReference: {fileID: 0}
+    - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[0].actionMultiplier
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[0].proficiencyDice.Array.data[0]
+      value: 
+      objectReference: {fileID: 3977603957081343019, guid: d58eb93d5ddbb4ba8a58a52718e7f90a,
+        type: 3}
+    - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[0].proficiencyDice.Array.data[1]
+      value: 
+      objectReference: {fileID: 6986820248315063782, guid: 4dc2d4f55e50a4f4d81d2441f0e49647,
+        type: 3}
+    - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[1].actionType
+      value: MANIPULATION
+      objectReference: {fileID: 0}
+    - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[1].actionMultiplier
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[1].proficiencyDice.Array.data[0]
+      value: 
+      objectReference: {fileID: 3977603957081343019, guid: d58eb93d5ddbb4ba8a58a52718e7f90a,
+        type: 3}
+    - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[1].proficiencyDice.Array.data[1]
+      value: 
+      objectReference: {fileID: 6261325660192181314, guid: 177f89921d19b404894b89719dbcdfe8,
+        type: 3}
+    - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[2].actionType
+      value: THOUGHT
+      objectReference: {fileID: 0}
+    - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[2].actionMultiplier
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[2].proficiencyDice.Array.data[0]
+      value: 
+      objectReference: {fileID: 3977603957081343019, guid: d58eb93d5ddbb4ba8a58a52718e7f90a,
+        type: 3}
+    - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[2].proficiencyDice.Array.data[1]
+      value: 
+      objectReference: {fileID: 6986820248315063782, guid: 4dc2d4f55e50a4f4d81d2441f0e49647,
+        type: 3}
     - target: {fileID: 3301613231005200024, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
         type: 3}
       propertyPath: m_SizeDelta.x

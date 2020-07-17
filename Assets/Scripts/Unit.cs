@@ -7,6 +7,8 @@ using TMPro;  // for TMP_Text to update the henchmen quantity from UnitRows
 
 public class Unit : MonoBehaviour
 {
+    readonly System.Random random = new System.Random();
+
     public int lifePoints = 1;
     public int lifePointsMax = 1;
     public int defense;
@@ -30,7 +32,7 @@ public class Unit : MonoBehaviour
     public int circularStrike = 0;  // TODO for CHAINS, if hero removed after MELEE with another hero in that zone, popup prompt saying up to this many additional successes carry over
     public int counterAttack = 0;  // TODO for SHOTGUN, if hero moves into space with SHOTGUN, reminder that after melee attack against SHOTGUN is resolved, SHOTGUN gets free melee attack vs hero with number of yellow dice = counterattack
 
-    public int marskmanSuccesses = 0;
+    public int marksmanSuccesses = 0;
     public int pointBlankRerolls = 0;
     // TODO public int counterRangedAttack = 0;  // Retaliation (Riddler's Gang w/ Handgun) if hero not in unit's space, reminder that after ranged attack against unit is resolved, unit gets free ranged attack vs hero with this number of yellow dice
 
@@ -47,31 +49,30 @@ public class Unit : MonoBehaviour
 
 
     [Serializable]
-    public class ActionProficiency
+    public struct ActionProficiency
     {
-        public string action;
-        public GameObject[] dice;
+        public string actionType;
+        public int actionMultiplier;  // The number of times the action can be performed
+        public List<GameObject> proficiencyDice;
     }
     public ActionProficiency[] actionProficiencies;  // Unity can't expose dictionaries in the inspector, so Dictionary<string, GameObject[]> actionProficiencies not possible without addon
-    public Dictionary<string, GameObject[]> validActionProficiencies;
 
 
     void Awake()  // Need to happen on Instantiate for potential spawn/reinforcement evaluation, so Start() not good enough
     {
         transform.name = transform.tag;  // Needed so that when Instantiated is named UZI or CHAINS instead of UZI(Clone) or CHAINS(Clone)
-        validActionProficiencies = GetValidActionProficiencies();
     }
 
-    GameObject GetZone()
+    public GameObject GetZone()
     {
         return transform.parent.parent.parent.gameObject;  // Grabs ZoneInfoPanel instead of UnitsContainer. If changes in future, only need to change this function.
     }
 
-    public IEnumerator ActivateUnit()
+    public IEnumerator ActivateUnit(Dictionary<string, List<(string, int, double, ScenarioMap.ActionCallback)>> actionsWeightTable)
     {
         GameObject currentZone = GetZone();
         Dictionary<GameObject, MovementPath> possibleDestinations = GetPossibleDestinations(currentZone);
-        List<UnitPossibleAction> allPossibleUnitActions = GetPossibleActions(possibleDestinations);
+        List<UnitPossibleAction> allPossibleUnitActions = GetPossibleActions(possibleDestinations, actionsWeightTable);
 
         if (allPossibleUnitActions != null && allPossibleUnitActions.Count > 0)
         {
@@ -89,11 +90,11 @@ public class Unit : MonoBehaviour
                 chosenAction.pathTaken.zones.Add(chosenAction.destinationZone);  // Otherwise token is never animated moving the last zone to the destination
                 yield return StartCoroutine(MoveToken(chosenAction.pathTaken));
             }
-            yield return StartCoroutine(PerformAction(chosenAction));
+            yield return StartCoroutine(PerformAction(chosenAction, actionsWeightTable));
         }
         else
         {
-            GameObject destinationZone = GetPartialMoveAndWeight(possibleDestinations).Item1;
+            GameObject destinationZone = GetPartialMoveAndWeight(possibleDestinations, actionsWeightTable).Item1;
             if (destinationZone != null && currentZone != destinationZone)
             {
                 possibleDestinations[destinationZone].zones.Add(destinationZone);  // Otherwise token is never animated moving the last zone to the destination
@@ -205,7 +206,7 @@ public class Unit : MonoBehaviour
         return possibleDestinations;
     }
 
-    private Tuple<GameObject, double> GetPartialMoveAndWeight(Dictionary<GameObject, MovementPath> reachableDestinations)
+    private Tuple<GameObject, double> GetPartialMoveAndWeight(Dictionary<GameObject, MovementPath> reachableDestinations, Dictionary<string, List<(string, int, double, ScenarioMap.ActionCallback)>> actionsWeightTable)
     {
         double mostValuableActionWeight = 0;
         GameObject chosenDestination = null;
@@ -218,12 +219,12 @@ public class Unit : MonoBehaviour
         foreach (GameObject reachableZone in reachableDestinations.Keys)
         {
             Dictionary<GameObject, MovementPath> nextPossibleDestinations = GetPossibleDestinations(reachableZone, new Dictionary<GameObject, MovementPath>(reachableDestinations), new HashSet<GameObject>(reachableDestinations.Keys));
-            List<UnitPossibleAction> futurePossibleActions = GetPossibleActions(nextPossibleDestinations);
+            List<UnitPossibleAction> futurePossibleActions = GetPossibleActions(nextPossibleDestinations, actionsWeightTable);
             if (futurePossibleActions != null && futurePossibleActions.Count > 0)
             {
                 foreach (UnitPossibleAction unitAction in futurePossibleActions)
                 {
-                    unitAction.actionWeight *= actionsWeightTable["ONEHALF_MOVE"];  // Reduce weight for the fact these actions can't be completed until a second activation.
+                    unitAction.actionWeight *= .25;  // Reduce weight for the fact these actions can't be completed until a second activation. TODO add another lookahead (for next next turn) with a .0625 multiplier for a third activation
                     if (unitAction.actionWeight > mostValuableActionWeight)
                     {
                         mostValuableActionWeight = unitAction.actionWeight;
@@ -243,7 +244,7 @@ public class Unit : MonoBehaviour
         return new Tuple<GameObject, double>(null, 0);
     }
 
-    private double GetAverageSuccesses(List<Dice> dice, int rerolls = 0)
+    private double GetAverageSuccesses(List<GameObject> dice, int rerolls = 0)
     {
         double averageSuccesses = 0;
         //if (rerolls > 0)
@@ -283,16 +284,16 @@ public class Unit : MonoBehaviour
         //        averageSuccesses += die.averageSuccessesWithReroll;  // Accounts for dice specific rerolls, but not generic rerolls
         //    }
         //}
-        foreach (Dice die in dice)
+        foreach (GameObject die in dice)
         {
-            averageSuccesses += die.averageSuccessesWithReroll;  // Accounts for dice specific rerolls, but not generic rerolls
+            averageSuccesses += die.GetComponent<Dice>().averageSuccessesWithReroll;  // Accounts for dice specific rerolls, but not generic rerolls
         }
 
         averageSuccesses += dice.Count * rerolls / 3;  // For two YellowDice average = 1.33333333333, with reroll average = 1.95238095238, this func's estimation = 1.33333339 + 2 * 1 / 3 =  1.999999999
         return averageSuccesses;
     }
 
-    private double GetChanceOfSuccess(int requiredSuccesses, List<Dice> dice, int rerolls = 0)
+    private double GetChanceOfSuccess(int requiredSuccesses, List<GameObject> dice, int rerolls = 0)
     {
         double chanceOfSuccess = 0;
         // TODO proper method from NiceToHaves vs this incredibly rough estimation
@@ -300,37 +301,21 @@ public class Unit : MonoBehaviour
         return chanceOfSuccess;
     }
 
-    private Dictionary<string, double> actionsWeightTable = new Dictionary<string, double>()
-    {
-        { "MANIPULATION", 70 },
-        { "THOUGHT", 60 },
-        { "OBJECTIVE_REROLL", 7 },  // * totalRerolls
-        { "OBJECTIVE_HINDRANCE", -15 },  // * totalHindrance
-        { "MELEE", 40 },
-        { "RANGED", 40 },
-        { "ATTACK_BONUSDIE", 10 },  // * totalBonusDice
-        { "ATTACK_REROLL", 5 },  // * totalRerolls
-        { "ATTACK_HINDRANCE", -9 },  // * totalHindrance
-        { "GUARD_PRIMEDBOMB", 15 },  // // TODO triple this if there are no more bombs and only 2 primedbombs left
-        { "GUARD_BOMB", 10 },
-        { "GUARD_COMPUTER", 5 },
-        { "ONEHALF_MOVE", .25 },  // * weight of action accomplishable on unit's next turn
-        { "ONETHIRD_MOVE", .0625 }  // * weight of action accomplishable on unit's next next turn  // TODO not yet implemented for GetPartialMoveAndWeight()
-    };
-
     public class UnitPossibleAction
     {
         public Unit myUnit;
-        public string actionType;
+        public (string, int, double, ScenarioMap.ActionCallback) missionSpecificAction;
+        public ActionProficiency actionProficiency;
         public double actionWeight;
         public GameObject destinationZone;
         public MovementPath pathTaken;
         public GameObject targetedZone;
 
-        public UnitPossibleAction(Unit theUnit, string unitActionType, double unitActionWeight, GameObject unitDestinationZone, GameObject unitTargetedZone = null, MovementPath unitPathTaken = null)
+        public UnitPossibleAction(Unit theUnit, (string, int, double, ScenarioMap.ActionCallback) unitMissionSpecificAction, ActionProficiency unitActionProficiency, double unitActionWeight, GameObject unitDestinationZone, GameObject unitTargetedZone = null, MovementPath unitPathTaken = null)
         {
             myUnit = theUnit;
-            actionType = unitActionType;
+            missionSpecificAction = unitMissionSpecificAction;
+            actionProficiency = unitActionProficiency;
             actionWeight = unitActionWeight;
             destinationZone = unitDestinationZone;
             targetedZone = unitTargetedZone;
@@ -338,7 +323,7 @@ public class Unit : MonoBehaviour
         }
     }
 
-    private List<UnitPossibleAction> GetPossibleActions(Dictionary<GameObject, MovementPath> possibleDestinationsAndPaths)
+    private List<UnitPossibleAction> GetPossibleActions(Dictionary<GameObject, MovementPath> possibleDestinationsAndPaths, Dictionary<string, List<(string, int, double, ScenarioMap.ActionCallback)>> actionsWeightTable)
     {
         //List<ZoneInfo> possibleDestinationsInfo = new List<ZoneInfo>();
         //foreach (GameObject destination in possibleDestinations.Keys)
@@ -351,69 +336,95 @@ public class Unit : MonoBehaviour
         foreach (GameObject destinationZone in possibleDestinationsAndPaths.Keys)
         {
             ZoneInfo destination = destinationZone.GetComponent<ZoneInfo>();
-            int destinationHindrance = destination.GetCurrentHindrance(this.gameObject);
-            foreach (string actionType in validActionProficiencies.Keys)
+            int destinationHindrance = destination.GetCurrentHindrance(gameObject);
+            int availableRerolls = destination.supportRerolls;
+            if (GetZone() == destinationZone)
+            {
+                availableRerolls -= supportRerolls;
+            }
+
+            foreach (ActionProficiency actionProficiency in actionProficiencies)
             {
                 double actionWeight = 0;
 
-                if (destination.HasToken("PrimedBomb"))
+                if (actionsWeightTable.ContainsKey("GUARD"))
                 {
-                    actionWeight += actionsWeightTable["GUARD_PRIMEDBOMB"];
-                }
-                if (destination.HasToken("Bomb"))
-                {
-                    actionWeight += actionsWeightTable["GUARD_BOMB"];
-                }
-                if (destination.HasToken("Computer"))
-                {
-                    actionWeight += actionsWeightTable["GUARD_COMPUTER"];
+                    foreach ((string, int, double, ScenarioMap.ActionCallback) guardable in actionsWeightTable["GUARD"])
+                    {
+                        if (destination.HasToken(guardable.Item1))
+                        {
+                            actionWeight += guardable.Item3;
+                        }
+                    }
                 }
 
-                
-                switch (actionType)
+                switch (actionProficiency.actionType)
                 {
-                    case "MANIPULATION":
-                        if (destination.HasToken("Bomb"))
-                        {
-                            actionWeight += actionsWeightTable[actionType];
-                            actionWeight += destination.supportRerolls * actionsWeightTable["OBJECTIVE_REROLL"];
-                            actionWeight += destinationHindrance * actionsWeightTable["OBJECTIVE_HINDRANCE"];
-                            allPossibleActions.Add(new UnitPossibleAction(this, actionType, actionWeight, destination.gameObject, null, possibleDestinationsAndPaths[destinationZone]));
-                        }
-                        break;
-                    case "THOUGHT":
-                        if (destination.HasToken("Computer") && GameObject.FindGameObjectsWithTag("Bomb").Length > 0)
-                        {
-                            actionWeight += actionsWeightTable[actionType];
-                            actionWeight += destination.supportRerolls * actionsWeightTable["OBJECTIVE_REROLL"];
-                            actionWeight += destinationHindrance * actionsWeightTable["OBJECTIVE_HINDRANCE"];
-                            allPossibleActions.Add(new UnitPossibleAction(this, actionType, actionWeight, destination.gameObject, null, possibleDestinationsAndPaths[destinationZone]));
-                        }
-                        break;
                     case "MELEE":
                         if (destination.HasHeroes())
                         {
-                            actionWeight += actionsWeightTable[actionType];
-                            actionWeight += destination.supportRerolls * actionsWeightTable["ATTACK_REROLL"];
-                            allPossibleActions.Add(new UnitPossibleAction(this, actionType, actionWeight, destination.gameObject, null, possibleDestinationsAndPaths[destinationZone]));
+                            double averageWounds = GetAverageSuccesses(actionProficiency.proficiencyDice, availableRerolls) + martialArtsSuccesses;
+                            averageWounds *= actionProficiency.actionMultiplier;
+                            actionWeight += averageWounds * actionsWeightTable["MELEE"][0].Item3;
+                            allPossibleActions.Add(new UnitPossibleAction(this, actionsWeightTable["MELEE"][0], actionProficiency, actionWeight, destination.gameObject, null, possibleDestinationsAndPaths[destinationZone]));
                         }
                         break;
                     case "RANGED":
                         GameObject targetedZone = destination.GetLineOfSightZoneWithHero();
                         if (targetedZone != null)
                         {
-                            actionWeight += actionsWeightTable[actionType];
-                            actionWeight += destination.supportRerolls * actionsWeightTable["ATTACK_REROLL"];
-                            if (pointBlankRerolls > 0 && targetedZone == destination.gameObject)
-                            {
-                                actionWeight += pointBlankRerolls * actionsWeightTable["ATTACK_REROLL"];
-                            }
-                            actionWeight += destinationHindrance * actionsWeightTable["ATTACK_HINDRANCE"];
+                            List<GameObject> dicePool = new List<GameObject>(actionProficiency.proficiencyDice);
                             if (destination.elevation > targetedZone.GetComponent<ZoneInfo>().elevation)
                             {
-                                actionWeight += actionsWeightTable["ATTACK_BONUSDIE"];
+                                dicePool.Add(destination.elevationDie);
                             }
-                            allPossibleActions.Add(new UnitPossibleAction(this, actionType, actionWeight, destination.gameObject, targetedZone, possibleDestinationsAndPaths[destinationZone]));
+                            if (pointBlankRerolls > 0 && targetedZone == destination.gameObject)
+                            {
+                                availableRerolls += pointBlankRerolls;
+                            }
+                            double averageWounds = GetAverageSuccesses(dicePool, availableRerolls) + marksmanSuccesses - destinationHindrance;
+                            if (averageWounds > 0)
+                            {
+                                averageWounds *= actionProficiency.actionMultiplier;
+                            }
+                            else
+                            {
+                                averageWounds += actionProficiency.actionMultiplier / 10;
+                            }
+                            averageWounds *= actionProficiency.actionMultiplier;
+                            actionWeight += averageWounds * actionsWeightTable["RANGED"][0].Item3;
+                            allPossibleActions.Add(new UnitPossibleAction(this, actionsWeightTable["RANGED"][0], actionProficiency, actionWeight, destination.gameObject, targetedZone, possibleDestinationsAndPaths[destinationZone]));
+                        }
+                        break;
+                    case "MANIPULATION":
+                        if (actionsWeightTable.ContainsKey("MANIPULATION"))
+                        {
+
+                            foreach ((string, int, double, ScenarioMap.ActionCallback) manipulatable in actionsWeightTable["MANIPULATION"])
+                            {
+                                if (destination.HasToken(manipulatable.Item1))
+                                {
+                                    int requiredSuccesses = manipulatable.Item2 + destinationHindrance - (manipulatable.Item1 == "Bomb" ? munitionSpecialist : 0);
+                                    double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
+                                    actionWeight += chanceOfSuccess * manipulatable.Item3;
+                                    allPossibleActions.Add(new UnitPossibleAction(this, manipulatable, actionProficiency, actionWeight, destination.gameObject, null, possibleDestinationsAndPaths[destinationZone]));
+                                }
+                            }
+                        }
+                        break;
+                    case "THOUGHT":
+                        if (actionsWeightTable.ContainsKey("THOUGHT"))
+                        {
+                            foreach ((string, int, double, ScenarioMap.ActionCallback) thoughtable in actionsWeightTable["THOUGHT"])
+                            {
+                                if (destination.HasToken(thoughtable.Item1))
+                                {
+                                    int requiredSuccesses = thoughtable.Item2 + destinationHindrance;
+                                    double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
+                                    actionWeight += chanceOfSuccess * thoughtable.Item3;
+                                    allPossibleActions.Add(new UnitPossibleAction(this, thoughtable, actionProficiency, actionWeight, destination.gameObject, null, possibleDestinationsAndPaths[destinationZone]));
+                                }
+                            }
                         }
                         break;
                 }
@@ -423,13 +434,13 @@ public class Unit : MonoBehaviour
         return allPossibleActions;
     }
 
-    public double GetMostValuableActionWeight()
+    public double GetMostValuableActionWeight(Dictionary<string, List<(string, int, double, ScenarioMap.ActionCallback)>> actionsWeightTable)
     {
         double mostValuableActionWeight = 0;
         GameObject currentZone = GetZone();
 
         Dictionary<GameObject, MovementPath> possibleDestinations = GetPossibleDestinations(currentZone);
-        List<UnitPossibleAction> allPossibleUnitActions = GetPossibleActions(possibleDestinations);
+        List<UnitPossibleAction> allPossibleUnitActions = GetPossibleActions(possibleDestinations, actionsWeightTable);
 
         if (allPossibleUnitActions != null && allPossibleUnitActions.Count > 0)
         {
@@ -443,23 +454,10 @@ public class Unit : MonoBehaviour
         }
         else
         {
-            mostValuableActionWeight = GetPartialMoveAndWeight(possibleDestinations).Item2;
+            mostValuableActionWeight = GetPartialMoveAndWeight(possibleDestinations, actionsWeightTable).Item2;
         }
 
         return mostValuableActionWeight;
-    }
-
-    public Dictionary<string, GameObject[]> GetValidActionProficiencies()
-    {
-        Dictionary<string, GameObject[]> validActionProficiencies = new Dictionary<string, GameObject[]>();
-        foreach (ActionProficiency proficiency in actionProficiencies)
-        {
-            if (proficiency.dice.Length > 0)
-            {
-                validActionProficiencies.Add(proficiency.action, proficiency.dice);
-            }
-        }
-        return validActionProficiencies;
     }
 
     IEnumerator MoveToken(MovementPath pathToMove)
@@ -537,49 +535,53 @@ public class Unit : MonoBehaviour
     public IEnumerator AnimateWounds(ZoneInfo targetedZoneInfo, int woundsTotal)
     {
         GameObject targetedHero = targetedZoneInfo.GetRandomHero();
-        GameObject animationContainer = GameObject.FindGameObjectWithTag("AnimationContainer");
-        GameObject mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
 
-        for (int i = 0; i < woundsTotal; i++)
+        if (targetedHero != null)
         {
-            if (i == (woundsTotal - 1) / 2)  // If halfway or less through woundsTotal
+            GameObject animationContainer = GameObject.FindGameObjectWithTag("AnimationContainer");
+            GameObject mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
+
+            for (int i = 0; i < woundsTotal; i++)
             {
-                StartCoroutine(MoveObjectOverTime(new List<GameObject>() { mainCamera }, mainCamera.transform.position, targetedHero.transform.position));  // If only one wound, AnimateWounds() will return before camera finished panning
+                if (i == (woundsTotal - 1) / 2)  // If halfway or less through woundsTotal
+                {
+                    StartCoroutine(MoveObjectOverTime(new List<GameObject>() { mainCamera }, mainCamera.transform.position, targetedHero.transform.position));  // If only one wound, AnimateWounds() will return before camera finished panning
+                }
+                GameObject wound = Instantiate(targetedZoneInfo.woundPrefab, transform);
+                Vector3 newDestination = targetedHero.transform.TransformPoint(woundPlacement[i].x, woundPlacement[i].y, 0);
+                wound.transform.SetParent(animationContainer.transform);  // Needed so unit animating is always drawn last (above everything it might pass over).
+                if (i < woundsTotal - 1)
+                {
+                    StartCoroutine(MoveObjectOverTime(new List<GameObject>() { wound }, wound.transform.position, newDestination, .7f));
+                    yield return new WaitForSecondsRealtime(.5f);
+                }
+                else  // If last wound
+                {
+                    yield return StartCoroutine(MoveObjectOverTime(new List<GameObject>() { wound }, wound.transform.position, newDestination, .7f));
+                }
             }
-            GameObject wound = Instantiate(targetedZoneInfo.woundPrefab, transform);
-            Vector3 newDestination = targetedHero.transform.TransformPoint(woundPlacement[i].x, woundPlacement[i].y, 0);
-            wound.transform.SetParent(animationContainer.transform);  // Needed so unit animating is always drawn last (above everything it might pass over).
-            if (i < woundsTotal - 1)
+            yield return StartCoroutine(PauseUntilPlayerPushesContinue(animationContainer, targetedZoneInfo, targetedHero));
+
+            // Fading the wounds out
+            float fadeoutTime = 0.7f;
+            float t = 0;
+            CanvasGroup animationContainerTransparency = animationContainer.GetComponent<CanvasGroup>();
+            while (t < 1f)
             {
-                StartCoroutine(MoveObjectOverTime(new List<GameObject>() { wound }, wound.transform.position, newDestination, .7f));
-                yield return new WaitForSecondsRealtime(.5f);
+                t += Time.deltaTime * fadeoutTime;
+
+                float transparency = Mathf.Lerp(1, .2f, t);
+                animationContainerTransparency.alpha = transparency;
+
+                yield return null;
             }
-            else  // If last wound
+
+            for (int i = woundsTotal - 1; i >= 0; i--)
             {
-                yield return StartCoroutine(MoveObjectOverTime(new List<GameObject>() { wound }, wound.transform.position, newDestination, .7f));
+                Destroy(animationContainer.transform.GetChild(i).gameObject);
             }
+            animationContainerTransparency.alpha = 1f;  // Reset animationContainer transparency
         }
-        yield return StartCoroutine(PauseUntilPlayerPushesContinue(animationContainer, targetedZoneInfo, targetedHero));
-
-        // Fading the wounds out
-        float fadeoutTime = 0.7f;
-        float t = 0;
-        CanvasGroup animationContainerTransparency = animationContainer.GetComponent<CanvasGroup>();
-        while (t < 1f)
-        {
-            t += Time.deltaTime * fadeoutTime;
-
-            float transparency = Mathf.Lerp(1, .2f, t);
-            animationContainerTransparency.alpha = transparency;
-
-            yield return null;
-        }
-
-        for (int i = woundsTotal - 1; i >= 0; i--)
-        {
-            Destroy(animationContainer.transform.GetChild(i).gameObject);
-        }
-        animationContainerTransparency.alpha = 1f;  // Reset animationContainer transparency
         yield return 0;
     }
 
@@ -598,153 +600,63 @@ public class Unit : MonoBehaviour
         yield return 0;
     }
 
-    IEnumerator PerformAction(UnitPossibleAction unitTurn)
+    IEnumerator PerformAction(UnitPossibleAction unitTurn, Dictionary<string, List<(string, int, double, ScenarioMap.ActionCallback)>> actionsWeightTable)
     {
         int actionSuccesses = 0;
         int requiredSuccesses;
         GameObject currentZone = GetZone();
         ZoneInfo currentZoneInfo = currentZone.GetComponent<ZoneInfo>();
-        int rerolls = currentZoneInfo.supportRerolls - supportRerolls;
+        int currentZoneHindrance = currentZoneInfo.GetCurrentHindrance(gameObject);
+        int availableRerolls = currentZoneInfo.supportRerolls - supportRerolls;
 
         GameObject mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
         mainCamera.transform.position = new Vector3(transform.position.x, transform.position.y, mainCamera.transform.position.z);
         GameObject animationContainer = GameObject.FindGameObjectWithTag("AnimationContainer");
-        GameObject successContainer;
 
-        switch (unitTurn.actionType)
+        switch (unitTurn.actionProficiency.actionType)
         {
-            case "MANIPULATION":
-                requiredSuccesses = 3;
-                actionSuccesses += munitionSpecialist;
-                actionSuccesses = RollAndReroll(validActionProficiencies[unitTurn.actionType], actionSuccesses, rerolls, requiredSuccesses);
-                actionSuccesses -= currentZoneInfo.GetCurrentHindrance(transform.gameObject);
-
-                // Animate success vs failure UI
-                successContainer = Instantiate(currentZoneInfo.successVsFailurePrefab, animationContainer.transform);
-                successContainer.transform.position = transform.TransformPoint(new Vector3(0, 12, 0));
-
-                for (int i = -1; i < actionSuccesses; i++)
-                {
-                    yield return new WaitForSecondsRealtime(1);
-                    if (i == requiredSuccesses - 1)  // Otherwise there can be more results (checks/x's) displayed than requiredSuccesses
-                    {
-                        break;
-                    }
-                    GameObject successOrFailurePrefab = i + 1 < actionSuccesses ? currentZoneInfo.successPrefab : currentZoneInfo.failurePrefab;
-                    GameObject successOrFailureMarker = Instantiate(successOrFailurePrefab, successContainer.transform);
-                    successOrFailureMarker.transform.localPosition = new Vector3(i * 10, 0, 0);
-                }
-                yield return new WaitForSecondsRealtime(1);
-
-                if (actionSuccesses >= requiredSuccesses)
-                {
-                    // Move camera to bomb being armed
-                    //yield return StartCoroutine(MoveObjectOverTime(new List<GameObject>() { mainCamera }, transform.position, currentZoneInfo.GetBomb().transform.position));  // Move camera over slightly is more jarring than anything else
-
-                    currentZoneInfo.PrimeBomb();
-                    yield return new WaitForSecondsRealtime(2);
-                }
-                Destroy(successContainer);
-                break;
-
-            case "THOUGHT":
-                requiredSuccesses = 3;
-                actionSuccesses = RollAndReroll(validActionProficiencies[unitTurn.actionType], actionSuccesses, rerolls, requiredSuccesses);
-                actionSuccesses -= currentZoneInfo.GetCurrentHindrance(transform.gameObject);
-
-                // Animate success vs failure UI
-                successContainer = Instantiate(currentZoneInfo.successVsFailurePrefab, animationContainer.transform);
-                successContainer.transform.position = transform.TransformPoint(new Vector3(0, 12, 0));
-                for (int i = -1; i < actionSuccesses; i++)
-                {
-                    yield return new WaitForSecondsRealtime(1);
-                    if (i == requiredSuccesses - 1)  // Otherwise there can be more results (checks/x's) displayed than requiredSuccesses
-                    {
-                        break;
-                    }
-                    GameObject successOrFailurePrefab = i + 1 < actionSuccesses ? currentZoneInfo.successPrefab : currentZoneInfo.failurePrefab;
-                    GameObject successOrFailureMarker = Instantiate(successOrFailurePrefab, successContainer.transform);
-                    successOrFailureMarker.transform.localPosition = new Vector3(i * 10, 0, 0);
-                }
-                yield return new WaitForSecondsRealtime(1);
-                Destroy(successContainer);
-
-                if (actionSuccesses >= requiredSuccesses)
-                {
-                    List<ZoneInfo> bombZones = new List<ZoneInfo>();
-                    foreach (GameObject bomb in GameObject.FindGameObjectsWithTag("Bomb"))
-                    {
-                        bombZones.Add(bomb.transform.parent.parent.GetComponentInParent<ZoneInfo>());
-                    }
-                    ZoneInfo chosenBombZone = null;
-                    double greatestManipulationChance = -100;
-                    foreach (ZoneInfo bombZone in bombZones)
-                    {
-                        double bombZoneManipulationChance = bombZone.GetOccupantsManipulationLikelihood(transform.gameObject);
-                        if (bombZoneManipulationChance > greatestManipulationChance)
-                        {
-                            greatestManipulationChance = bombZoneManipulationChance;
-                            chosenBombZone = bombZone;
-                        }
-                    }
-                    if (chosenBombZone != null)
-                    {
-                        currentZoneInfo.RemoveComputer();
-
-                        // Move camera to bomb being armed
-                        yield return StartCoroutine(MoveObjectOverTime(new List<GameObject>() { mainCamera }, transform.position, chosenBombZone.GetBomb().transform.position));
-
-                        chosenBombZone.PrimeBomb();
-                        yield return new WaitForSecondsRealtime(2);
-                        unitTurn.targetedZone = chosenBombZone.transform.gameObject;  // Only useful for DEBUG statement at end of PerformAction()
-                    }
-                    else
-                    {
-                        Debug.LogError("ERROR! Tried to use a computer from " + currentZone.name + " to prime a bomb, but no zones with bombs available. Why was computer able to be used if there are no zones with bombs?");
-                    }
-                }
-                break;
-
             case "MELEE":
-                actionSuccesses = RollAndReroll(validActionProficiencies[unitTurn.actionType], actionSuccesses, rerolls);
-                if (actionSuccesses > 0)
+                for (int i = 0; i < unitTurn.actionProficiency.actionMultiplier; i++)
                 {
-                    actionSuccesses += martialArtsSuccesses;
-                }
-                if (actionSuccesses > 0)
-                {
-                    yield return AnimateWounds(currentZoneInfo, actionSuccesses);
+                    actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls);
+                    if (actionSuccesses > 0)
+                    {
+                        actionSuccesses += martialArtsSuccesses;
+                    }
+                    if (actionSuccesses > 0)
+                    {
+                        yield return StartCoroutine(AnimateWounds(currentZoneInfo, actionSuccesses));
+                    }
                 }
                 break;
-
             case "RANGED":
                 if (unitTurn.targetedZone != null)
                 {
-                    GameObject[] dicePool = validActionProficiencies[unitTurn.actionType];
                     ZoneInfo targetedLineOfSightZoneInfo = unitTurn.targetedZone.GetComponent<ZoneInfo>();
 
+                    List<GameObject> dicePool = new List<GameObject>(unitTurn.actionProficiency.proficiencyDice);
                     if (currentZoneInfo.elevation > targetedLineOfSightZoneInfo.elevation)
                     {
-                        List<GameObject> tempDicePool = new List<GameObject>();
-                        tempDicePool.AddRange(dicePool);
-                        tempDicePool.Add(currentZoneInfo.elevationDie);
-                        dicePool = tempDicePool.ToArray();
+                        dicePool.Add(currentZoneInfo.elevationDie);
                     }
 
                     if (currentZone == unitTurn.targetedZone)
                     {
-                        rerolls += pointBlankRerolls;
+                        availableRerolls += pointBlankRerolls;
                     }
 
-                    actionSuccesses = RollAndReroll(dicePool, actionSuccesses, rerolls);
-                    if (actionSuccesses > 0)
+                    for (int i = 0; i < unitTurn.actionProficiency.actionMultiplier; i++)
                     {
-                        actionSuccesses += marskmanSuccesses;
-                    }
-                    actionSuccesses -= currentZoneInfo.GetCurrentHindrance(transform.gameObject);
-                    if (actionSuccesses > 0)
-                    {
-                        yield return AnimateWounds(targetedLineOfSightZoneInfo, actionSuccesses);
+                        actionSuccesses = RollAndReroll(dicePool, availableRerolls);
+                        if (actionSuccesses > 0)
+                        {
+                            actionSuccesses += marksmanSuccesses;
+                        }
+                        actionSuccesses -= currentZoneInfo.GetCurrentHindrance(gameObject);
+                        if (actionSuccesses > 0)
+                        {
+                            yield return StartCoroutine(AnimateWounds(targetedLineOfSightZoneInfo, actionSuccesses));
+                        }
                     }
                 }
                 else
@@ -752,17 +664,26 @@ public class Unit : MonoBehaviour
                     Debug.LogError("ERROR! RANGED action was performed while targetedLineOfSightZone was null, so henchman just wasted its action wildly firing its gun into the air.");
                 }
                 break;
+            case "MANIPULATION":
+                requiredSuccesses = unitTurn.missionSpecificAction.Item2 + currentZoneHindrance - (unitTurn.missionSpecificAction.Item1 == "Bomb" ? munitionSpecialist : 0);
+                actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls, requiredSuccesses);
+                yield return StartCoroutine(unitTurn.missionSpecificAction.Item4(gameObject, null, actionSuccesses, requiredSuccesses));
+                break;
+            case "THOUGHT":
+                requiredSuccesses = unitTurn.missionSpecificAction.Item2;
+                actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls, requiredSuccesses);
+                yield return StartCoroutine(unitTurn.missionSpecificAction.Item4(gameObject, null, actionSuccesses, requiredSuccesses));
+                break;
         }
-        string debugString = tag + " in " + unitTurn.destinationZone.name + " performed " + unitTurn.actionType;
+        string debugString = tag + " in " + unitTurn.destinationZone.name + " performed " + unitTurn.actionProficiency.actionType;
         if (unitTurn.targetedZone != null)
         {
             debugString += " targeting " + unitTurn.targetedZone.name;
         }
         debugString += " and got " + actionSuccesses + " successes";
-        Debug.Log(tag + " in " + unitTurn.destinationZone.name + " performed " + unitTurn.actionType + " and got " + actionSuccesses + " successes");
+        Debug.Log(debugString);
         yield return 0;
     }
-
 
     class ActionResult
     {
@@ -776,19 +697,20 @@ public class Unit : MonoBehaviour
         }
     }
 
-    private int RollAndReroll(GameObject[] dicePool, int actionSuccesses, int rerolls, int requiredSuccesses)
+    private int RollAndReroll(List<GameObject> dicePool, int rerolls, int requiredSuccesses)
     {
+        int rolledSuccesses = 0;
         List<ActionResult> currentActionResults = new List<ActionResult>();
 
         foreach (GameObject die in dicePool)
         {
             Dice dieInfo = die.GetComponent<Dice>();
             ActionResult currentActionResult = new ActionResult(dieInfo, dieInfo.Roll());
-            actionSuccesses += currentActionResult.successes;
+            rolledSuccesses += currentActionResult.successes;
             currentActionResults.Add(currentActionResult);
         }
 
-        while (actionSuccesses < requiredSuccesses)
+        while (rolledSuccesses < requiredSuccesses)
         {
             ActionResult mostDisappointingResult = new ActionResult();
             double averageVsResultDifference = 10;  // Any suitably high number (over 3) works
@@ -825,18 +747,19 @@ public class Unit : MonoBehaviour
                     rerolls--;
                 }
                 int rerolledDieSuccesses = mostDisappointingResult.die.Roll();
-                actionSuccesses = actionSuccesses - mostDisappointingResult.successes + rerolledDieSuccesses;
+                rolledSuccesses = rolledSuccesses - mostDisappointingResult.successes + rerolledDieSuccesses;
                 currentActionResults[mostDisappointingResultIndex] = new ActionResult(mostDisappointingResult.die, rerolledDieSuccesses);
                 //currentActionResults.RemoveAt(mostDisappointingResultIndex);  // Above is quite a bit more efficient instead of shifting the list twice. TODO remove these two lines once confirmed that this works.
                 //currentActionResults.Insert(mostDisappointingResultIndex, new ActionResult(mostDisappointingResult.die, rerolledDieSuccesses));
             }
         }
 
-        return actionSuccesses;
+        return rolledSuccesses;
     }
 
-    private int RollAndReroll(GameObject[] dicePool, int actionSuccesses, int rerolls)
+    private int RollAndReroll(List<GameObject> dicePool, int rerolls)
     {
+        int rolledSuccesses = 0;
         List<ActionResult> currentActionResults = new List<ActionResult>();
 
         foreach (GameObject die in dicePool)
@@ -848,7 +771,7 @@ public class Unit : MonoBehaviour
                 currentRollSuccesses = dieInfo.Roll();
             }
             ActionResult currentActionResult = new ActionResult(dieInfo, currentRollSuccesses);
-            actionSuccesses += currentActionResult.successes;
+            rolledSuccesses += currentActionResult.successes;
             currentActionResults.Add(currentActionResult);
         }
 
@@ -886,13 +809,13 @@ public class Unit : MonoBehaviour
                     rerolls--;
                 }
                 int rerolledDieSuccesses = mostDisappointingResult.die.Roll();
-                actionSuccesses = actionSuccesses - mostDisappointingResult.successes + rerolledDieSuccesses;
+                rolledSuccesses = rolledSuccesses - mostDisappointingResult.successes + rerolledDieSuccesses;
                 currentActionResults.RemoveAt(mostBelowAverageResultIndex);
                 currentActionResults.Insert(mostBelowAverageResultIndex, new ActionResult(mostDisappointingResult.die, rerolledDieSuccesses));
             }
         }
 
-        return actionSuccesses;
+        return rolledSuccesses;
     }
 
     public void TokenClicked()

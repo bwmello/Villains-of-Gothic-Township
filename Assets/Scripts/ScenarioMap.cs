@@ -39,7 +39,15 @@ public class ScenarioMap : MonoBehaviour
     public int reinforcementPoints = 5;
     public int totalHeroes;
 
-    public Dictionary<string, List<(string, int, double)>> missionSpecificActionsWeightTable = new Dictionary<string, List<(string, int, double)>>();
+    private GameObject mainCamera;
+    private GameObject animationContainer;
+    private Animate animate;
+
+    public delegate IEnumerator ActionCallback(GameObject unit, GameObject target, int totalSuccesses, int requiredSuccesses);
+    public Dictionary<string, List<(string, int, double, ActionCallback)>> missionSpecificActionsWeightTable = new Dictionary<string, List<(string, int, double, ActionCallback)>>() {
+        { "MELEE", new List<(string, int, double, ActionCallback)>() { (null, 0, 10, null) } },  // 10 * averageTotalWounds
+        { "RANGED", new List<(string, int, double, ActionCallback)>() { (null, 0, 10, null) } }
+    };
 
 
     void Awake()
@@ -50,28 +58,149 @@ public class ScenarioMap : MonoBehaviour
             unitPrefabsMasterDict[unitPrefab.name] = unitPrefab;
         }
         ScenarioSave scenarioSave = JsonUtility.FromJson<ScenarioSave>(File.ReadAllText(Application.persistentDataPath + "/" + missionName + ".json"));
+        //ScenarioSave scenarioSave = JsonUtility.FromJson<ScenarioSave>(File.ReadAllText(Application.persistentDataPath + "/5ASinkingFeeling.json"));
         LoadScenarioSave(scenarioSave);
     }
 
     void Start()
     {
+        mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
+        animationContainer = GameObject.FindGameObjectWithTag("AnimationContainer");
+        animate = animationContainer.GetComponent<Animate>();
         //SaveIntoJson();  // Used along with SaveIntoJson commented out file path for setting initial game state save json (loaded in Awake())
+        SetMissionSpecificActionsWeightTable();  // May also work if instead put in Awake()
         float startingClockHandAngle = -(currentRound * 30) + 2;
         clockHand.transform.eulerAngles = new Vector3(0, 0, startingClockHandAngle);
     }
 
     void SetMissionSpecificActionsWeightTable()
     {
-        switch (missionName)
+        switch (missionName)  // Each nonconstant key (ex: "THOUGHT") should be wiped each time and only added back in if conditions are still met
         {
             case "ASinkingFeeling":
-                missionSpecificActionsWeightTable["MANIPULATION"] = new List<(string, int, double)>() { ("Bomb", 3, 70) };
-                missionSpecificActionsWeightTable["THOUGHT"] = new List<(string, int, double)>() { ("Computer", 3, 60) };
+                int totalBombs = GameObject.FindGameObjectsWithTag("Bomb").Length;
+                int totalPrimedBombs = GameObject.FindGameObjectsWithTag("PrimedBomb").Length;
+                int totalComputers = GameObject.FindGameObjectsWithTag("Computer").Length;
+
+                missionSpecificActionsWeightTable["MANIPULATION"] = new List<(string, int, double, ActionCallback)>();
+                if (totalBombs > 0)
+                {    // 60 * GetChanceOfSuccess(), which returns 1 for a 50/50 chance (where averageSuccesses = requiredSuccesses). CROWBARS have a .55556 chance of priming a bomb unhindered, which gives a weight of 33.33333.
+                    missionSpecificActionsWeightTable["MANIPULATION"].Add(("Bomb", 3, 60, PrimeBombManually));
+                }
+
+                missionSpecificActionsWeightTable["THOUGHT"] = new List<(string, int, double, ActionCallback)>();
+                if (totalComputers > 0 && totalBombs > 0)
+                {
+                    missionSpecificActionsWeightTable["THOUGHT"].Add(("Computer", 3, 60, PrimeBombRemotely));
+                }
+
+                missionSpecificActionsWeightTable["GUARD"] = new List<(string, int, double, ActionCallback)>();
+                if (totalPrimedBombs > 0)
+                {
+                    missionSpecificActionsWeightTable["GUARD"].Add(("PrimedBomb", 0, 15, null));  // Flat weight bonus for hindering heroes attempting to disable objectives
+                }
+                if (totalBombs > 0)
+                {
+                    missionSpecificActionsWeightTable["GUARD"].Add(("Bomb", 0, 10, null));
+                    if (totalComputers > 0)
+                    {
+                        missionSpecificActionsWeightTable["GUARD"].Add(("Computer", 0, 5, null));
+                    }
+                }
                 break;
             case "IceToSeeYou":
                 break;
         }
     }
+
+    /* ActionCallbacks specific to "ASinkingFeeling" mission */
+    public IEnumerator PrimeBombManually(GameObject unit, GameObject target, int totalSuccesses, int requiredSuccesses)
+    {
+        ZoneInfo unitZoneInfo = unit.GetComponent<Unit>().GetZone().GetComponent<ZoneInfo>();
+        // Animate success vs failure UI
+        GameObject successContainer = Instantiate(unitZoneInfo.successVsFailurePrefab, animationContainer.transform);
+        successContainer.transform.position = unit.transform.TransformPoint(new Vector3(0, 12, 0));
+
+        for (int i = -1; i < (totalSuccesses >= 0 ? totalSuccesses : 0); i++)
+        {
+            yield return new WaitForSecondsRealtime(1);
+            if (i == requiredSuccesses - 1)  // Otherwise there can be more results (checks/x's) displayed than requiredSuccesses
+            {
+                break;
+            }
+            GameObject successOrFailurePrefab = i + 1 < totalSuccesses ? unitZoneInfo.successPrefab : unitZoneInfo.failurePrefab;
+            GameObject successOrFailureMarker = Instantiate(successOrFailurePrefab, successContainer.transform);
+            successOrFailureMarker.transform.localPosition = new Vector3(i * 10, 0, 0);
+        }
+        yield return new WaitForSecondsRealtime(1);
+
+        if (totalSuccesses >= requiredSuccesses)
+        {
+            //yield return StartCoroutine(MoveObjectOverTime(new List<GameObject>() { mainCamera }, transform.position, currentZoneInfo.GetBomb().transform.position));  // Moving camera over slightly to bomb being armed is more jarring than anything else
+            unitZoneInfo.PrimeBomb();
+            yield return new WaitForSecondsRealtime(2);
+        }
+        Destroy(successContainer);
+        SetMissionSpecificActionsWeightTable();  // TODO test that the last bomb to be primed doesn't leave "Bomb" as a MANIPULATE action for next unit due to mistiming
+        yield return 0;
+    }
+    public IEnumerator PrimeBombRemotely(GameObject unit, GameObject target, int totalSuccesses, int requiredSuccesses)
+    {
+        ZoneInfo unitZoneInfo = unit.GetComponent<Unit>().GetZone().GetComponent<ZoneInfo>();
+        // Animate success vs failure UI
+        GameObject successContainer = Instantiate(unitZoneInfo.successVsFailurePrefab, animationContainer.transform);
+        successContainer.transform.position = unit.transform.TransformPoint(new Vector3(0, 12, 0));
+
+        for (int i = -1; i < (totalSuccesses >= 0 ? totalSuccesses : 0); i++)
+        {
+            yield return new WaitForSecondsRealtime(1);
+            if (i == requiredSuccesses - 1)  // Otherwise there can be more results (checks/x's) displayed than requiredSuccesses
+            {
+                break;
+            }
+            GameObject successOrFailurePrefab = i + 1 < totalSuccesses ? unitZoneInfo.successPrefab : unitZoneInfo.failurePrefab;
+            GameObject successOrFailureMarker = Instantiate(successOrFailurePrefab, successContainer.transform);
+            successOrFailureMarker.transform.localPosition = new Vector3(i * 10, 0, 0);
+        }
+        yield return new WaitForSecondsRealtime(1);
+
+        if (totalSuccesses >= requiredSuccesses)
+        {
+            List<ZoneInfo> bombZones = new List<ZoneInfo>();
+            foreach (GameObject bomb in GameObject.FindGameObjectsWithTag("Bomb"))
+            {
+                bombZones.Add(bomb.transform.parent.parent.GetComponentInParent<ZoneInfo>());
+            }
+            ZoneInfo chosenBombZone = null;
+            chosenBombZone = bombZones[random.Next(bombZones.Count)];
+            //double greatestManipulationChance = -100;
+            //foreach (ZoneInfo bombZone in bombZones)
+            //{
+            //    double bombZoneManipulationChance = bombZone.GetOccupantsManipulationLikelihood(transform.gameObject);
+            //    if (bombZoneManipulationChance > greatestManipulationChance)
+            //    {
+            //        greatestManipulationChance = bombZoneManipulationChance;
+            //        chosenBombZone = bombZone;  // TODO This doesn't even make sense because you're arming the bomb remotely where you're most likely to arm it manually
+            //    }
+            //}
+            if (chosenBombZone != null)
+            {
+                unitZoneInfo.RemoveComputer();
+                yield return StartCoroutine(animate.MoveObjectOverTime(new List<GameObject>() { mainCamera }, transform.position, chosenBombZone.GetBomb().transform.position));  // Move camera to bomb being armed
+                chosenBombZone.PrimeBomb();
+                yield return new WaitForSecondsRealtime(2);
+                //unitTurn.targetedZone = chosenBombZone.transform.gameObject;  // Only useful for DEBUG statement at end of PerformAction()
+            }
+            else
+            {
+                Debug.LogError("ERROR! Tried to use a computer from " + unitZoneInfo.name + " to prime a bomb, but no zones with bombs available. Why was computer able to be used if there are no zones with bombs?");
+            }
+        }
+        Destroy(successContainer);
+        SetMissionSpecificActionsWeightTable();  // TODO test that the last bomb to be primed doesn't leave "Bomb" as a THOUGHT action for next unit due to mistiming
+        yield return 0;
+    }
+
 
     // The flow: Player uses UI to end turn -> EndHeroTurn() -> StartVillainTurn() -> StartHeroTurn() -> Player takes their next turn
     public void EndHeroTurn()
@@ -101,6 +230,7 @@ public class ScenarioMap : MonoBehaviour
 
         SaveIntoJson();  // Do this before CleanupZones() in case player wants to go back to just before they ended their turn.
         CleanupZones();
+        SetMissionSpecificActionsWeightTable();
         StartCoroutine(StartVillainTurn());
     }
 
@@ -142,7 +272,7 @@ public class ScenarioMap : MonoBehaviour
     {
         foreach (GameObject unit in GameObject.FindGameObjectsWithTag(unitTypeToActivate))
         {
-            yield return StartCoroutine(unit.GetComponent<Unit>().ActivateUnit());
+            yield return StartCoroutine(unit.GetComponent<Unit>().ActivateUnit(missionSpecificActionsWeightTable));
         }
         yield return 0;
     }
@@ -213,7 +343,7 @@ public class ScenarioMap : MonoBehaviour
             {
                 foreach (GameObject unit in GameObject.FindGameObjectsWithTag(unitTag))
                 {
-                    currentWeightOfUnitTurn += unit.GetComponent<Unit>().GetMostValuableActionWeight();
+                    currentWeightOfUnitTurn += unit.GetComponent<Unit>().GetMostValuableActionWeight(missionSpecificActionsWeightTable);
                 }
             }
 
@@ -299,7 +429,7 @@ public class ScenarioMap : MonoBehaviour
                         {
                             GameObject availableUnitSlot = spawnZone.GetComponent<ZoneInfo>().GetAvailableUnitSlot();
                             GameObject tempUnit = Instantiate(unitPool.unit, availableUnitSlot.transform);
-                            double currentSpawnActionWeight = tempUnit.GetComponent<Unit>().GetMostValuableActionWeight();
+                            double currentSpawnActionWeight = tempUnit.GetComponent<Unit>().GetMostValuableActionWeight(missionSpecificActionsWeightTable);
                             DestroyImmediate(tempUnit);
                             if (currentSpawnActionWeight > highestSpawnActionWeight)
                             {
@@ -342,7 +472,7 @@ public class ScenarioMap : MonoBehaviour
                 GameObject superBarn = GameObject.FindGameObjectWithTag("SUPERBARN");
                 if (superBarn != null)
                 {
-                    weight = superBarn.GetComponent<Unit>().GetMostValuableActionWeight();
+                    weight = superBarn.GetComponent<Unit>().GetMostValuableActionWeight(missionSpecificActionsWeightTable);
                 }
                 break;
         }
@@ -377,7 +507,7 @@ public class ScenarioMap : MonoBehaviour
                 else
                 {
                     Unit superBarnInfo = superBarn.GetComponent<Unit>();
-                    yield return StartCoroutine(superBarnInfo.ActivateUnit());
+                    yield return StartCoroutine(superBarnInfo.ActivateUnit(missionSpecificActionsWeightTable));
                     superBarnInfo.ModifyLifePoints(-2);
                     if (superBarnInfo.lifePoints < 1)
                     {
