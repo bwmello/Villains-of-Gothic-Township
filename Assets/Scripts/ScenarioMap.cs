@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.UI;  // For button
 using UnityEngine.SceneManagement;  // For SceneManager
 //using UnityEditor;  // For AssetDatabase.LoadAssetAtPath() for getting unit prefabs
+using TMPro;  // for TMP_Text to edit SuccessVsFailure's successContainer blanks
 
 public class ScenarioMap : MonoBehaviour
 {
@@ -121,6 +122,16 @@ public class ScenarioMap : MonoBehaviour
         GameObject successContainer = Instantiate(unitZoneInfo.successVsFailurePrefab, animationContainer.transform);
         successContainer.transform.position = unit.transform.TransformPoint(new Vector3(0, 12, 0));
 
+        successContainer.GetComponent<RectTransform>().sizeDelta = new Vector2(requiredSuccesses * 10, successContainer.GetComponent<RectTransform>().rect.height);
+        Transform successContainerText = successContainer.transform.GetChild(0);
+        successContainerText.GetComponent<RectTransform>().sizeDelta = new Vector2(requiredSuccesses * 10, successContainerText.GetComponent<RectTransform>().rect.height);
+        string successContainerBlanks = "_";
+        for (int i = 1; i < requiredSuccesses; i++)
+        {
+            successContainerBlanks += " _";
+        }
+        successContainerText.GetComponent<TMP_Text>().text = successContainerBlanks;
+
         for (int i = -1; i < (totalSuccesses >= 0 ? totalSuccesses : 0); i++)
         {
             yield return new WaitForSecondsRealtime(1);
@@ -130,7 +141,6 @@ public class ScenarioMap : MonoBehaviour
             }
             GameObject successOrFailurePrefab = i + 1 < totalSuccesses ? unitZoneInfo.successPrefab : unitZoneInfo.failurePrefab;
             GameObject successOrFailureMarker = Instantiate(successOrFailurePrefab, successContainer.transform);
-            successOrFailureMarker.transform.localPosition = new Vector3(i * 10, 0, 0);
         }
         yield return new WaitForSecondsRealtime(1);
 
@@ -151,6 +161,16 @@ public class ScenarioMap : MonoBehaviour
         GameObject successContainer = Instantiate(unitZoneInfo.successVsFailurePrefab, animationContainer.transform);
         successContainer.transform.position = unit.transform.TransformPoint(new Vector3(0, 12, 0));
 
+        successContainer.GetComponent<RectTransform>().sizeDelta = new Vector2(requiredSuccesses * 10, successContainer.GetComponent<RectTransform>().rect.height);
+        Transform successContainerText = successContainer.transform.GetChild(0);
+        successContainerText.GetComponent<RectTransform>().sizeDelta = new Vector2(requiredSuccesses * 10, successContainerText.GetComponent<RectTransform>().rect.height);
+        string successContainerBlanks = "_";
+        for (int i = 1; i < requiredSuccesses; i++)
+        {
+            successContainerBlanks += " _";
+        }
+        successContainerText.GetComponent<TMP_Text>().text = successContainerBlanks;
+
         for (int i = -1; i < (totalSuccesses >= 0 ? totalSuccesses : 0); i++)
         {
             yield return new WaitForSecondsRealtime(1);
@@ -160,7 +180,6 @@ public class ScenarioMap : MonoBehaviour
             }
             GameObject successOrFailurePrefab = i + 1 < totalSuccesses ? unitZoneInfo.successPrefab : unitZoneInfo.failurePrefab;
             GameObject successOrFailureMarker = Instantiate(successOrFailurePrefab, successContainer.transform);
-            successOrFailureMarker.transform.localPosition = new Vector3(i * 10, 0, 0);
         }
         yield return new WaitForSecondsRealtime(1);
 
