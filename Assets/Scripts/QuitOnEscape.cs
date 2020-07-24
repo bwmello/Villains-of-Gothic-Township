@@ -9,7 +9,12 @@ public class QuitOnEscape : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Escape) == true)
         {
-            Application.Quit();
+            ExitApp();
         }
+    }
+
+    public void ExitApp()
+    {
+        Application.Quit();
     }
 }

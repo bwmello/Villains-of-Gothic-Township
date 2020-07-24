@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;  // For button
 using TMPro;  // for getting hero number
 
-public class Token : MonoBehaviour
+public class Token : MonoBehaviour  // Should be called ObjectiveToken as there was no need to distinguish between EnvironTokens
 {
     void Awake()
     {  // Needed so that when Instantiated is named Bomb or Computer instead of Bomb(Clone) or Computer(Clone)
@@ -22,5 +22,15 @@ public class Token : MonoBehaviour
         {
             buttonCanvas.alpha = (float)1;
         }
+    }
+
+    public bool IsActive()
+    {
+        CanvasGroup buttonCanvas = gameObject.GetComponent<CanvasGroup>();
+        if (buttonCanvas.alpha == 1)
+        {
+            return true;
+        }
+        return false;
     }
 }

@@ -2,7 +2,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using TMPro;  // For getting henchmen quantity from UnitRows
+using UnityEngine.UI;  // For button AddEnvironToken continue prompt when hero suffers terrainDanger
+using TMPro;  // For adding heroes to the zone and knowing which button to light up
 
 public class ZoneInfo : MonoBehaviour
 {
@@ -20,11 +21,16 @@ public class ZoneInfo : MonoBehaviour
     public GameObject computerPrefab;
     public GameObject bombPrefab;
     public GameObject primedBombPrefab;
+    public GameObject gasPrefab;
+    public GameObject flamePrefab;
+    public GameObject smokePrefab;
+    public GameObject frostPrefab;
+    public GameObject cryogenicPrefab;
     public GameObject woundPrefab;
     public GameObject successVsFailurePrefab;
     public GameObject successPrefab;
     public GameObject failurePrefab;
-    public GameObject elevationDie;  // Determines fall damage and bonus for ranged attacks made from a higher elevation
+    public GameObject environmentalDie;  // Determines terrainDanger/fall damage and bonus for ranged attacks made from a higher elevation
     public GameObject confirmButtonPrefab;
 
     public Boolean isSpawnZone = false;
@@ -32,6 +38,9 @@ public class ZoneInfo : MonoBehaviour
     public int maxOccupancy;
     public int terrainDifficulty = 0;
     public int terrainDanger = 0;
+
+    public int frostTokens = 0;  // Increases terrainDifficulty when incremented, ignored by unit.frostwalker
+    public int cryogenicTokens = 0;  // Increases terrainDifficulty/Danger when incremented, ignored by unit.frostwalker
     public int supportRerolls = 0;  // Determined by total Unit.supportRerolls of each unit in zone
 
     private void Start()
@@ -146,10 +155,15 @@ public class ZoneInfo : MonoBehaviour
     //    return manipulationOdds;
     //}
 
-    public bool HasToken(string tokenName)
+    public bool HasObjectiveToken(string tokenName)
     {
         Transform tokensRow = transform.Find("TokensRow");
-        return (tokensRow.Find(tokenName) != null);
+        Transform token = tokensRow.Find(tokenName);
+        if (token)
+        {
+            return token.GetComponent<Token>().IsActive();
+        }
+        return false;
     }
 
     public void DestroyFadedTokens()
@@ -157,7 +171,7 @@ public class ZoneInfo : MonoBehaviour
         Transform tokensRow = transform.Find("TokensRow");
         foreach (Transform token in tokensRow)
         {
-            if (token.gameObject.GetComponent<CanvasGroup>().alpha < 1)
+            if (token.gameObject.GetComponent<CanvasGroup>().alpha < (float).5)  // Dissipating EnvironTokens go to .5 while still active
             {
                 DestroyImmediate(token.gameObject);
             }
@@ -209,7 +223,7 @@ public class ZoneInfo : MonoBehaviour
         return heroesCount;
     }
 
-    public GameObject GetRandomHero()
+    public List<GameObject> GetHeroes()
     {
         Transform heroesRow = transform.Find("HeroesRow");
         List<GameObject> heroes = new List<GameObject>();
@@ -220,7 +234,28 @@ public class ZoneInfo : MonoBehaviour
                 heroes.Add(hero.gameObject);
             }
         }
+        return heroes;
+    }
+
+    public GameObject GetRandomHero()
+    {
+        List<GameObject> heroes = GetHeroes();
         return heroes.Count > 0 ? heroes[random.Next(heroes.Count)] : null;
+    }
+
+    // Could be expanded to recursively search children instead of just TokensRow
+    public List<GameObject> GetAllTokensWithTag(string tagToFind)
+    {
+        List<GameObject> childrenWithTag = new List<GameObject>();
+        Transform tokensRow = transform.Find("TokensRow");
+        foreach (Transform token in tokensRow)
+        {
+            if (token.CompareTag(tagToFind))
+            {
+                childrenWithTag.Add(token.gameObject);
+            }
+        }
+        return childrenWithTag;
     }
 
     public void PrimeBomb()
@@ -232,12 +267,13 @@ public class ZoneInfo : MonoBehaviour
             bomb.GetComponent<CanvasGroup>().alpha = (float).2;  // Still exists to be primed by someone else
             bomb.tag = "Untagged";
             //Destroy(tokensRow.Find("Bomb"));  // When Destroy() or DestroyImmediate(), throws error: Can't remove RectTransform because Image (Script), Image (Script), Image (Script) depends on it
+            GameObject primedBomb = Instantiate(primedBombPrefab, tokensRow);
+            primedBomb.transform.position = bomb.position;
         }
         catch (NullReferenceException err)
         {
             Debug.LogError("ERROR! Tried to prime a bomb in " + transform.name + " without a bomb there. Error details: " + err.ToString());
         }
-        Instantiate(primedBombPrefab, tokensRow);
     }
 
     public GameObject GetBomb()
@@ -270,6 +306,183 @@ public class ZoneInfo : MonoBehaviour
         }
     }
 
+    public int GetTerrainDangerTotal(Unit unit)
+    {
+        int terrainDangerTotal = terrainDanger;
+        if (!unit.fiery)
+        {
+            List<GameObject> flameTokens = GetAllTokensWithTag("Flame");
+            foreach (GameObject flameToken in flameTokens)
+            {
+                terrainDanger += flameToken.GetComponent<EnvironToken>().quantity;
+            }
+        }
+        if (!unit.frosty)
+        {
+            List<GameObject> cryogenicTokens = GetAllTokensWithTag("Cryogenic");
+            foreach (GameObject cryogenicToken in cryogenicTokens)
+            {
+                terrainDanger += cryogenicToken.GetComponent<EnvironToken>().quantity;
+            }
+        }
+        if (!unit.gasImmunity)
+        {
+            List<GameObject> gasTokens = GetAllTokensWithTag("Gas");
+            foreach (GameObject gasToken in gasTokens)
+            {
+                terrainDanger += gasToken.GetComponent<EnvironToken>().quantity;
+            }
+        }
+        return terrainDangerTotal;
+    }
+
+
+
+    public IEnumerator AddEnvironTokens(EnvironTokenSave newEnvironToken)
+    {
+        Transform tokensRow = transform.Find("TokensRow");
+        bool newTokenRequired = true;
+        foreach (Transform existingToken in tokensRow)
+        {
+            if (existingToken.CompareTag(newEnvironToken.tag))
+            {
+                EnvironToken existingEnvironToken = existingToken.GetComponent<EnvironToken>();
+                if (!existingEnvironToken.partiallyDissipated && existingEnvironToken.dissipatesHeroTurn == newEnvironToken.dissipatesHeroTurn && existingEnvironToken.dissipatesVillainTurn == newEnvironToken.dissipatesVillainTurn)
+                {
+                    newTokenRequired = false;
+                    existingEnvironToken.quantity += newEnvironToken.quantity;
+                    existingEnvironToken.QuantityModified();
+                }
+            }
+        }
+        bool terrainDangerIncreased = false;
+        switch (newEnvironToken.tag)
+        {
+            case "Gas":
+                terrainDangerIncreased = true;
+                if (newTokenRequired)
+                {
+                    Instantiate(gasPrefab, tokensRow).GetComponent<EnvironToken>().LoadEnvironTokenSave(newEnvironToken);
+                    ReorganizeTokens();
+                }
+                foreach (Unit affectedUnit in GetUnitsInfo())
+                {
+                    if (!affectedUnit.gasImmunity)
+                    {
+                        int automaticWounds = 0;
+                        Dice damageDie = environmentalDie.GetComponent<Dice>();
+                        for (int i = 0; i < newEnvironToken.quantity; i++)
+                        {
+                            automaticWounds += damageDie.Roll();
+                        }
+                        affectedUnit.ModifyLifePoints(automaticWounds);
+                    }
+                }
+                // TODO give heroes chance to roll damage on themselves (as they can use their rerolls)
+                break;
+            case "Flame":
+                terrainDangerIncreased = true;
+                if (newTokenRequired)
+                {
+                    Instantiate(flamePrefab, tokensRow).GetComponent<EnvironToken>().LoadEnvironTokenSave(newEnvironToken);
+                    ReorganizeTokens();
+                }
+                foreach (Unit affectedUnit in GetUnitsInfo())
+                {
+                    if (!affectedUnit.fiery)
+                    {
+                        int automaticWounds = 0;
+                        Dice damageDie = environmentalDie.GetComponent<Dice>();
+                        for (int i = 0; i < newEnvironToken.quantity; i++)
+                        {
+                            automaticWounds += damageDie.Roll();
+                        }
+                        affectedUnit.ModifyLifePoints(automaticWounds);
+                    }
+                }
+                // TODO give heroes chance to roll damage on themselves (as they can use their rerolls)
+                break;
+            case "Smoke":
+                if (newTokenRequired)
+                {
+                    Instantiate(smokePrefab, tokensRow).GetComponent<EnvironToken>().LoadEnvironTokenSave(newEnvironToken);
+                    ReorganizeTokens();
+                }
+                break;
+            case "Frost":
+                if (newTokenRequired)
+                {
+                    Instantiate(frostPrefab, tokensRow).GetComponent<EnvironToken>().LoadEnvironTokenSave(newEnvironToken);
+                    ReorganizeTokens();
+                }
+                break;
+            case "Cryogenic":
+                terrainDangerIncreased = true;
+                if (newTokenRequired)
+                {
+                    Instantiate(cryogenicPrefab, tokensRow).GetComponent<EnvironToken>().LoadEnvironTokenSave(newEnvironToken);
+                    ReorganizeTokens();
+                }
+                foreach (Unit affectedUnit in GetUnitsInfo())
+                {
+                    if (!affectedUnit.frosty)
+                    {
+                        int automaticWounds = 0;
+                        Dice damageDie = environmentalDie.GetComponent<Dice>();
+                        for (int i = 0; i < newEnvironToken.quantity; i++)
+                        {
+                            automaticWounds += damageDie.Roll();
+                        }
+                        Debug.Log("!!!ZoneInfo.AddEnvironToken(Cryogenic), unit " + affectedUnit.name + "   wounds " + automaticWounds.ToString());
+                        affectedUnit.ModifyLifePoints(-automaticWounds);
+                    }
+                }
+                // TODO give heroes chance to roll damage on themselves (as they can use their rerolls)
+                break;
+            default:
+                Debug.LogError("ERROR! In ZoneInfo.LoadZoneSave(), unable to identify EnvironToken " + newEnvironToken.tag + " for " + transform.name);
+                break;
+        }
+
+        if (terrainDangerIncreased && HasHeroes())  // Gives heroes chance to roll damage on themselves (as they can use their rerolls)
+        {
+            GameObject animationContainer = GameObject.FindGameObjectWithTag("AnimationContainer");
+            yield return StartCoroutine(PauseUntilPlayerPushesContinue(animationContainer));
+        }
+        yield return 0;
+    }
+
+    Boolean waitingOnPlayerInput = false;
+    IEnumerator PauseUntilPlayerPushesContinue(GameObject animationContainer)  // TODO this function replicates one in Unit.cs, move both to a shared class and distinguish between pausing for one hero and multiple
+    {
+        waitingOnPlayerInput = true;
+        List<GameObject> heroes = GetHeroes();
+        foreach (GameObject hero in heroes)
+        {
+            Button heroButton = hero.GetComponent<Button>();
+            heroButton.enabled = true;
+        }
+
+        GameObject continueButton = Instantiate(confirmButtonPrefab, transform);
+        continueButton.transform.position = transform.TransformPoint(0, -30f, 0);
+        continueButton.GetComponent<Button>().onClick.AddListener(delegate { waitingOnPlayerInput = false; });
+        yield return new WaitUntil(() => !waitingOnPlayerInput);
+
+        foreach (GameObject hero in heroes)
+        {
+            Button heroButton = hero.GetComponent<Button>();
+            heroButton.enabled = false;
+        }
+        Destroy(continueButton);
+        yield return 0;
+    }
+
+    public void RemoveEnvironToken(GameObject tokenToRemove)
+    {
+        DestroyImmediate(tokenToRemove);
+        ReorganizeTokens();
+    }
+
     public void ReorganizeTokens()
     {
         Transform tokensRow = transform.Find("TokensRow");
@@ -293,6 +506,10 @@ public class ZoneInfo : MonoBehaviour
         {
             tokensRow.GetChild(0).localPosition = new Vector2((float)-7.5, 0);  // Left
             tokensRow.GetChild(1).localPosition = new Vector2((float)7.5, 0);  // Right
+        }
+        else if (totalTokens == 1)
+        {
+            tokensRow.GetChild(0).localPosition = new Vector2(0, 0);  // Center
         }
     }
 
@@ -417,6 +634,34 @@ public class ZoneInfo : MonoBehaviour
                     break;
             }
         }
+        //zoneSave.environTokens = new List<EnvironTokenSave> { new EnvironTokenSave("Frost", 2, false, true), new EnvironTokenSave("Cryogenic", 1, false, false) };  // For testing frost and cryogenic tokens
+        foreach (EnvironTokenSave environTokenSave in zoneSave.environTokens)
+        {
+            GameObject environTokenCreated = null;
+            switch (environTokenSave.tag)
+            {
+                case "Gas":
+                    environTokenCreated = Instantiate(gasPrefab, tokensRow);
+                    break;
+                case "Flame":
+                    environTokenCreated = Instantiate(flamePrefab, tokensRow);
+                    break;
+                case "Smoke":
+                    environTokenCreated = Instantiate(smokePrefab, tokensRow);
+                    break;
+                case "Frost":
+                    environTokenCreated = Instantiate(frostPrefab, tokensRow);
+                    break;
+                case "Cryogenic":
+                    environTokenCreated = Instantiate(cryogenicPrefab, tokensRow);
+                    break;
+                default:
+                    Debug.LogError("ERROR! In ZoneInfo.LoadZoneSave(), unable to identify EnvironToken " + environTokenSave.tag + " for " + transform.name);
+                    break;
+            }
+            EnvironToken environTokenInfo = environTokenCreated.GetComponent<EnvironToken>();
+            environTokenInfo.LoadEnvironTokenSave(environTokenSave);
+        }
         ReorganizeTokens();
 
         foreach (UnitSave unit in zoneSave.units)
@@ -447,22 +692,31 @@ public class ZoneSave
     public Boolean isSpawnZone = false;
     public List<string> tokensAndHeroesTags = new List<string>();  // Ex: ["Computer", "2ndHero", "3rdHero"]
     public List<string> fadedTokensTags = new List<string>();
+    public List<EnvironTokenSave> environTokens = new List<EnvironTokenSave>();
     public List<UnitSave> units = new List<UnitSave>();
 
     public ZoneSave(ZoneInfo zone)
     {
         isSpawnZone = zone.isSpawnZone;
-
         Transform tokensRow = zone.transform.Find("TokensRow");
+        List<string> objectiveTokenTags = new List<string> { "Computer", "Bomb", "PrimedBomb" };
+        //List<string> environTokenTags = new List<string> { "Gas", "Flame", "Smoke", "Frost", "Cryogenic" };
         foreach (Transform row in tokensRow)
         {
-            if (row.GetComponent<CanvasGroup>().alpha == 1)
+            if (objectiveTokenTags.Contains(row.tag))
             {
-                tokensAndHeroesTags.Add(row.tag);  // This should always be a token
+                if (row.GetComponent<CanvasGroup>().alpha == 1)
+                {
+                    tokensAndHeroesTags.Add(row.tag);  // This should always be a token
+                }
+                else
+                {
+                    fadedTokensTags.Add(row.tag);  // This should always be a token
+                }
             }
-            else
+            else  // else if (environTokenTags.Contains(row.tag))
             {
-                fadedTokensTags.Add(row.tag);  // This should always be a token
+                environTokens.Add(row.GetComponent<EnvironToken>().ToJSON());
             }
         }
 

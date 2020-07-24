@@ -46,4 +46,9 @@ public class Hero : MonoBehaviour
             }
         }
     }
+
+    public GameObject GetZone()
+    {
+        return transform.parent.parent.gameObject;  // Grabs ZoneInfoPanel instead of HeroesRow. If changes in future, only need to change this function.
+    }
 }

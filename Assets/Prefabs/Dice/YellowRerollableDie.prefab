@@ -37,6 +37,11 @@ PrefabInstance:
       propertyPath: averageSuccessesWithReroll
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 4026089378909472414, guid: aeba88583a08441e5a97cc905463dc1d,
+        type: 3}
+      propertyPath: color
+      value: yellow
+      objectReference: {fileID: 0}
     - target: {fileID: 8737123444041974402, guid: aeba88583a08441e5a97cc905463dc1d,
         type: 3}
       propertyPath: m_Name

@@ -36,9 +36,11 @@ public class Unit : MonoBehaviour
     public int pointBlankRerolls = 0;
     // TODO public int counterRangedAttack = 0;  // Retaliation (Riddler's Gang w/ Handgun) if hero not in unit's space, reminder that after ranged attack against unit is resolved, unit gets free ranged attack vs hero with this number of yellow dice
 
-    // TODO TODO public int frost = 0;  // Frost (Mr. Freeze) During attack or explosion from unit, place Frost Token in targeted area, which increases difficult terrain by number of Frost Tokens (except Mr. Freeze)
-
     public int munitionSpecialist = 0;
+
+    public bool gasImmunity = false;
+    public bool frosty = false;  // OTTERPOP's ability to ignore frost and cryogenic tokens and spawn frost tokens  // Frost (Mr. Freeze) During attack or explosion from unit, place Frost Token in targeted area, which increases difficult terrain by number of Frost Tokens (except Mr. Freeze)
+    public bool fiery = false;  // Firefly's ability to place flame tokens after attack/explosion and be immune to flame tokens
 
     // Actions
     // TODO TODO public int blast = 0;  // Blast (Mr. Freeze) auto manipulation to trigger this level of explosion in unit's area and adjacent area with LoS
@@ -61,6 +63,15 @@ public class Unit : MonoBehaviour
     void Awake()  // Need to happen on Instantiate for potential spawn/reinforcement evaluation, so Start() not good enough
     {
         transform.name = transform.tag;  // Needed so that when Instantiated is named UZI or CHAINS instead of UZI(Clone) or CHAINS(Clone)
+    }
+
+    public bool IsActive()
+    {
+        if (lifePoints > 0)
+        {
+            return true;
+        }
+        return false;
     }
 
     public GameObject GetZone()
@@ -109,6 +120,7 @@ public class Unit : MonoBehaviour
     {
         public List<GameObject> zones = new List<GameObject>();
         public int movementSpent = 0;
+        public int terrainDanger = 0;
     }
 
     private Dictionary<GameObject, MovementPath> GetPossibleDestinations(GameObject currentZone, Dictionary<GameObject, MovementPath> possibleDestinations = null, HashSet<GameObject> alreadyPossibleZones = null)
@@ -160,6 +172,19 @@ public class Unit : MonoBehaviour
             }
 
             int terrainDifficultyCost = currentZoneInfo.terrainDifficulty >= ignoreTerrainDifficulty ? currentZoneInfo.terrainDifficulty - ignoreTerrainDifficulty : 0;
+            if (!frosty)
+            {
+                List<GameObject> frostTokens = potentialZoneInfo.GetAllTokensWithTag("Frost");
+                foreach (GameObject frostToken in frostTokens)
+                {
+                    terrainDifficultyCost += frostToken.GetComponent<EnvironToken>().quantity;
+                }
+                List<GameObject> cryogenicTokens = potentialZoneInfo.GetAllTokensWithTag("Cryogenic");
+                foreach (GameObject cryogenicToken in cryogenicTokens)
+                {
+                    terrainDifficultyCost += cryogenicToken.GetComponent<EnvironToken>().quantity;
+                }
+            }
             int sizeCost = currentZoneInfo.GetCurrentHindrance(transform.gameObject, true);
             sizeCost = sizeCost >= ignoreSize ? sizeCost - ignoreSize : 0;
             int elevationCost = 0;
@@ -177,12 +202,14 @@ public class Unit : MonoBehaviour
 
             if (movePoints >= totalMovementCost)  // if unit can move here
             {
+                int totalTerrainDanger = possibleDestinations[currentZone].terrainDanger + potentialZoneInfo.GetTerrainDangerTotal(this);
                 if (possibleDestinations.ContainsKey(potentialZone))
                 {
-                    if (possibleDestinations[potentialZone].movementSpent > totalMovementCost)
+                    if (totalTerrainDanger < possibleDestinations[potentialZone].terrainDanger || (totalTerrainDanger == possibleDestinations[potentialZone].terrainDanger &&  totalMovementCost < possibleDestinations[potentialZone].movementSpent))
                     {
                         possibleDestinations[potentialZone].zones = new List<GameObject>(possibleDestinations[currentZone].zones);
                         possibleDestinations[potentialZone].zones.Add(currentZone);
+                        possibleDestinations[potentialZone].terrainDanger = totalTerrainDanger;
                         possibleDestinations[potentialZone].movementSpent = totalMovementCost;
                         if (movePoints > totalMovementCost)
                         {
@@ -195,6 +222,7 @@ public class Unit : MonoBehaviour
                     possibleDestinations.Add(potentialZone, new MovementPath());
                     possibleDestinations[potentialZone].zones = new List<GameObject>(possibleDestinations[currentZone].zones);
                     possibleDestinations[potentialZone].zones.Add(currentZone);
+                    possibleDestinations[potentialZone].terrainDanger = totalTerrainDanger;
                     possibleDestinations[potentialZone].movementSpent = totalMovementCost;
                     if (movePoints > totalMovementCost)
                     {
@@ -351,7 +379,7 @@ public class Unit : MonoBehaviour
                 {
                     foreach ((string, int, double, ScenarioMap.ActionCallback) guardable in actionsWeightTable["GUARD"])
                     {
-                        if (destination.HasToken(guardable.Item1))
+                        if (destination.HasObjectiveToken(guardable.Item1))
                         {
                             actionWeight += guardable.Item3;
                         }
@@ -366,6 +394,10 @@ public class Unit : MonoBehaviour
                             double averageWounds = GetAverageSuccesses(actionProficiency.proficiencyDice, availableRerolls) + martialArtsSuccesses;
                             averageWounds *= actionProficiency.actionMultiplier;
                             actionWeight += averageWounds * actionsWeightTable["MELEE"][0].Item3;
+                            if (possibleDestinationsAndPaths[destinationZone].terrainDanger > 0)
+                            {
+                                actionWeight /= (2 * possibleDestinationsAndPaths[destinationZone].terrainDanger);
+                            }
                             allPossibleActions.Add(new UnitPossibleAction(this, actionsWeightTable["MELEE"][0], actionProficiency, actionWeight, destination.gameObject, null, possibleDestinationsAndPaths[destinationZone]));
                         }
                         break;
@@ -376,7 +408,7 @@ public class Unit : MonoBehaviour
                             List<GameObject> dicePool = new List<GameObject>(actionProficiency.proficiencyDice);
                             if (destination.elevation > targetedZone.GetComponent<ZoneInfo>().elevation)
                             {
-                                dicePool.Add(destination.elevationDie);
+                                dicePool.Add(destination.environmentalDie);
                             }
                             if (pointBlankRerolls > 0 && targetedZone == destination.gameObject)
                             {
@@ -393,6 +425,10 @@ public class Unit : MonoBehaviour
                             }
                             averageWounds *= actionProficiency.actionMultiplier;
                             actionWeight += averageWounds * actionsWeightTable["RANGED"][0].Item3;
+                            if (possibleDestinationsAndPaths[destinationZone].terrainDanger > 0)
+                            {
+                                actionWeight /= (2 * possibleDestinationsAndPaths[destinationZone].terrainDanger);
+                            }
                             allPossibleActions.Add(new UnitPossibleAction(this, actionsWeightTable["RANGED"][0], actionProficiency, actionWeight, destination.gameObject, targetedZone, possibleDestinationsAndPaths[destinationZone]));
                         }
                         break;
@@ -402,11 +438,15 @@ public class Unit : MonoBehaviour
 
                             foreach ((string, int, double, ScenarioMap.ActionCallback) manipulatable in actionsWeightTable["MANIPULATION"])
                             {
-                                if (destination.HasToken(manipulatable.Item1))
+                                if (destination.HasObjectiveToken(manipulatable.Item1))
                                 {
                                     int requiredSuccesses = manipulatable.Item2 + destinationHindrance - (manipulatable.Item1 == "Bomb" ? munitionSpecialist : 0);
                                     double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
                                     actionWeight += chanceOfSuccess * manipulatable.Item3;
+                                    if (possibleDestinationsAndPaths[destinationZone].terrainDanger > 0)
+                                    {
+                                        actionWeight /= (2 * possibleDestinationsAndPaths[destinationZone].terrainDanger);
+                                    }
                                     allPossibleActions.Add(new UnitPossibleAction(this, manipulatable, actionProficiency, actionWeight, destination.gameObject, null, possibleDestinationsAndPaths[destinationZone]));
                                 }
                             }
@@ -417,11 +457,15 @@ public class Unit : MonoBehaviour
                         {
                             foreach ((string, int, double, ScenarioMap.ActionCallback) thoughtable in actionsWeightTable["THOUGHT"])
                             {
-                                if (destination.HasToken(thoughtable.Item1))
+                                if (destination.HasObjectiveToken(thoughtable.Item1))
                                 {
                                     int requiredSuccesses = thoughtable.Item2 + destinationHindrance;
                                     double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
                                     actionWeight += chanceOfSuccess * thoughtable.Item3;
+                                    if (possibleDestinationsAndPaths[destinationZone].terrainDanger > 0)
+                                    {
+                                        actionWeight /= (2 * possibleDestinationsAndPaths[destinationZone].terrainDanger);
+                                    }
                                     allPossibleActions.Add(new UnitPossibleAction(this, thoughtable, actionProficiency, actionWeight, destination.gameObject, null, possibleDestinationsAndPaths[destinationZone]));
                                 }
                             }
@@ -497,6 +541,20 @@ public class Unit : MonoBehaviour
                 }
             }
             yield return StartCoroutine(AnimateMovement(origin, destination));
+
+            ZoneInfo destinationInfo = destination.GetComponent<ZoneInfo>();
+            int desinationTerrainDanger = destinationInfo.GetTerrainDangerTotal(this);
+            int automaticWounds = 0;
+            Dice damageDie = destinationInfo.environmentalDie.GetComponent<Dice>();
+            for (int j = 0; j < desinationTerrainDanger; j++)
+            {
+                automaticWounds += damageDie.Roll();
+            }
+            ModifyLifePoints(-automaticWounds);
+            if (lifePoints <= 0)
+            {
+                break;
+            }
         }
         if (destination != null)
         {
@@ -517,7 +575,7 @@ public class Unit : MonoBehaviour
     }
 
     Boolean waitingOnPlayerInput = false;
-    IEnumerator PauseUntilPlayerPushesContinue(GameObject animationContainer, ZoneInfo targetedZoneInfo, GameObject targetedHero)
+    public IEnumerator PauseUntilPlayerPushesContinue(GameObject animationContainer, ZoneInfo targetedZoneInfo, GameObject targetedHero)
     {
         Button heroButton = targetedHero.GetComponent<Button>();
         heroButton.enabled = true;
@@ -622,10 +680,15 @@ public class Unit : MonoBehaviour
                     if (actionSuccesses > 0)
                     {
                         actionSuccesses += martialArtsSuccesses;
-                    }
-                    if (actionSuccesses > 0)
-                    {
                         yield return StartCoroutine(AnimateWounds(currentZoneInfo, actionSuccesses));
+                    }
+                    if (fiery)
+                    {
+                        currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Flame", 1, false, true));
+                    }
+                    if (frosty)
+                    {
+                        currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true));
                     }
                 }
                 break;
@@ -637,7 +700,7 @@ public class Unit : MonoBehaviour
                     List<GameObject> dicePool = new List<GameObject>(unitTurn.actionProficiency.proficiencyDice);
                     if (currentZoneInfo.elevation > targetedLineOfSightZoneInfo.elevation)
                     {
-                        dicePool.Add(currentZoneInfo.elevationDie);
+                        dicePool.Add(currentZoneInfo.environmentalDie);
                     }
 
                     if (currentZone == unitTurn.targetedZone)
@@ -657,6 +720,14 @@ public class Unit : MonoBehaviour
                         {
                             yield return StartCoroutine(AnimateWounds(targetedLineOfSightZoneInfo, actionSuccesses));
                         }
+                    }
+                    if (fiery)
+                    {
+                        targetedLineOfSightZoneInfo.AddEnvironTokens(new EnvironTokenSave("Flame", 1, false, true));
+                    }
+                    if (frosty)
+                    {
+                        targetedLineOfSightZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true));
                     }
                 }
                 else
@@ -697,7 +768,7 @@ public class Unit : MonoBehaviour
         }
     }
 
-    private int RollAndReroll(List<GameObject> dicePool, int rerolls, int requiredSuccesses)
+    private int RollAndReroll(List<GameObject> dicePool, int rerolls, int requiredSuccesses) // TODO still need to fix this like improvements to other RollAndReroll (rerollable dice can be rerolled across their color, multiple dice can be rerolled)
     {
         int rolledSuccesses = 0;
         List<ActionResult> currentActionResults = new List<ActionResult>();
@@ -749,8 +820,6 @@ public class Unit : MonoBehaviour
                 int rerolledDieSuccesses = mostDisappointingResult.die.Roll();
                 rolledSuccesses = rolledSuccesses - mostDisappointingResult.successes + rerolledDieSuccesses;
                 currentActionResults[mostDisappointingResultIndex] = new ActionResult(mostDisappointingResult.die, rerolledDieSuccesses);
-                //currentActionResults.RemoveAt(mostDisappointingResultIndex);  // Above is quite a bit more efficient instead of shifting the list twice. TODO remove these two lines once confirmed that this works.
-                //currentActionResults.Insert(mostDisappointingResultIndex, new ActionResult(mostDisappointingResult.die, rerolledDieSuccesses));
             }
         }
 
@@ -759,62 +828,85 @@ public class Unit : MonoBehaviour
 
     private int RollAndReroll(List<GameObject> dicePool, int rerolls)
     {
+        rerolls = 1;
         int rolledSuccesses = 0;
         List<ActionResult> currentActionResults = new List<ActionResult>();
+        string debugString = "RollAndReroll for unit " + gameObject.name + ". ";
 
+        // Separate dice results by color for freeRerolls
+        Dictionary<string, List<ActionResult>> actionResultsByColor = new Dictionary<string, List<ActionResult>>();
         foreach (GameObject die in dicePool)
         {
             Dice dieInfo = die.GetComponent<Dice>();
-            int currentRollSuccesses = dieInfo.Roll();
-            if (dieInfo.rerollable && currentRollSuccesses < dieInfo.averageSuccesses)
+            ActionResult currentActionResult = new ActionResult(dieInfo, dieInfo.Roll());
+            if (actionResultsByColor.ContainsKey(dieInfo.color))
             {
-                currentRollSuccesses = dieInfo.Roll();
-            }
-            ActionResult currentActionResult = new ActionResult(dieInfo, currentRollSuccesses);
-            rolledSuccesses += currentActionResult.successes;
-            currentActionResults.Add(currentActionResult);
-        }
-
-        while (rerolls > 0)
-        {
-            ActionResult mostDisappointingResult = new ActionResult();
-            double averageVsResultDifference = 10;  // Any suitably high number (over 3) works
-            int mostBelowAverageResultIndex = 0;
-            int counter = 0;
-
-            foreach (ActionResult myActionResult in currentActionResults)
-            {
-                double myAverageVsResultDifference = myActionResult.die.averageSuccesses - myActionResult.successes;
-                if (myAverageVsResultDifference < 0 && myAverageVsResultDifference < averageVsResultDifference)  // Don't keep rerolling the same die if you already have average or above successes.
-                {
-                    averageVsResultDifference = myAverageVsResultDifference;
-                    mostDisappointingResult = myActionResult;
-                    mostBelowAverageResultIndex = counter;
-                }
-                counter++;
-            }
-
-            if (mostDisappointingResult.die == null)
-            {
-                break;
+                actionResultsByColor[dieInfo.color].Add(currentActionResult);
             }
             else
             {
-                if (mostDisappointingResult.die.rerollable)
-                {
-                    mostDisappointingResult.die.rerollable = false;
-                }
-                else
-                {
-                    rerolls--;
-                }
-                int rerolledDieSuccesses = mostDisappointingResult.die.Roll();
-                rolledSuccesses = rolledSuccesses - mostDisappointingResult.successes + rerolledDieSuccesses;
-                currentActionResults.RemoveAt(mostBelowAverageResultIndex);
-                currentActionResults.Insert(mostBelowAverageResultIndex, new ActionResult(mostDisappointingResult.die, rerolledDieSuccesses));
+                actionResultsByColor[dieInfo.color] = new List<ActionResult>() { currentActionResult };
             }
         }
 
+        // Apply freeRerolls
+        foreach (List<ActionResult> dieResults in actionResultsByColor.Values)
+        {
+            int freeRerolls = 0;
+            foreach (ActionResult result in dieResults)
+            {
+                if (result.die.rerollable)
+                {
+                    freeRerolls += 1;
+                }
+            }
+            debugString += dieResults[0].die.color + " has " + freeRerolls.ToString() + " freeRerolls. ";
+
+            if (freeRerolls > 0)
+            {
+                dieResults.Sort((x, y) => (y.die.averageSuccesses - y.successes).CompareTo(x.die.averageSuccesses - x.successes));  // Sorts from greatest below average to most above average
+
+                for (int i = 0; i < freeRerolls; i++)
+                {
+                    if (dieResults[i].successes >= dieResults[i].die.averageSuccesses)
+                    {
+                        break;  // Exit freeRerolls loop if none of the dice rolled below average
+                    }
+                    else
+                    {
+                        debugString += "Using freeReroll to change from " + dieResults[i].successes.ToString() + " to ";
+                        dieResults[i] = new ActionResult(dieResults[i].die, dieResults[i].die.Roll());
+                        debugString += dieResults[i].successes.ToString();
+                    }
+                }
+            }
+
+            currentActionResults.AddRange(dieResults);
+        }
+
+        // Apply rerolls
+        for (int i = 0; i < rerolls; i++)
+        {
+            debugString += "  On my " + (i + 1).ToString() + " reroll: ";
+            for (int j = 0; j < currentActionResults.Count-1; j++)  // Reroll each die still below its average
+            {
+                if (currentActionResults[i].successes < currentActionResults[i].die.averageSuccesses)
+                {
+                    debugString += " Changing " + currentActionResults[i].successes.ToString() + " to ";
+                    currentActionResults[i] = new ActionResult(currentActionResults[i].die, currentActionResults[i].die.Roll());
+                    debugString += currentActionResults[i].successes.ToString();
+                }
+            }
+        }
+
+        // Add up final roll
+        debugString += "\nFinal roll: ";
+        foreach (ActionResult myActionResult in currentActionResults)
+        {
+            rolledSuccesses += myActionResult.successes;
+            debugString += myActionResult.successes.ToString() + ", ";
+        }
+        Debug.Log(debugString);
         return rolledSuccesses;
     }
 
@@ -847,7 +939,7 @@ public class Unit : MonoBehaviour
 
         if (lifePoints > 0)
         {
-            this.GetComponent<CanvasGroup>().alpha = (float)1;
+            this.GetComponent<CanvasGroup>().alpha = 1;
         }
         else
         {

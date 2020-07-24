@@ -106,6 +106,10 @@ MonoBehaviour:
     type: 3}
   primedBombPrefab: {fileID: 1237332250277100696, guid: 1ab30b78c61aa4f62985dff6fc3c2f7e,
     type: 3}
+  frostPrefab: {fileID: 929136032118409275, guid: 25754255818de4ed486fdda4369696c3,
+    type: 3}
+  cryogenicPrefab: {fileID: 5311532353715782929, guid: ee84dbf890e6748bf99c9f5607932f2c,
+    type: 3}
   woundPrefab: {fileID: 8577637518863107775, guid: a332cd3d704d445d79ed44f08ac3811b,
     type: 3}
   successVsFailurePrefab: {fileID: 5210211658972486827, guid: e9b633e10e4434545851d94e9604e0f6,
@@ -114,14 +118,17 @@ MonoBehaviour:
     type: 3}
   failurePrefab: {fileID: 3989726647576400915, guid: 32f0cdfb10ff446298d70758741e0a6f,
     type: 3}
-  elevationDie: {fileID: 4378926195687391191, guid: 57078db74302144e8a156c288214f7e9,
+  environmentalDie: {fileID: 4378926195687391191, guid: 57078db74302144e8a156c288214f7e9,
     type: 3}
   confirmButtonPrefab: {fileID: 6339903062524070627, guid: 4740639e9a8e342afbe919da07b3e180,
     type: 3}
+  isSpawnZone: 0
   elevation: 0
   maxOccupancy: 0
   terrainDifficulty: 0
   terrainDanger: 0
+  frostTokens: 0
+  cryogenicTokens: 0
   supportRerolls: 0
 --- !u!1 &5084421897810169031
 GameObject:
@@ -183,6 +190,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []

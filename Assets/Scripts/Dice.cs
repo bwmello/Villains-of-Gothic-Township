@@ -7,6 +7,7 @@ public class Dice : MonoBehaviour
 {
     readonly System.Random random = new System.Random();
 
+    public string color;
     public int[] faces;
     public bool rerollable = false;
     public double averageSuccesses;

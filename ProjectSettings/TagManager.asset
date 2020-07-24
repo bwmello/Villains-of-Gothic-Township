@@ -22,6 +22,11 @@ TagManager:
   - WallRubble
   - AnimationContainer
   - OTTERPOP
+  - Frost
+  - Cryogenic
+  - Gas
+  - Smoke
+  - Flame
   layers:
   - Default
   - TransparentFX

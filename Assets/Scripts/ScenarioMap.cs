@@ -58,7 +58,8 @@ public class ScenarioMap : MonoBehaviour
         {
             unitPrefabsMasterDict[unitPrefab.name] = unitPrefab;
         }
-        ScenarioSave scenarioSave = JsonUtility.FromJson<ScenarioSave>(File.ReadAllText(Application.persistentDataPath + "/" + missionName + ".json"));
+        //ScenarioSave scenarioSave = JsonUtility.FromJson<ScenarioSave>(File.ReadAllText(Application.persistentDataPath + "/" + missionName + ".json"));
+        ScenarioSave scenarioSave = JsonUtility.FromJson<ScenarioSave>(File.ReadAllText(Application.persistentDataPath + "/" + SceneHandler.saveName));
         //ScenarioSave scenarioSave = JsonUtility.FromJson<ScenarioSave>(File.ReadAllText(Application.persistentDataPath + "/5ASinkingFeeling.json"));
         LoadScenarioSave(scenarioSave);
     }
@@ -72,16 +73,27 @@ public class ScenarioMap : MonoBehaviour
         SetMissionSpecificActionsWeightTable();  // May also work if instead put in Awake()
         float startingClockHandAngle = -(currentRound * 30) + 2;
         clockHand.transform.eulerAngles = new Vector3(0, 0, startingClockHandAngle);
+
+        if (currentRound < 1)  // Start with villain's turn
+        {
+            DisablePlayerUI();
+            CameraToFixedZoom();
+            SetMissionSpecificActionsWeightTable();
+            StartCoroutine(StartVillainTurn());
+        }
     }
 
     void SetMissionSpecificActionsWeightTable()
     {
+        int totalBombs;
+        int totalPrimedBombs;
+        int totalComputers;
         switch (missionName)  // Each nonconstant key (ex: "THOUGHT") should be wiped each time and only added back in if conditions are still met
         {
             case "ASinkingFeeling":
-                int totalBombs = GameObject.FindGameObjectsWithTag("Bomb").Length;
-                int totalPrimedBombs = GameObject.FindGameObjectsWithTag("PrimedBomb").Length;
-                int totalComputers = GameObject.FindGameObjectsWithTag("Computer").Length;
+                totalBombs = GameObject.FindGameObjectsWithTag("Bomb").Length;
+                totalPrimedBombs = GameObject.FindGameObjectsWithTag("PrimedBomb").Length;
+                totalComputers = GameObject.FindGameObjectsWithTag("Computer").Length;
 
                 missionSpecificActionsWeightTable["MANIPULATION"] = new List<(string, int, double, ActionCallback)>();
                 if (totalBombs > 0)
@@ -110,6 +122,20 @@ public class ScenarioMap : MonoBehaviour
                 }
                 break;
             case "IceToSeeYou":
+                totalBombs = GameObject.FindGameObjectsWithTag("Bomb").Length;
+                totalComputers = GameObject.FindGameObjectsWithTag("Computer").Length;
+
+                missionSpecificActionsWeightTable["THOUGHT"] = new List<(string, int, double, ActionCallback)>();
+                if (totalComputers > 0)
+                {
+                    missionSpecificActionsWeightTable["THOUGHT"].Add(("Computer", 1, 20, ActivateCryogenicDevice));  // Assume you cost the hero at least 1 movepoint and auto deal 2/3 of a wound per cryogenic token, 0 weight if would hit anyone except frosty
+                }
+
+                missionSpecificActionsWeightTable["GUARD"] = new List<(string, int, double, ActionCallback)>();
+                if (totalBombs > 0)
+                {
+                    missionSpecificActionsWeightTable["GUARD"].Add(("Bomb", 0, 15, null));
+                }
                 break;
         }
     }
@@ -146,12 +172,12 @@ public class ScenarioMap : MonoBehaviour
 
         if (totalSuccesses >= requiredSuccesses)
         {
-            //yield return StartCoroutine(MoveObjectOverTime(new List<GameObject>() { mainCamera }, transform.position, currentZoneInfo.GetBomb().transform.position));  // Moving camera over slightly to bomb being armed is more jarring than anything else
+            //yield return StartCoroutine(MoveObjectOverTime(new List<GameObject>() { mainCamera }, mainCamera.transform.position, currentZoneInfo.GetBomb().transform.position));  // Moving camera over slightly to bomb being armed is more jarring than anything else
             unitZoneInfo.PrimeBomb();
             yield return new WaitForSecondsRealtime(2);
+            SetMissionSpecificActionsWeightTable();  // TODO test that the last bomb to be primed doesn't leave "Bomb" as a MANIPULATE action for next unit due to mistiming
         }
         Destroy(successContainer);
-        SetMissionSpecificActionsWeightTable();  // TODO test that the last bomb to be primed doesn't leave "Bomb" as a MANIPULATE action for next unit due to mistiming
         yield return 0;
     }
     public IEnumerator PrimeBombRemotely(GameObject unit, GameObject target, int totalSuccesses, int requiredSuccesses)
@@ -205,7 +231,7 @@ public class ScenarioMap : MonoBehaviour
             if (chosenBombZone != null)
             {
                 unitZoneInfo.RemoveComputer();
-                yield return StartCoroutine(animate.MoveObjectOverTime(new List<GameObject>() { mainCamera }, transform.position, chosenBombZone.GetBomb().transform.position));  // Move camera to bomb being armed
+                yield return StartCoroutine(animate.MoveObjectOverTime(new List<GameObject>() { mainCamera }, mainCamera.transform.position, chosenBombZone.GetBomb().transform.position));  // Move camera to bomb being armed
                 chosenBombZone.PrimeBomb();
                 yield return new WaitForSecondsRealtime(2);
                 //unitTurn.targetedZone = chosenBombZone.transform.gameObject;  // Only useful for DEBUG statement at end of PerformAction()
@@ -214,17 +240,103 @@ public class ScenarioMap : MonoBehaviour
             {
                 Debug.LogError("ERROR! Tried to use a computer from " + unitZoneInfo.name + " to prime a bomb, but no zones with bombs available. Why was computer able to be used if there are no zones with bombs?");
             }
+            SetMissionSpecificActionsWeightTable();  // TODO test that the last bomb to be primed doesn't leave "Bomb" as a THOUGHT action for next unit due to mistiming
         }
         Destroy(successContainer);
-        SetMissionSpecificActionsWeightTable();  // TODO test that the last bomb to be primed doesn't leave "Bomb" as a THOUGHT action for next unit due to mistiming
         yield return 0;
     }
 
-
-    // The flow: Player uses UI to end turn -> EndHeroTurn() -> StartVillainTurn() -> StartHeroTurn() -> Player takes their next turn
-    public void EndHeroTurn()
+    /* ActionCallbacks specific to "IceToSeeYou" mission */
+    public IEnumerator ActivateCryogenicDevice(GameObject unit, GameObject target, int totalSuccesses, int requiredSuccesses)
     {
-        // Disable all UI so Villain turn isn't interrupted
+        ZoneInfo unitZoneInfo = unit.GetComponent<Unit>().GetZone().GetComponent<ZoneInfo>();
+        // Animate success vs failure UI
+        GameObject successContainer = Instantiate(unitZoneInfo.successVsFailurePrefab, animationContainer.transform);
+        successContainer.transform.position = unit.transform.TransformPoint(new Vector3(0, 12, 0));
+
+        successContainer.GetComponent<RectTransform>().sizeDelta = new Vector2(requiredSuccesses * 10, successContainer.GetComponent<RectTransform>().rect.height);
+        Transform successContainerText = successContainer.transform.GetChild(0);
+        successContainerText.GetComponent<RectTransform>().sizeDelta = new Vector2(requiredSuccesses * 10, successContainerText.GetComponent<RectTransform>().rect.height);
+        string successContainerBlanks = "_";
+        for (int i = 1; i < requiredSuccesses; i++)
+        {
+            successContainerBlanks += " _";
+        }
+        successContainerText.GetComponent<TMP_Text>().text = successContainerBlanks;
+
+        for (int i = -1; i < (totalSuccesses >= 0 ? totalSuccesses : 0); i++)
+        {
+            yield return new WaitForSecondsRealtime(1);
+            if (i == requiredSuccesses - 1)  // Otherwise there can be more results (checks/x's) displayed than requiredSuccesses
+            {
+                break;
+            }
+            GameObject successOrFailurePrefab = i + 1 < totalSuccesses ? unitZoneInfo.successPrefab : unitZoneInfo.failurePrefab;
+            GameObject successOrFailureMarker = Instantiate(successOrFailurePrefab, successContainer.transform);
+        }
+        yield return new WaitForSecondsRealtime(1);
+
+        if (totalSuccesses >= requiredSuccesses)
+        {
+            List<(double, GameObject)> cryoZoneTargets = new List<(double, GameObject)>();
+
+            GameObject hero = GameObject.FindGameObjectWithTag("1stHero");
+            GameObject heroZone = hero.GetComponent<Hero>().GetZone();
+            cryoZoneTargets.Add((30, heroZone));
+            foreach (GameObject bomb in GameObject.FindGameObjectsWithTag("Bomb"))
+            {
+                GameObject bombZone = bomb.transform.parent.parent.gameObject;
+                cryoZoneTargets.Add((15, bombZone));
+                ZoneInfo bombZoneInfo = bombZone.GetComponent<ZoneInfo>();
+                if ((bombZoneInfo.adjacentZones.Count + bombZoneInfo.steeplyAdjacentZones.Count) == 1)  // If only one way in or out (ignoring walls)
+                {
+                    if (bombZoneInfo.adjacentZones.Count == 1)
+                    {
+                        cryoZoneTargets.Add((20, bombZoneInfo.adjacentZones[0]));  // TODO Once hero has broken through any wall, adjust this
+                    }
+                    else
+                    {
+                        cryoZoneTargets.Add((20, bombZoneInfo.steeplyAdjacentZones[0]));
+                    }
+                }
+            }
+            for (int i = 0; i < cryoZoneTargets.Count - 1; i++)  // Subtract friendly fire from each target zone's weight
+            {
+                foreach (Unit inAreaUnit in cryoZoneTargets[i].Item2.GetComponent<ZoneInfo>().GetUnitsInfo())
+                {
+                    if (!inAreaUnit.frosty)
+                    {
+                        //cryoZoneTargets[i].Item1 -= 5;  // Doesn't work because I think .Item1 is a clone of the value ("return value is not a variable")
+                        cryoZoneTargets[i] = (cryoZoneTargets[i].Item1 - 9, cryoZoneTargets[i].Item2);
+                    }
+                }
+            }
+            cryoZoneTargets.Sort((x, y) => y.Item1.CompareTo(x.Item1));  // Sorts by doubles in descending order
+
+            //string cryoDebugString = "";
+            //foreach ((double, GameObject) cryoZoneTarget in cryoZoneTargets)
+            //{
+            //    cryoDebugString += "cryoZoneTarget: " + cryoZoneTarget.Item2.name + " worth " + cryoZoneTarget.Item1 + ",   ";
+            //}
+            //Debug.Log("!!!ActivateCryogenicDevice of ScenarioMap, cryoDebugString: " + cryoDebugString);
+
+            for (int i = 0; i < cryoZoneTargets.Count-1 && i < 2; i++)
+            {
+                GameObject zoneToCryo = cryoZoneTargets[i].Item2;
+                yield return StartCoroutine(animate.MoveObjectOverTime(new List<GameObject>() { mainCamera }, mainCamera.transform.position, zoneToCryo.transform.position));
+                yield return new WaitForSecondsRealtime(1);
+                yield return StartCoroutine(zoneToCryo.GetComponent<ZoneInfo>().AddEnvironTokens(new EnvironTokenSave("Cryogenic", 1, false, true)));
+                yield return new WaitForSecondsRealtime(2);
+            }
+            unitZoneInfo.RemoveComputer();
+            SetMissionSpecificActionsWeightTable();
+        }
+        Destroy(successContainer);
+        yield return 0;
+    }
+
+    public void DisablePlayerUI()
+    {
         foreach (Button button in transform.GetComponentsInChildren<Button>())
         {
             button.enabled = false;
@@ -233,9 +345,21 @@ public class ScenarioMap : MonoBehaviour
         {
             wallRubble.GetComponent<WallRubble>().isClickable = false;
         }
+    }
 
+    public void CameraToFixedZoom()
+    {
         Camera mainCamera = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
         mainCamera.orthographicSize = 2.2f;
+    }
+
+    // The flow: Player uses UI to end turn -> EndHeroTurn() -> StartVillainTurn() -> StartHeroTurn() -> Player takes their next turn
+    public void EndHeroTurn()
+    {
+        // Disable all UI so Villain turn isn't interrupted
+        DisablePlayerUI();
+
+        CameraToFixedZoom();
 
         // Dredge the river, removing any tiles with 0 units on the map
         foreach (string unitTag in new List<string>(villainRiver))
@@ -255,6 +379,8 @@ public class ScenarioMap : MonoBehaviour
 
     IEnumerator StartVillainTurn()
     {
+        DissipateEnvironTokens(false);
+
         // Disable camera controls
         PanAndZoom panAndZoom = this.GetComponent<PanAndZoom>();
         panAndZoom.controlCamera = false;
@@ -291,13 +417,18 @@ public class ScenarioMap : MonoBehaviour
     {
         foreach (GameObject unit in GameObject.FindGameObjectsWithTag(unitTypeToActivate))
         {
-            yield return StartCoroutine(unit.GetComponent<Unit>().ActivateUnit(missionSpecificActionsWeightTable));
+            Unit unitInfo = unit.GetComponent<Unit>();
+            if (unitInfo.IsActive())  // Check if killed (but not yet removed) by previous unit's turn
+            {
+                yield return StartCoroutine(unit.GetComponent<Unit>().ActivateUnit(missionSpecificActionsWeightTable));
+            }
         }
         yield return 0;
     }
 
     IEnumerator StartHeroTurn()
     {
+        DissipateEnvironTokens(true);
         CleanupZones();
         GameObject mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
         mainCamera.transform.position = new Vector3(clockHand.transform.position.x, clockHand.transform.position.y, mainCamera.transform.position.z);
@@ -556,6 +687,18 @@ public class ScenarioMap : MonoBehaviour
         yield return 0;
     }
 
+    void DissipateEnvironTokens(bool isHeroTurn)
+    {
+        string[] dissipatingEnvironTokensTags = new string[] { "Gas", "Flame", "Smoke", "Frost" };
+        foreach (string tokenTag in dissipatingEnvironTokensTags)
+        {
+            foreach (GameObject environToken in GameObject.FindGameObjectsWithTag(tokenTag))
+            {
+                environToken.GetComponent<EnvironToken>().Dissipate(isHeroTurn);
+            }
+        }
+    }
+
     void CleanupZones()
     {
         foreach (GameObject zone in GameObject.FindGameObjectsWithTag("ZoneInfoPanel"))
@@ -598,6 +741,8 @@ public class ScenarioMap : MonoBehaviour
         string scenarioAsJson = JsonUtility.ToJson(scenarioToSave);
 
         //Debug.Log("ScenarioAsJson: " + JsonUtility.ToJson(scenarioToSave, true));  // scenarioAsJson is minimum size, this one is pretty printed.
+        PlayerPrefs.SetInt(missionName, currentRound);  // Update for the mission select screen to know which round to Continue
+        PlayerPrefs.Save();
         string filename = "/" + currentRound.ToString() + missionName + ".json";
         //string filename = "/" + missionName + ".json";  // This file path (without being prepended by round number) is the initial game state for this scenario.
         System.IO.File.WriteAllText(Application.persistentDataPath + filename, scenarioAsJson);
