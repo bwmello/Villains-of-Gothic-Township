@@ -100,17 +100,23 @@ MonoBehaviour:
   wall4AdjacentZones: []
   wall5AdjacentZones: []
   lineOfSightZones: []
+  linesOfSight: []
   computerPrefab: {fileID: 746747094370953665, guid: f6a532de03433460d815715d8bc0241e,
     type: 3}
   bombPrefab: {fileID: 111584049025619987, guid: f778074d6564f48829c2ce3c8ab46511,
     type: 3}
   primedBombPrefab: {fileID: 1237332250277100696, guid: 1ab30b78c61aa4f62985dff6fc3c2f7e,
     type: 3}
+  gasPrefab: {fileID: 0}
+  flamePrefab: {fileID: 0}
+  smokePrefab: {fileID: 0}
   frostPrefab: {fileID: 929136032118409275, guid: 25754255818de4ed486fdda4369696c3,
     type: 3}
   cryogenicPrefab: {fileID: 5311532353715782929, guid: ee84dbf890e6748bf99c9f5607932f2c,
     type: 3}
   woundPrefab: {fileID: 8577637518863107775, guid: a332cd3d704d445d79ed44f08ac3811b,
+    type: 3}
+  terrainDangerIconPrefab: {fileID: 7297476033061010856, guid: f208a5ae63df944acb7d5ebe73ee3d14,
     type: 3}
   successVsFailurePrefab: {fileID: 5210211658972486827, guid: e9b633e10e4434545851d94e9604e0f6,
     type: 3}

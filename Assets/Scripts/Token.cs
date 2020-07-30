@@ -13,15 +13,8 @@ public class Token : MonoBehaviour  // Should be called ObjectiveToken as there 
 
     public void TokenButtonClicked(Button button)
     {
-        CanvasGroup buttonCanvas = button.GetComponent<CanvasGroup>();
-        if (buttonCanvas.alpha == 1)  // Token was disabled, so remove from board
-        {
-            buttonCanvas.alpha = (float).2;
-        }
-        else  // Mistake was made in removing token, so add token back to the board
-        {
-            buttonCanvas.alpha = (float)1;
-        }
+        MissionSpecifics.ObjectiveTokenClicked(button);
+        // Can't call MissionSpecifics function directly from token button prefab as doesn't list any of MissionSpecifics functions (probably because not MonoBehavior)
     }
 
     public bool IsActive()
@@ -32,5 +25,10 @@ public class Token : MonoBehaviour  // Should be called ObjectiveToken as there 
             return true;
         }
         return false;
+    }
+
+    public GameObject GetZone()
+    {
+        return transform.parent.parent.gameObject;  // Grabs ZoneInfoPanel instead of TokensRow. If changes in future, only need to change this function.
     }
 }

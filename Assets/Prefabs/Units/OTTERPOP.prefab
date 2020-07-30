@@ -184,6 +184,16 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 6986820248315063782, guid: 4dc2d4f55e50a4f4d81d2441f0e49647,
         type: 3}
+    - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
+        type: 3}
+      propertyPath: grenade
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
+        type: 3}
+      propertyPath: frosty
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3301613231005200024, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
         type: 3}
       propertyPath: m_SizeDelta.x

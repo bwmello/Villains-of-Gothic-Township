@@ -39,10 +39,12 @@ public class ScenarioMap : MonoBehaviour
     public int currentRound = 1;  // Used by ScenarioMapSave at bottom
     public int reinforcementPoints = 5;
     public int totalHeroes;
-
+    
     private GameObject mainCamera;
     private GameObject animationContainer;
     private Animate animate;
+    public GameObject bombPrefab;  // These prefabs are here just to pass off to static MissionSpecifics
+    public GameObject primedBombPrefab;
 
     public delegate IEnumerator ActionCallback(GameObject unit, GameObject target, int totalSuccesses, int requiredSuccesses);
     public Dictionary<string, List<(string, int, double, ActionCallback)>> missionSpecificActionsWeightTable = new Dictionary<string, List<(string, int, double, ActionCallback)>>() {
@@ -53,6 +55,8 @@ public class ScenarioMap : MonoBehaviour
 
     void Awake()
     {
+        MissionSpecifics.bombPrefab = bombPrefab;
+        MissionSpecifics.primedBombPrefab = primedBombPrefab;
         unitPrefabsMasterDict = new Dictionary<string, GameObject>();
         foreach (GameObject unitPrefab in unitPrefabsMasterList)
         {
@@ -125,10 +129,12 @@ public class ScenarioMap : MonoBehaviour
                 totalBombs = GameObject.FindGameObjectsWithTag("Bomb").Length;
                 totalComputers = GameObject.FindGameObjectsWithTag("Computer").Length;
 
+                missionSpecificActionsWeightTable["MANIPULATION"] = new List<(string, int, double, ActionCallback)>() { ("Grenade", 0, 20, null) };  // 20 * averageAutoWounds
+
                 missionSpecificActionsWeightTable["THOUGHT"] = new List<(string, int, double, ActionCallback)>();
                 if (totalComputers > 0)
                 {
-                    missionSpecificActionsWeightTable["THOUGHT"].Add(("Computer", 1, 20, ActivateCryogenicDevice));  // Assume you cost the hero at least 1 movepoint and auto deal 2/3 of a wound per cryogenic token, 0 weight if would hit anyone except frosty
+                    missionSpecificActionsWeightTable["THOUGHT"].Add(("Computer", 3, 20, ActivateCryogenicDevice));  // Assume you cost the hero at least 1 movepoint and auto deal 2/3 of a wound per cryogenic token, 0 weight if would hit anyone except frosty
                 }
 
                 missionSpecificActionsWeightTable["GUARD"] = new List<(string, int, double, ActionCallback)>();
@@ -643,7 +649,9 @@ public class ScenarioMap : MonoBehaviour
                         GameObject superbarnPrefab = unitPrefabsMasterDict["SUPERBARN"];
                         if (superbarnPrefab != null)
                         {
-                            Instantiate(superbarnPrefab, barn.transform.parent);
+                            Unit barnInfo = barn.GetComponent<Unit>();
+                            Unit superBarnInfo = Instantiate(superbarnPrefab, barn.transform.parent).GetComponent<Unit>();
+                            superBarnInfo.GetComponent<Unit>().ModifyLifePoints(barnInfo.lifePoints - barnInfo.lifePointsMax);  // Do not reset SuperBarn's life points to 6 if Barn was damaged.
                             DestroyImmediate(barn);
                             int barnRiverIndex = villainRiver.IndexOf("BARN");
                             villainRiver[barnRiverIndex] = "SUPERBARN";

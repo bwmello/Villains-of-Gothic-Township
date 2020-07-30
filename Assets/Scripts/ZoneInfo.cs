@@ -17,6 +17,7 @@ public class ZoneInfo : MonoBehaviour
     public List<GameObject> wall4AdjacentZones;
     public List<GameObject> wall5AdjacentZones;
     public List<GameObject> lineOfSightZones;
+    public List<LineOfSight> linesOfSight;
 
     public GameObject computerPrefab;
     public GameObject bombPrefab;
@@ -27,6 +28,7 @@ public class ZoneInfo : MonoBehaviour
     public GameObject frostPrefab;
     public GameObject cryogenicPrefab;
     public GameObject woundPrefab;
+    public GameObject terrainDangerIconPrefab;
     public GameObject successVsFailurePrefab;
     public GameObject successPrefab;
     public GameObject failurePrefab;
@@ -56,6 +58,12 @@ public class ZoneInfo : MonoBehaviour
         }
     }
 
+    [Serializable]
+    public struct LineOfSight
+    {
+        public List<GameObject> sightLine;
+    }
+
     public int GetZoneID()
     {
         try
@@ -71,11 +79,13 @@ public class ZoneInfo : MonoBehaviour
 
     public Unit[] GetUnitsInfo()
     {
+        // TODO Don't include faded/inactive/dead units (that way more likely to grenade zone with already dead unit in it)
         return transform.GetComponentsInChildren<Unit>();
     }
 
     public List<GameObject> GetUnits()
     {
+        // TODO Don't include faded/inactive/dead units
         List<GameObject> units = new List<GameObject>();
         foreach (Unit unit in GetUnitsInfo())
         {
@@ -113,6 +123,18 @@ public class ZoneInfo : MonoBehaviour
             currentHindrance = 0;
         }
         return currentHindrance;
+    }
+
+    public List<GameObject> GetLineOfSightWithZone(GameObject targetZone)
+    {
+        foreach (LineOfSight los in linesOfSight)
+        {
+            if (los.sightLine.Contains(targetZone))
+            {
+                return los.sightLine;
+            }
+        }
+        return null;
     }
 
     // TODO Replace this because it's dumb
@@ -336,7 +358,40 @@ public class ZoneInfo : MonoBehaviour
         return terrainDangerTotal;
     }
 
-
+    private readonly Vector3[] terrainDangerIconPlacement = new[] { new Vector3(-20f, 15f, 0), new Vector3(20f, 15f, 0), new Vector3(-20f, 0f, 0), new Vector3(20f, 0f, 0) };
+    public IEnumerator IncreaseTerrainDangerTemporarily(int dangerIncrease, List<Unit> affectedUnits = null)
+    {
+        if (affectedUnits == null)
+        {
+            affectedUnits = new List<Unit>(GetUnitsInfo());
+        }
+        foreach (Unit affectedUnit in affectedUnits)
+        {
+            int automaticWounds = 0;
+            Dice damageDie = environmentalDie.GetComponent<Dice>();
+            for (int i = 0; i < dangerIncrease; i++)
+            {
+                automaticWounds += damageDie.Roll();
+            }
+            affectedUnit.ModifyLifePoints(-automaticWounds);
+        }
+        if (HasHeroes())  // Gives heroes chance to roll damage on themselves (as they can use their rerolls)
+        {
+            List<GameObject> terrainDangerIcons = new List<GameObject>();
+            for (int i = 0; i < dangerIncrease; i++)
+            {
+                terrainDangerIcons.Add(Instantiate(terrainDangerIconPrefab, transform));
+                terrainDangerIcons[i].transform.localPosition = terrainDangerIconPlacement[i];
+            }
+            GameObject animationContainer = GameObject.FindGameObjectWithTag("AnimationContainer");
+            yield return StartCoroutine(PauseUntilPlayerPushesContinue(animationContainer));
+            for (int i = terrainDangerIcons.Count - 1; i >= 0; i--)
+            {
+                Destroy(terrainDangerIcons[i]);
+            }
+        }
+        yield return null;
+    }
 
     public IEnumerator AddEnvironTokens(EnvironTokenSave newEnvironToken)
     {
@@ -355,52 +410,38 @@ public class ZoneInfo : MonoBehaviour
                 }
             }
         }
-        bool terrainDangerIncreased = false;
+        List<Unit> affectedUnits = new List<Unit>();  // Used for Gas, Flame, and Cryogenic tokens to call IncreaseTerrainDangerTemporarily() with list of who should be affected
         switch (newEnvironToken.tag)
         {
             case "Gas":
-                terrainDangerIncreased = true;
                 if (newTokenRequired)
                 {
                     Instantiate(gasPrefab, tokensRow).GetComponent<EnvironToken>().LoadEnvironTokenSave(newEnvironToken);
                     ReorganizeTokens();
                 }
-                foreach (Unit affectedUnit in GetUnitsInfo())
+                foreach (Unit unitInZone in GetUnitsInfo())
                 {
-                    if (!affectedUnit.gasImmunity)
+                    if (!unitInZone.gasImmunity)
                     {
-                        int automaticWounds = 0;
-                        Dice damageDie = environmentalDie.GetComponent<Dice>();
-                        for (int i = 0; i < newEnvironToken.quantity; i++)
-                        {
-                            automaticWounds += damageDie.Roll();
-                        }
-                        affectedUnit.ModifyLifePoints(automaticWounds);
+                        affectedUnits.Add(unitInZone);
                     }
                 }
-                // TODO give heroes chance to roll damage on themselves (as they can use their rerolls)
+                yield return StartCoroutine(IncreaseTerrainDangerTemporarily(1, affectedUnits));
                 break;
             case "Flame":
-                terrainDangerIncreased = true;
                 if (newTokenRequired)
                 {
                     Instantiate(flamePrefab, tokensRow).GetComponent<EnvironToken>().LoadEnvironTokenSave(newEnvironToken);
                     ReorganizeTokens();
                 }
-                foreach (Unit affectedUnit in GetUnitsInfo())
+                foreach (Unit unitInZone in GetUnitsInfo())
                 {
-                    if (!affectedUnit.fiery)
+                    if (!unitInZone.fiery)
                     {
-                        int automaticWounds = 0;
-                        Dice damageDie = environmentalDie.GetComponent<Dice>();
-                        for (int i = 0; i < newEnvironToken.quantity; i++)
-                        {
-                            automaticWounds += damageDie.Roll();
-                        }
-                        affectedUnit.ModifyLifePoints(automaticWounds);
+                        affectedUnits.Add(unitInZone);
                     }
                 }
-                // TODO give heroes chance to roll damage on themselves (as they can use their rerolls)
+                yield return StartCoroutine(IncreaseTerrainDangerTemporarily(1, affectedUnits));
                 break;
             case "Smoke":
                 if (newTokenRequired)
@@ -417,37 +458,23 @@ public class ZoneInfo : MonoBehaviour
                 }
                 break;
             case "Cryogenic":
-                terrainDangerIncreased = true;
                 if (newTokenRequired)
                 {
                     Instantiate(cryogenicPrefab, tokensRow).GetComponent<EnvironToken>().LoadEnvironTokenSave(newEnvironToken);
                     ReorganizeTokens();
                 }
-                foreach (Unit affectedUnit in GetUnitsInfo())
+                foreach (Unit unitInZone in GetUnitsInfo())
                 {
-                    if (!affectedUnit.frosty)
+                    if (!unitInZone.frosty)
                     {
-                        int automaticWounds = 0;
-                        Dice damageDie = environmentalDie.GetComponent<Dice>();
-                        for (int i = 0; i < newEnvironToken.quantity; i++)
-                        {
-                            automaticWounds += damageDie.Roll();
-                        }
-                        Debug.Log("!!!ZoneInfo.AddEnvironToken(Cryogenic), unit " + affectedUnit.name + "   wounds " + automaticWounds.ToString());
-                        affectedUnit.ModifyLifePoints(-automaticWounds);
+                        affectedUnits.Add(unitInZone);
                     }
                 }
-                // TODO give heroes chance to roll damage on themselves (as they can use their rerolls)
+                yield return StartCoroutine(IncreaseTerrainDangerTemporarily(1, affectedUnits));
                 break;
             default:
                 Debug.LogError("ERROR! In ZoneInfo.LoadZoneSave(), unable to identify EnvironToken " + newEnvironToken.tag + " for " + transform.name);
                 break;
-        }
-
-        if (terrainDangerIncreased && HasHeroes())  // Gives heroes chance to roll damage on themselves (as they can use their rerolls)
-        {
-            GameObject animationContainer = GameObject.FindGameObjectWithTag("AnimationContainer");
-            yield return StartCoroutine(PauseUntilPlayerPushesContinue(animationContainer));
         }
         yield return 0;
     }

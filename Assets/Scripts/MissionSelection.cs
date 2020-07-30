@@ -20,6 +20,7 @@ public class MissionSelection : MonoBehaviour
 
     public void NewGame()
     {
+        MissionSpecifics.missionName = missionName;
         SceneHandler.saveName = missionName + ".json";
         SceneManager.LoadScene(mapName);
     }
@@ -28,6 +29,7 @@ public class MissionSelection : MonoBehaviour
     {
         if (PlayerPrefs.HasKey(missionName))
         {
+            MissionSpecifics.missionName = missionName;
             SceneHandler.saveName = PlayerPrefs.GetInt(missionName).ToString() + missionName + ".json";
             SceneManager.LoadScene(mapName);
         }

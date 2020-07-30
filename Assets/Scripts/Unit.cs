@@ -43,8 +43,8 @@ public class Unit : MonoBehaviour
     public bool fiery = false;  // Firefly's ability to place flame tokens after attack/explosion and be immune to flame tokens
 
     // Actions
-    // TODO TODO public int blast = 0;  // Blast (Mr. Freeze) auto manipulation to trigger this level of explosion in unit's area and adjacent area with LoS
-    // TODO TODO public int grenade = 0;  // Grenade (Mr. Freeze) Complex manipulation to trigger this level of explosion in targeted area with LoS w/ difficulty = distance, failure has explosion triggered at distance equal to number of successes
+    public int grenade = 0;  // Grenade (Mr. Freeze) Complex manipulation to trigger this level of explosion in targeted area with LoS w/ difficulty = distance, failure has explosion triggered at distance equal to number of successes
+    // TODO public int blast = 0;  // Blast (Mr. Freeze) auto manipulation to trigger this level of explosion in unit's area and adjacent area with LoS
     // TODO public int moveCommand = 0;  // Tactician (Two-Face) auto thought to immediately grant this many free move points to an ally (unit can only receive this once per turn in case multiple units have moveCommand > 0). If ally is character, they also get their Move Point Bonus for the First Movement (but not again if activated later in the turn, I assume)
 
     // Remainder TODO Harmless, Reduced Mobility, Attraction, Shackle, Hacking, Gas Immunity, Misfortune, Horror, Regeneration, Fly, Impenetrable Defense, Untouchable, Burst, Luck, Flame, Toxic Gas, Poison, Body Guard, Investigation, Sneak Attack, Imaginary Friend
@@ -101,7 +101,7 @@ public class Unit : MonoBehaviour
                 chosenAction.pathTaken.zones.Add(chosenAction.destinationZone);  // Otherwise token is never animated moving the last zone to the destination
                 yield return StartCoroutine(MoveToken(chosenAction.pathTaken));
             }
-            yield return StartCoroutine(PerformAction(chosenAction, actionsWeightTable));
+            yield return StartCoroutine(PerformAction(chosenAction));
         }
         else
         {
@@ -435,10 +435,41 @@ public class Unit : MonoBehaviour
                     case "MANIPULATION":
                         if (actionsWeightTable.ContainsKey("MANIPULATION"))
                         {
-
                             foreach ((string, int, double, ScenarioMap.ActionCallback) manipulatable in actionsWeightTable["MANIPULATION"])
                             {
-                                if (destination.HasObjectiveToken(manipulatable.Item1))
+                                if (manipulatable.Item1 == "Grenade")
+                                {
+                                    if (grenade > 0)
+                                    {
+                                        GameObject grenadeTargetZone = destination.GetLineOfSightZoneWithHero();  // TODO expand to return a list so can target closest hero
+                                        if (grenadeTargetZone != null && grenadeTargetZone != destinationZone)  // Don't grenade your own zone
+                                        {
+                                            List<GameObject> dicePool = new List<GameObject>(actionProficiency.proficiencyDice);
+                                            for (int i = 0; i < grenade; i++)
+                                            {
+                                                dicePool.Add(destination.environmentalDie);
+                                            }
+                                            double averageAutoWounds = GetAverageSuccesses(dicePool, availableRerolls) - destinationHindrance;
+                                            List<GameObject> lineOfSight = new List<GameObject>() { GetZone() };
+                                            lineOfSight.AddRange(destination.GetLineOfSightWithZone(grenadeTargetZone));
+                                            if (lineOfSight == null)
+                                            {
+                                                Debug.LogError("ERROR! Unit " + gameObject.name + " in " + destination.gameObject.name + " isn't able to GetLineOfSightWithZone with " + grenadeTargetZone.name);
+                                            }
+                                            int requiredSuccesses = lineOfSight.IndexOf(grenadeTargetZone);
+                                            double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
+                                            actionWeight += averageAutoWounds * manipulatable.Item3 * chanceOfSuccess;
+                                            //Debug.Log("!!!Weighing grenade throw, actionWeight " + actionWeight.ToString() + " += " + averageAutoWounds.ToString() + " * " + manipulatable.Item3.ToString() + " * " + chanceOfSuccess.ToString());
+                                            actionWeight -= grenadeTargetZone.GetComponent<ZoneInfo>().GetUnitsInfo().Length * grenade * 6.6666666666;  // Chance of unit dying is 2/3 per grenade/terrainDanger die
+                                            if (possibleDestinationsAndPaths[destinationZone].terrainDanger > 0)
+                                            {
+                                                actionWeight /= (2 * possibleDestinationsAndPaths[destinationZone].terrainDanger);
+                                            }
+                                            allPossibleActions.Add(new UnitPossibleAction(this, manipulatable, actionProficiency, actionWeight, destination.gameObject, grenadeTargetZone, possibleDestinationsAndPaths[destinationZone]));
+                                        }
+                                    }
+                                }
+                                else if (destination.HasObjectiveToken(manipulatable.Item1))
                                 {
                                     int requiredSuccesses = manipulatable.Item2 + destinationHindrance - (manipulatable.Item1 == "Bomb" ? munitionSpecialist : 0);
                                     double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
@@ -589,7 +620,7 @@ public class Unit : MonoBehaviour
         yield return 0;
     }
 
-    private readonly Vector2[] woundPlacement = new[] { new Vector2(7f, 6f), new Vector2(7f, 0f), new Vector2(7f, -6f), new Vector2(-7f, 6f), new Vector2(-7f, 0f), new Vector2(-7f, -6f), new Vector2(-2.5f, 7f), new Vector2(2.5f, 7f), new Vector2(-2.5f, -7f), new Vector2(2.5f, -7f) };
+    private readonly Vector2[] woundPlacement = new[] { new Vector2(-9f, 8f), new Vector2(9f, 8f), new Vector2(-9f, -8f), new Vector2(9f, -8f), new Vector2(-9f, 0f), new Vector2(9f, 0f), new Vector2(-3f, 8f), new Vector2(3f, -8f), new Vector2(3f, 8f), new Vector2(-3f, -8f) };
     public IEnumerator AnimateWounds(ZoneInfo targetedZoneInfo, int woundsTotal)
     {
         GameObject targetedHero = targetedZoneInfo.GetRandomHero();
@@ -603,7 +634,7 @@ public class Unit : MonoBehaviour
             {
                 if (i == (woundsTotal - 1) / 2)  // If halfway or less through woundsTotal
                 {
-                    StartCoroutine(MoveObjectOverTime(new List<GameObject>() { mainCamera }, mainCamera.transform.position, targetedHero.transform.position));  // If only one wound, AnimateWounds() will return before camera finished panning
+                    StartCoroutine(MoveObjectOverTime(new List<GameObject>() { mainCamera }, mainCamera.transform.position, targetedHero.transform.position));  // If only one wound, AnimateWounds() will return before camera finished panning  // TODO does this need yield return?
                 }
                 GameObject wound = Instantiate(targetedZoneInfo.woundPrefab, transform);
                 Vector3 newDestination = targetedHero.transform.TransformPoint(woundPlacement[i].x, woundPlacement[i].y, 0);
@@ -658,7 +689,7 @@ public class Unit : MonoBehaviour
         yield return 0;
     }
 
-    IEnumerator PerformAction(UnitPossibleAction unitTurn, Dictionary<string, List<(string, int, double, ScenarioMap.ActionCallback)>> actionsWeightTable)
+    IEnumerator PerformAction(UnitPossibleAction unitTurn)
     {
         int actionSuccesses = 0;
         int requiredSuccesses;
@@ -670,6 +701,7 @@ public class Unit : MonoBehaviour
         GameObject mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
         mainCamera.transform.position = new Vector3(transform.position.x, transform.position.y, mainCamera.transform.position.z);
         GameObject animationContainer = GameObject.FindGameObjectWithTag("AnimationContainer");
+        Animate animate = animationContainer.GetComponent<Animate>();
 
         switch (unitTurn.actionProficiency.actionType)
         {
@@ -684,11 +716,11 @@ public class Unit : MonoBehaviour
                     }
                     if (fiery)
                     {
-                        currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Flame", 1, false, true));
+                        yield return StartCoroutine(currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Flame", 1, false, true)));
                     }
                     if (frosty)
                     {
-                        currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true));
+                        yield return StartCoroutine(currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true)));
                     }
                 }
                 break;
@@ -721,13 +753,13 @@ public class Unit : MonoBehaviour
                             yield return StartCoroutine(AnimateWounds(targetedLineOfSightZoneInfo, actionSuccesses));
                         }
                     }
-                    if (fiery)
+                    if (fiery)  // Not sure these ever get triggered as the villains with these traits don't have a ranged attack, but the Frost/Fire text: During an attack or after an explosion...
                     {
-                        targetedLineOfSightZoneInfo.AddEnvironTokens(new EnvironTokenSave("Flame", 1, false, true));
+                        yield return StartCoroutine(targetedLineOfSightZoneInfo.AddEnvironTokens(new EnvironTokenSave("Flame", 1, false, true)));
                     }
                     if (frosty)
                     {
-                        targetedLineOfSightZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true));
+                        yield return StartCoroutine(targetedLineOfSightZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true)));
                     }
                 }
                 else
@@ -736,9 +768,35 @@ public class Unit : MonoBehaviour
                 }
                 break;
             case "MANIPULATION":
-                requiredSuccesses = unitTurn.missionSpecificAction.Item2 + currentZoneHindrance - (unitTurn.missionSpecificAction.Item1 == "Bomb" ? munitionSpecialist : 0);
-                actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls, requiredSuccesses);
-                yield return StartCoroutine(unitTurn.missionSpecificAction.Item4(gameObject, null, actionSuccesses, requiredSuccesses));
+                if (unitTurn.missionSpecificAction.Item1 == "Grenade")
+                {
+                    if (grenade > 0)
+                    {
+                        List<GameObject> lineOfSight = new List<GameObject>() { GetZone() };
+                        lineOfSight.AddRange(currentZoneInfo.GetLineOfSightWithZone(unitTurn.targetedZone));
+                        requiredSuccesses = lineOfSight.IndexOf(unitTurn.targetedZone);
+                        actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls, requiredSuccesses);
+                        GameObject targetedZone;
+                        if (actionSuccesses >= requiredSuccesses)
+                        {
+                            targetedZone = unitTurn.targetedZone;
+                        }
+                        else
+                        {
+                            targetedZone = lineOfSight[actionSuccesses];
+                        }
+                        ZoneInfo targetedZoneInfo = targetedZone.GetComponent<ZoneInfo>();
+                        yield return StartCoroutine(animate.ThrowGrenade(transform.position, targetedZone.transform.position));
+                        yield return StartCoroutine(targetedZoneInfo.IncreaseTerrainDangerTemporarily(grenade));
+                        yield return StartCoroutine(targetedZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true)));
+                    }
+                }
+                else
+                {
+                    requiredSuccesses = unitTurn.missionSpecificAction.Item2 + currentZoneHindrance - (unitTurn.missionSpecificAction.Item1 == "Bomb" ? munitionSpecialist : 0);
+                    actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls, requiredSuccesses);
+                    yield return StartCoroutine(unitTurn.missionSpecificAction.Item4(gameObject, null, actionSuccesses, requiredSuccesses));
+                }
                 break;
             case "THOUGHT":
                 requiredSuccesses = unitTurn.missionSpecificAction.Item2;
@@ -828,7 +886,6 @@ public class Unit : MonoBehaviour
 
     private int RollAndReroll(List<GameObject> dicePool, int rerolls)
     {
-        rerolls = 1;
         int rolledSuccesses = 0;
         List<ActionResult> currentActionResults = new List<ActionResult>();
         string debugString = "RollAndReroll for unit " + gameObject.name + ". ";
