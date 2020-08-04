@@ -8,6 +8,6 @@ public class Clock : MonoBehaviour
 
     void OnMouseDown()  // Necessary to determine when polygon collider is clicked and not the image itself.
     {
-        scenarioMap.GetComponent<ScenarioMap>().GoBackATurn();
+        scenarioMap.GetComponent<ScenarioMap>().EndHeroTurn();
     }
 }

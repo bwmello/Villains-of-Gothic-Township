@@ -18,7 +18,7 @@ public static class MissionSpecifics
                 case "IceToSeeYou":
                     GameObject tokenZone = button.gameObject.GetComponent<Token>().GetZone();
                     GameObject.DestroyImmediate(button.gameObject);
-                    GameObject.Instantiate(primedBombPrefab, tokenZone.transform);
+                    GameObject.Instantiate(primedBombPrefab, tokenZone.transform.Find("TokensRow"));
                     tokenZone.GetComponent<ZoneInfo>().ReorganizeTokens();
                     return;
                 default:
@@ -32,7 +32,7 @@ public static class MissionSpecifics
                 case "IceToSeeYou":
                     GameObject tokenZone = button.gameObject.GetComponent<Token>().GetZone();
                     GameObject.DestroyImmediate(button.gameObject);
-                    GameObject.Instantiate(bombPrefab, tokenZone.transform);
+                    GameObject.Instantiate(bombPrefab, tokenZone.transform.Find("TokensRow"));
                     tokenZone.GetComponent<ZoneInfo>().ReorganizeTokens();
                     return;
                 default:
@@ -48,5 +48,70 @@ public static class MissionSpecifics
         {
             buttonCanvas.alpha = (float)1;
         }
+    }
+
+    public static int GetTotalActiveTokens(List<string> tokenTags)
+    {
+        int totalActiveTokens = 0;
+        foreach (string tokenTag in tokenTags)
+        {
+            GameObject[] activeAndInactiveTokens = GameObject.FindGameObjectsWithTag(tokenTag);
+            foreach (GameObject maybeActiveToken in activeAndInactiveTokens)
+            {
+                if (maybeActiveToken.GetComponent<Token>().IsActive())
+                {
+                    totalActiveTokens++;
+                }
+            }
+        }
+        return totalActiveTokens;
+    }
+
+    public static bool IsGameOver(int currentRound)
+    {
+        switch (missionName)
+        {
+            case "ASinkingFeeling":
+                int totalBombsRemaining = GetTotalActiveTokens(new List<string>() { "Bomb", "PrimedBomb" });
+                if (currentRound >= 7 || totalBombsRemaining < 2)  // end of hero turn 7 or 4 of 5 bombs are neutralized
+                {
+                    return true;
+                }
+                break;
+            case "IceToSeeYou":
+                int totalPrimedBombs = GetTotalActiveTokens(new List<string>() { "PrimedBomb" });
+                if (currentRound >= 8 || totalPrimedBombs >= 3)  // end of hero turn 8 or 3 bombs are primed
+                {
+                    return true;
+                }
+                break;
+            default:
+                break;
+        }
+        return false;
+    }
+
+    public static bool IsHeroVictory()
+    {
+        switch (missionName)
+        {
+            case "ASinkingFeeling":
+                int totalPrimedBombsRemaining = GameObject.FindGameObjectsWithTag("PrimedBomb").Length;
+                if (totalPrimedBombsRemaining < 2)
+                {
+                    return true;
+                }
+                break;
+            case "IceToSeeYou":
+                int totalPrimedBombs = GameObject.FindGameObjectsWithTag("PrimedBomb").Length;
+                if (totalPrimedBombs >= 3)
+                {
+                    return true;
+                }
+                break;
+            default:
+                break;
+        }
+        return false;
     }
 }

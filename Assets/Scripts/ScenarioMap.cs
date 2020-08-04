@@ -13,7 +13,9 @@ public class ScenarioMap : MonoBehaviour
     readonly System.Random random = new System.Random();
 
     [SerializeField]
+    GameObject roundClock;
     GameObject clockHand;
+    GameObject clockTurnBack;
     [SerializeField]
     List<GameObject> unitPrefabsMasterList;
     private List<GameObject> spawnZones = new List<GameObject>();
@@ -57,6 +59,8 @@ public class ScenarioMap : MonoBehaviour
     {
         MissionSpecifics.bombPrefab = bombPrefab;
         MissionSpecifics.primedBombPrefab = primedBombPrefab;
+        clockHand = roundClock.transform.Find("ClockHand").gameObject;
+        clockTurnBack = roundClock.transform.Find("TurnBackButton").gameObject;
         unitPrefabsMasterDict = new Dictionary<string, GameObject>();
         foreach (GameObject unitPrefab in unitPrefabsMasterList)
         {
@@ -75,8 +79,6 @@ public class ScenarioMap : MonoBehaviour
         animate = animationContainer.GetComponent<Animate>();
         //SaveIntoJson();  // Used along with SaveIntoJson commented out file path for setting initial game state save json (loaded in Awake())
         SetMissionSpecificActionsWeightTable();  // May also work if instead put in Awake()
-        float startingClockHandAngle = -(currentRound * 30) + 2;
-        clockHand.transform.eulerAngles = new Vector3(0, 0, startingClockHandAngle);
 
         if (currentRound < 1)  // Start with villain's turn
         {
@@ -95,9 +97,9 @@ public class ScenarioMap : MonoBehaviour
         switch (missionName)  // Each nonconstant key (ex: "THOUGHT") should be wiped each time and only added back in if conditions are still met
         {
             case "ASinkingFeeling":
-                totalBombs = GameObject.FindGameObjectsWithTag("Bomb").Length;
-                totalPrimedBombs = GameObject.FindGameObjectsWithTag("PrimedBomb").Length;
-                totalComputers = GameObject.FindGameObjectsWithTag("Computer").Length;
+                totalBombs = MissionSpecifics.GetTotalActiveTokens(new List<string>() { "Bomb" });
+                totalPrimedBombs = MissionSpecifics.GetTotalActiveTokens(new List<string>() { "PrimedBomb" });
+                totalComputers = MissionSpecifics.GetTotalActiveTokens(new List<string>() { "Computer" });
 
                 missionSpecificActionsWeightTable["MANIPULATION"] = new List<(string, int, double, ActionCallback)>();
                 if (totalBombs > 0)
@@ -126,8 +128,8 @@ public class ScenarioMap : MonoBehaviour
                 }
                 break;
             case "IceToSeeYou":
-                totalBombs = GameObject.FindGameObjectsWithTag("Bomb").Length;
-                totalComputers = GameObject.FindGameObjectsWithTag("Computer").Length;
+                totalBombs = MissionSpecifics.GetTotalActiveTokens(new List<string>() { "Bomb" });
+                totalComputers = MissionSpecifics.GetTotalActiveTokens(new List<string>() { "Computer" });
 
                 missionSpecificActionsWeightTable["MANIPULATION"] = new List<(string, int, double, ActionCallback)>() { ("Grenade", 0, 20, null) };  // 20 * averageAutoWounds
 
@@ -362,40 +364,51 @@ public class ScenarioMap : MonoBehaviour
     // The flow: Player uses UI to end turn -> EndHeroTurn() -> StartVillainTurn() -> StartHeroTurn() -> Player takes their next turn
     public void EndHeroTurn()
     {
-        // Disable all UI so Villain turn isn't interrupted
-        DisablePlayerUI();
-
-        CameraToFixedZoom();
-
-        // Dredge the river, removing any tiles with 0 units on the map
-        foreach (string unitTag in new List<string>(villainRiver))
+        if (MissionSpecifics.IsGameOver(currentRound))
         {
-            if (unitTag != "REINFORCEMENT" && GameObject.FindGameObjectsWithTag(unitTag).Length == 0)
-            {
-                Debug.Log("EndHeroTurn() DREDGING " + unitTag);
-                villainRiver.Remove(unitTag);
-            }
+            animate.ShowGameOver();
         }
+        else
+        {
+            DisablePlayerUI();  // Disable all UI so Villain turn isn't interrupted
+            CameraToFixedZoom();
 
-        SaveIntoJson();  // Do this before CleanupZones() in case player wants to go back to just before they ended their turn.
-        CleanupZones();
-        SetMissionSpecificActionsWeightTable();
-        StartCoroutine(StartVillainTurn());
+            // Dredge the river, removing any tiles with 0 units on the map
+            foreach (string unitTag in new List<string>(villainRiver))
+            {
+                if (unitTag != "REINFORCEMENT" && GameObject.FindGameObjectsWithTag(unitTag).Length == 0)
+                {
+                    Debug.Log("EndHeroTurn() DREDGING " + unitTag);
+                    villainRiver.Remove(unitTag);
+                }
+            }
+
+            SaveIntoJson();  // Do this before CleanupZones() in case player wants to go back to just before they ended their turn.
+            CleanupZones();
+            SetMissionSpecificActionsWeightTable();
+            StartCoroutine(StartVillainTurn());
+        }
     }
 
     IEnumerator StartVillainTurn()
     {
         DissipateEnvironTokens(false);
-
-        // Disable camera controls
-        PanAndZoom panAndZoom = this.GetComponent<PanAndZoom>();
-        panAndZoom.controlCamera = false;
-
         yield return StartCoroutine(ActivateRiverTiles());
-        yield return StartCoroutine(StartHeroTurn());
 
-        // Reactivate camera controls
-        panAndZoom.controlCamera = true;
+        if (MissionSpecifics.IsGameOver(currentRound))
+        {
+            animate.ShowGameOver();
+        }
+        else
+        {
+            // Disable camera controls
+            PanAndZoom panAndZoom = this.GetComponent<PanAndZoom>();
+            panAndZoom.controlCamera = false;
+            yield return StartCoroutine(StartHeroTurn());
+
+            // Reactivate camera controls
+            panAndZoom.controlCamera = true;
+        }
         yield return 0;
     }
 
@@ -442,6 +455,14 @@ public class ScenarioMap : MonoBehaviour
         currentRound += 1;
         float newClockHandAngle = -(currentRound * 30) + 2;
         yield return StartCoroutine(TurnClockHand(currentClockHandAngle, newClockHandAngle));
+        if (currentRound > 1)
+        {
+            SaveIntoJson();
+            if (!clockTurnBack.activeSelf)
+            {
+                clockTurnBack.SetActive(true);
+            }
+        }
 
         // Re-Enable all the UI buttons which were disabled at EndHeroTurn()
         foreach (Button button in transform.GetComponentsInChildren<Button>())
@@ -763,7 +784,16 @@ public class ScenarioMap : MonoBehaviour
         reinforcementPoints = scenarioSave.reinforcementPoints;
         totalHeroes = scenarioSave.totalHeroes;
         float startingClockHandAngle = -(currentRound * 30) + 2;
-        clockHand.transform.eulerAngles = new Vector3(0, 0, startingClockHandAngle);  // Fix clockhand without animation. Not sure if this is needed though.
+        clockHand.transform.eulerAngles = new Vector3(0, 0, startingClockHandAngle);
+        if (!clockTurnBack.activeSelf && currentRound > 1)
+        {
+            clockTurnBack.SetActive(true);
+        }
+        else if (clockTurnBack.activeSelf && currentRound <= 1)
+        {
+            clockTurnBack.SetActive(false);
+        }
+
         villainRiver = new List<string>(scenarioSave.villainRiver);
         unitTagsMasterList = new List<string>(scenarioSave.unitTagsMasterList);
 

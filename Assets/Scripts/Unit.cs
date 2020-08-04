@@ -826,61 +826,113 @@ public class Unit : MonoBehaviour
         }
     }
 
-    private int RollAndReroll(List<GameObject> dicePool, int rerolls, int requiredSuccesses) // TODO still need to fix this like improvements to other RollAndReroll (rerollable dice can be rerolled across their color, multiple dice can be rerolled)
+    private int RollAndReroll(List<GameObject> dicePool, int rerolls, int requiredSuccesses)
     {
         int rolledSuccesses = 0;
         List<ActionResult> currentActionResults = new List<ActionResult>();
+        string debugString = "RollAndReroll for unit " + gameObject.name + " with " + requiredSuccesses.ToString() + " requiredSuccesses. ";
 
+        // Separate dice results by color for freeRerolls
+        Dictionary<string, List<ActionResult>> actionResultsByColor = new Dictionary<string, List<ActionResult>>();
         foreach (GameObject die in dicePool)
         {
             Dice dieInfo = die.GetComponent<Dice>();
             ActionResult currentActionResult = new ActionResult(dieInfo, dieInfo.Roll());
             rolledSuccesses += currentActionResult.successes;
-            currentActionResults.Add(currentActionResult);
-        }
-
-        while (rolledSuccesses < requiredSuccesses)
-        {
-            ActionResult mostDisappointingResult = new ActionResult();
-            double averageVsResultDifference = 10;  // Any suitably high number (over 3) works
-            int mostDisappointingResultIndex = 0;
-            int counter = 0;
-
-            foreach (ActionResult myActionResult in currentActionResults)
+            if (actionResultsByColor.ContainsKey(dieInfo.color))
             {
-                if (myActionResult.die.rerollable || rerolls > 0)
-                {
-                    double myAverageVsResultDifference = myActionResult.die.averageSuccesses - myActionResult.successes;
-                    if (myAverageVsResultDifference < averageVsResultDifference)
-                    {
-                        averageVsResultDifference = myAverageVsResultDifference;
-                        mostDisappointingResult = myActionResult;
-                        mostDisappointingResultIndex = counter;
-                    }
-                }
-                counter++;
-            }
-
-            if (mostDisappointingResult.die == null)
-            {
-                break;
+                actionResultsByColor[dieInfo.color].Add(currentActionResult);
             }
             else
             {
-                if (mostDisappointingResult.die.rerollable)
-                {
-                    mostDisappointingResult.die.rerollable = false;
-                }
-                else
-                {
-                    rerolls--;
-                }
-                int rerolledDieSuccesses = mostDisappointingResult.die.Roll();
-                rolledSuccesses = rolledSuccesses - mostDisappointingResult.successes + rerolledDieSuccesses;
-                currentActionResults[mostDisappointingResultIndex] = new ActionResult(mostDisappointingResult.die, rerolledDieSuccesses);
+                actionResultsByColor[dieInfo.color] = new List<ActionResult>() { currentActionResult };
             }
         }
 
+        // Apply freeRerolls (if needed)
+        if (rolledSuccesses < requiredSuccesses)
+        {
+            foreach (List<ActionResult> dieResults in actionResultsByColor.Values)
+            {
+                int freeRerolls = 0;
+                foreach (ActionResult result in dieResults)
+                {
+                    if (result.die.rerollable)
+                    {
+                        freeRerolls += 1;
+                    }
+                }
+                debugString += dieResults[0].die.color + " has " + freeRerolls.ToString() + " freeRerolls. ";
+
+                if (freeRerolls > 0)
+                {
+                    dieResults.Sort((x, y) => (y.die.averageSuccesses - y.successes).CompareTo(x.die.averageSuccesses - x.successes));  // Sorts from greatest below average to most above average
+
+                    for (int i = 0; i < freeRerolls; i++)
+                    {
+                        if (dieResults[i].successes >= dieResults[i].die.averageSuccesses)
+                        {
+                            // TODO If rerolls == 0 add dieResults[i] to another list of worst results by color with leftover freeRerolls, sort that list like above, and reroll the worst of the above average results until rolledSuccesses >= requiredSuccesses
+                            break;  // Exit freeRerolls loop if none of the dice rolled below average
+                        }
+                        else
+                        {
+                            debugString += "Using freeReroll to change from " + dieResults[i].successes.ToString() + " to ";
+                            rolledSuccesses -= dieResults[i].successes;
+                            dieResults[i] = new ActionResult(dieResults[i].die, dieResults[i].die.Roll());
+                            rolledSuccesses += dieResults[i].successes;
+                            debugString += dieResults[i].successes.ToString();
+
+                            if (rolledSuccesses >= requiredSuccesses)
+                            {
+                                break;
+                            }
+                        }
+                    }
+                }
+                currentActionResults.AddRange(dieResults);
+            }
+        }
+
+        // Apply rerolls
+        for (int i = 0; i < rerolls; i++)
+        {
+            if (rolledSuccesses >= requiredSuccesses)
+            {
+                break;
+            }
+            debugString += "  On my " + (i + 1).ToString() + " reroll: ";
+            int totalDiceRerolled = 0;
+            for (int j = 0; j < currentActionResults.Count - 1; j++)  // Reroll each die still below its average
+            {
+                if (currentActionResults[i].successes < currentActionResults[i].die.averageSuccesses)
+                {
+                    debugString += " Changing " + currentActionResults[i].successes.ToString() + " to ";
+                    rolledSuccesses -= currentActionResults[i].successes;
+                    currentActionResults[i] = new ActionResult(currentActionResults[i].die, currentActionResults[i].die.Roll());
+                    rolledSuccesses += currentActionResults[i].successes;
+                    debugString += currentActionResults[i].successes.ToString();
+                    totalDiceRerolled++;
+                }
+            }
+            if (totalDiceRerolled == 0)
+            {
+                currentActionResults.Sort((x, y) => (y.die.averageSuccesses - y.successes).CompareTo(x.die.averageSuccesses - x.successes));  // Sorts from greatest below average to most above average
+                debugString += " Changing " + currentActionResults[i].successes.ToString() + " to ";
+                rolledSuccesses -= currentActionResults[i].successes;
+                currentActionResults[i] = new ActionResult(currentActionResults[i].die, currentActionResults[i].die.Roll());
+                rolledSuccesses += currentActionResults[i].successes;
+                debugString += currentActionResults[i].successes.ToString();
+            }
+        }
+
+        // Debug final roll
+        debugString += "\nFinal roll: ";
+        foreach (ActionResult myActionResult in currentActionResults)
+        {
+            debugString += myActionResult.successes.ToString() + ", ";
+        }
+        Debug.Log(debugString);
         return rolledSuccesses;
     }
 

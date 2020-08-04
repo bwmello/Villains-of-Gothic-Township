@@ -1,12 +1,14 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;  // To update TMP_Text
 
 public class Animate : MonoBehaviour
 {
     GameObject mainCamera;
 
     public GameObject grenadePrefab;
+    public GameObject gameOverPrefab;
 
     private void Start()
     {
@@ -35,5 +37,19 @@ public class Animate : MonoBehaviour
         yield return StartCoroutine(MoveObjectOverTime(new List<GameObject>() { grenade, mainCamera }, origin, destination));
         Destroy(grenade);
         yield return 0;
+    }
+
+    public void ShowGameOver()
+    {
+        GameObject gameOverPanel = Instantiate(gameOverPrefab, transform);
+        if (MissionSpecifics.IsHeroVictory())
+        {
+            gameOverPanel.transform.Find("MissionStatusText").GetComponent<TMP_Text>().text = "<color=\"green\">Mission Success";
+        }
+        else
+        {
+            gameOverPanel.transform.Find("MissionStatusText").GetComponent<TMP_Text>().text = "<color=\"red\">Mission Failure";
+        }
+        StartCoroutine(MoveObjectOverTime(new List<GameObject>() { mainCamera }, mainCamera.transform.position, new Vector3(0, 0, 0)));  // Move camera to center
     }
 }
