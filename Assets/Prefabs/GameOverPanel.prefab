@@ -78,8 +78,9 @@ MonoBehaviour:
       m_Calls: []
   m_text: Mission Success
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2100000, guid: e73a58f6e2794ae7b1b7e50b7fb811b0, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: ab138d442819645c8b8b5beb91f0cae1, type: 2}
+  m_sharedMaterial: {fileID: 5583245065602327264, guid: ab138d442819645c8b8b5beb91f0cae1,
+    type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -121,7 +122,7 @@ MonoBehaviour:
   m_enableWordWrapping: 1
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
-  m_firstOverflowCharacterIndex: -1
+  m_firstOverflowCharacterIndex: 8
   m_linkedTextComponent: {fileID: 0}
   m_isLinkedTextComponent: 0
   m_isTextTruncated: 0
@@ -150,7 +151,7 @@ MonoBehaviour:
     spaceCount: 1
     wordCount: 2
     linkCount: 0
-    lineCount: 1
+    lineCount: 2
     pageCount: 1
     materialCount: 1
   m_isUsingLegacyAnimationComponent: 0
@@ -601,7 +602,7 @@ PrefabInstance:
     - target: {fileID: 392963778446764793, guid: bf1e1cfa56bda4a93abec08201f77f80,
         type: 3}
       propertyPath: m_SizeDelta.x
-      value: 50
+      value: 70
       objectReference: {fileID: 0}
     - target: {fileID: 392963778446764793, guid: bf1e1cfa56bda4a93abec08201f77f80,
         type: 3}

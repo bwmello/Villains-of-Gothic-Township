@@ -137,45 +137,24 @@ public class ZoneInfo : MonoBehaviour
         return null;
     }
 
-    // TODO Replace this because it's dumb
-    //public double GetOccupantsManipulationLikelihood(GameObject unitToDiscount)  // TODO get the odds of success instead of just adding up each unit's average successes
-    //{
-    //    double manipulationOdds = 0;
+    public double GetOccupantsManipulationLikelihood(GameObject unitToDiscount)
+    {
+        double chanceOfFailure = 1;
 
-    //    int currentHindrance = 0;
-    //    currentHindrance += GetHeroesCount();  // TODO stop assuming size and menace of 1 for each hero
-    //    List<string> unitTags = transform.GetComponentInParent<ScenarioMap>().villainRiver;
-    //    foreach (Transform row in transform)
-    //    {
-    //        if (unitTags.Contains(row.tag))
-    //        {
-    //            if (row.gameObject == unitToDiscount)
-    //            {
-    //                continue;  // Unit doesn't count itself for hindrance, so skip it.
-    //            }
-    //            Unit unitInfo = row.gameObject.GetComponent<Unit>();
-    //            if (unitInfo.validActionProficiencies.ContainsKey("MANIPULATION"))
-    //            {
-    //                foreach (GameObject die in unitInfo.validActionProficiencies["MANIPULATION"])
-    //                {
-    //                    manipulationOdds += die.GetComponent<Dice>().averageSuccesses;
-    //                }
-    //            }
-    //            currentHindrance -= unitInfo.menace;
-    //        }
-    //    }
-    //    if (currentHindrance < 0)
-    //    {
-    //        currentHindrance = 0;
-    //    }
-    //    manipulationOdds -= currentHindrance;
-    //    if (manipulationOdds < 0)
-    //    {
-    //        manipulationOdds = 0;
-    //    }
-
-    //    return manipulationOdds;
-    //}
+        int requiredSuccesses = 5 + GetCurrentHindrance(unitToDiscount);  // TODO Once GetChanceOfSuccess is fixed to never return >= 1, replace 5 with actual requiredSuccesses (include munitionSpecialist)
+        foreach (Unit unit in GetUnitsInfo())
+        {
+            foreach (Unit.ActionProficiency proficiency in unit.actionProficiencies)
+            {
+                if (proficiency.actionType == "MANIPULATION")
+                {
+                    int rerolls = supportRerolls - unit.supportRerolls;
+                    chanceOfFailure *= unit.GetChanceOfSuccess(requiredSuccesses, proficiency.proficiencyDice, rerolls);
+                }
+            }
+        }
+        return 1 - chanceOfFailure;
+    }
 
     public bool HasObjectiveToken(string tokenName)
     {

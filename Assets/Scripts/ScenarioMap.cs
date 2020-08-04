@@ -66,9 +66,7 @@ public class ScenarioMap : MonoBehaviour
         {
             unitPrefabsMasterDict[unitPrefab.name] = unitPrefab;
         }
-        //ScenarioSave scenarioSave = JsonUtility.FromJson<ScenarioSave>(File.ReadAllText(Application.persistentDataPath + "/" + missionName + ".json"));
         ScenarioSave scenarioSave = JsonUtility.FromJson<ScenarioSave>(File.ReadAllText(Application.persistentDataPath + "/" + SceneHandler.saveName));
-        //ScenarioSave scenarioSave = JsonUtility.FromJson<ScenarioSave>(File.ReadAllText(Application.persistentDataPath + "/5ASinkingFeeling.json"));
         LoadScenarioSave(scenarioSave);
     }
 
@@ -110,7 +108,7 @@ public class ScenarioMap : MonoBehaviour
                 missionSpecificActionsWeightTable["THOUGHT"] = new List<(string, int, double, ActionCallback)>();
                 if (totalComputers > 0 && totalBombs > 0)
                 {
-                    missionSpecificActionsWeightTable["THOUGHT"].Add(("Computer", 3, 60, PrimeBombRemotely));
+                    missionSpecificActionsWeightTable["THOUGHT"].Add(("Computer", 1, 60, PrimeBombRemotely));
                 }
 
                 missionSpecificActionsWeightTable["GUARD"] = new List<(string, int, double, ActionCallback)>();
@@ -183,7 +181,7 @@ public class ScenarioMap : MonoBehaviour
             //yield return StartCoroutine(MoveObjectOverTime(new List<GameObject>() { mainCamera }, mainCamera.transform.position, currentZoneInfo.GetBomb().transform.position));  // Moving camera over slightly to bomb being armed is more jarring than anything else
             unitZoneInfo.PrimeBomb();
             yield return new WaitForSecondsRealtime(2);
-            SetMissionSpecificActionsWeightTable();  // TODO test that the last bomb to be primed doesn't leave "Bomb" as a MANIPULATE action for next unit due to mistiming
+            SetMissionSpecificActionsWeightTable();
         }
         Destroy(successContainer);
         yield return 0;
@@ -225,17 +223,17 @@ public class ScenarioMap : MonoBehaviour
                 bombZones.Add(bomb.transform.parent.parent.GetComponentInParent<ZoneInfo>());
             }
             ZoneInfo chosenBombZone = null;
-            chosenBombZone = bombZones[random.Next(bombZones.Count)];
-            //double greatestManipulationChance = -100;
-            //foreach (ZoneInfo bombZone in bombZones)
-            //{
-            //    double bombZoneManipulationChance = bombZone.GetOccupantsManipulationLikelihood(transform.gameObject);
-            //    if (bombZoneManipulationChance > greatestManipulationChance)
-            //    {
-            //        greatestManipulationChance = bombZoneManipulationChance;
-            //        chosenBombZone = bombZone;  // TODO This doesn't even make sense because you're arming the bomb remotely where you're most likely to arm it manually
-            //    }
-            //}
+            double leastManipulationChance = 100;
+            foreach (ZoneInfo bombZone in bombZones)
+            {
+                double bombZoneManipulationChance = bombZone.GetOccupantsManipulationLikelihood(unit);
+                //Debug.Log("!!!" + bombZone.transform.name + " with bombZoneManipulationChance: " + bombZoneManipulationChance.ToString());
+                if (bombZoneManipulationChance < leastManipulationChance)
+                {
+                    leastManipulationChance = bombZoneManipulationChance;
+                    chosenBombZone = bombZone;
+                }
+            }
             if (chosenBombZone != null)
             {
                 unitZoneInfo.RemoveComputer();

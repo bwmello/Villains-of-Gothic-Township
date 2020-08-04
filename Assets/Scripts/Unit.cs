@@ -321,7 +321,7 @@ public class Unit : MonoBehaviour
         return averageSuccesses;
     }
 
-    private double GetChanceOfSuccess(int requiredSuccesses, List<GameObject> dice, int rerolls = 0)
+    public double GetChanceOfSuccess(int requiredSuccesses, List<GameObject> dice, int rerolls = 0)
     {
         double chanceOfSuccess = 0;
         // TODO proper method from NiceToHaves vs this incredibly rough estimation
@@ -850,48 +850,45 @@ public class Unit : MonoBehaviour
         }
 
         // Apply freeRerolls (if needed)
-        if (rolledSuccesses < requiredSuccesses)
+        foreach (List<ActionResult> dieResults in actionResultsByColor.Values)
         {
-            foreach (List<ActionResult> dieResults in actionResultsByColor.Values)
+            int freeRerolls = 0;
+            foreach (ActionResult result in dieResults)
             {
-                int freeRerolls = 0;
-                foreach (ActionResult result in dieResults)
+                if (result.die.rerollable)
                 {
-                    if (result.die.rerollable)
-                    {
-                        freeRerolls += 1;
-                    }
+                    freeRerolls += 1;
                 }
-                debugString += dieResults[0].die.color + " has " + freeRerolls.ToString() + " freeRerolls. ";
-
-                if (freeRerolls > 0)
-                {
-                    dieResults.Sort((x, y) => (y.die.averageSuccesses - y.successes).CompareTo(x.die.averageSuccesses - x.successes));  // Sorts from greatest below average to most above average
-
-                    for (int i = 0; i < freeRerolls; i++)
-                    {
-                        if (dieResults[i].successes >= dieResults[i].die.averageSuccesses)
-                        {
-                            // TODO If rerolls == 0 add dieResults[i] to another list of worst results by color with leftover freeRerolls, sort that list like above, and reroll the worst of the above average results until rolledSuccesses >= requiredSuccesses
-                            break;  // Exit freeRerolls loop if none of the dice rolled below average
-                        }
-                        else
-                        {
-                            debugString += "Using freeReroll to change from " + dieResults[i].successes.ToString() + " to ";
-                            rolledSuccesses -= dieResults[i].successes;
-                            dieResults[i] = new ActionResult(dieResults[i].die, dieResults[i].die.Roll());
-                            rolledSuccesses += dieResults[i].successes;
-                            debugString += dieResults[i].successes.ToString();
-
-                            if (rolledSuccesses >= requiredSuccesses)
-                            {
-                                break;
-                            }
-                        }
-                    }
-                }
-                currentActionResults.AddRange(dieResults);
             }
+            debugString += dieResults[0].die.color + " has " + freeRerolls.ToString() + " freeRerolls. ";
+
+            if (freeRerolls > 0 && rolledSuccesses < requiredSuccesses)
+            {
+                dieResults.Sort((x, y) => (y.die.averageSuccesses - y.successes).CompareTo(x.die.averageSuccesses - x.successes));  // Sorts from greatest below average to most above average
+
+                for (int i = 0; i < freeRerolls; i++)
+                {
+                    if (dieResults[i].successes >= dieResults[i].die.averageSuccesses)
+                    {
+                        // TODO If rerolls == 0 add dieResults[i] to another list of worst results by color with leftover freeRerolls, sort that list like above, and reroll the worst of the above average results until rolledSuccesses >= requiredSuccesses
+                        break;  // Exit freeRerolls loop if none of the dice rolled below average
+                    }
+                    else
+                    {
+                        debugString += "Using freeReroll to change from " + dieResults[i].successes.ToString() + " to ";
+                        rolledSuccesses -= dieResults[i].successes;
+                        dieResults[i] = new ActionResult(dieResults[i].die, dieResults[i].die.Roll());
+                        rolledSuccesses += dieResults[i].successes;
+                        debugString += dieResults[i].successes.ToString();
+
+                        if (rolledSuccesses >= requiredSuccesses)
+                        {
+                            break;
+                        }
+                    }
+                }
+            }
+            currentActionResults.AddRange(dieResults);
         }
 
         // Apply rerolls
