@@ -8,6 +8,7 @@ using TMPro;  // for TMP_Text to update the henchmen quantity from UnitRows
 public class Unit : MonoBehaviour
 {
     readonly System.Random random = new System.Random();
+    private Animate animate;
 
     public int lifePoints = 1;
     public int lifePointsMax = 1;
@@ -63,6 +64,7 @@ public class Unit : MonoBehaviour
     void Awake()  // Need to happen on Instantiate for potential spawn/reinforcement evaluation, so Start() not good enough
     {
         transform.name = transform.tag;  // Needed so that when Instantiated is named UZI or CHAINS instead of UZI(Clone) or CHAINS(Clone)
+        animate = GameObject.FindGameObjectWithTag("AnimationContainer").GetComponent<Animate>();  // Not initiated quickly enough in Start()
     }
 
     public bool IsActive()
@@ -550,6 +552,11 @@ public class Unit : MonoBehaviour
     IEnumerator AnimateMovementPath(MovementPath movementPath)
     {
         GameObject destination = null;  // Needed for transform.SetParent(destination.transform) after loop
+        if (movementPath.zones.Count > 1)
+        {
+            Vector3 finalCoordinates = movementPath.zones[movementPath.zones.Count - 1].GetComponent<ZoneInfo>().GetAvailableUnitSlot().transform.position;
+            StartCoroutine(animate.MoveCameraUntilOnscreen(transform.position, finalCoordinates));
+        }
         for (int i = 1; i < movementPath.zones.Count; i++)
         {
             GameObject origin = movementPath.zones[i - 1];
@@ -598,10 +605,8 @@ public class Unit : MonoBehaviour
     IEnumerator AnimateMovement(GameObject origin, GameObject destination)
     {
         GameObject destinationUnitSlot = destination.GetComponent<ZoneInfo>().GetAvailableUnitSlot();
-        GameObject mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
         transform.SetParent(GameObject.FindGameObjectWithTag("AnimationContainer").transform);  // Needed so unit animating is always drawn last (above everything it might pass over).
-
-        yield return StartCoroutine(MoveObjectOverTime(new List<GameObject>() { transform.gameObject, mainCamera }, transform.position, destinationUnitSlot.transform.position));
+        yield return StartCoroutine(animate.MoveObjectOverTime(new List<GameObject>() { transform.gameObject }, transform.position, destinationUnitSlot.transform.position));
         yield return 0;
     }
 
@@ -634,19 +639,19 @@ public class Unit : MonoBehaviour
             {
                 if (i == (woundsTotal - 1) / 2)  // If halfway or less through woundsTotal
                 {
-                    StartCoroutine(MoveObjectOverTime(new List<GameObject>() { mainCamera }, mainCamera.transform.position, targetedHero.transform.position));  // If only one wound, AnimateWounds() will return before camera finished panning  // TODO does this need yield return?
+                    StartCoroutine(animate.MoveCameraUntilOnscreen(mainCamera.transform.position, targetedHero.transform.position));
                 }
                 GameObject wound = Instantiate(targetedZoneInfo.woundPrefab, transform);
                 Vector3 newDestination = targetedHero.transform.TransformPoint(woundPlacement[i].x, woundPlacement[i].y, 0);
                 wound.transform.SetParent(animationContainer.transform);  // Needed so unit animating is always drawn last (above everything it might pass over).
                 if (i < woundsTotal - 1)
                 {
-                    StartCoroutine(MoveObjectOverTime(new List<GameObject>() { wound }, wound.transform.position, newDestination, .7f));
+                    StartCoroutine(animate.MoveObjectOverTime(new List<GameObject>() { wound }, wound.transform.position, newDestination, .7f));
                     yield return new WaitForSecondsRealtime(.5f);
                 }
                 else  // If last wound
                 {
-                    yield return StartCoroutine(MoveObjectOverTime(new List<GameObject>() { wound }, wound.transform.position, newDestination, .7f));
+                    yield return StartCoroutine(animate.MoveObjectOverTime(new List<GameObject>() { wound }, wound.transform.position, newDestination, .7f));
                 }
             }
             yield return StartCoroutine(PauseUntilPlayerPushesContinue(animationContainer, targetedZoneInfo, targetedHero));
@@ -674,21 +679,6 @@ public class Unit : MonoBehaviour
         yield return 0;
     }
 
-    IEnumerator MoveObjectOverTime(List<GameObject> objectsToMove, Vector3 origin, Vector3 destination, float timeCoefficient = .5f)
-    {
-        float t = 0;
-        while (t < 1f)
-        {
-            t += Time.deltaTime * timeCoefficient;
-            foreach( GameObject currentObject in objectsToMove)
-            {
-                currentObject.transform.position = new Vector3(Mathf.Lerp(origin.x, destination.x, t), Mathf.Lerp(origin.y, destination.y, t), currentObject.transform.position.z);
-            }
-            yield return null;
-        }
-        yield return 0;
-    }
-
     IEnumerator PerformAction(UnitPossibleAction unitTurn)
     {
         int actionSuccesses = 0;
@@ -698,10 +688,11 @@ public class Unit : MonoBehaviour
         int currentZoneHindrance = currentZoneInfo.GetCurrentHindrance(gameObject);
         int availableRerolls = currentZoneInfo.supportRerolls - supportRerolls;
 
-        GameObject mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
-        mainCamera.transform.position = new Vector3(transform.position.x, transform.position.y, mainCamera.transform.position.z);
-        GameObject animationContainer = GameObject.FindGameObjectWithTag("AnimationContainer");
-        Animate animate = animationContainer.GetComponent<Animate>();
+        if (!animate.IsPointOnScreen(transform.position))
+        {
+            GameObject mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
+            mainCamera.transform.position = new Vector3(transform.position.x, transform.position.y, mainCamera.transform.position.z);
+        }
 
         switch (unitTurn.actionProficiency.actionType)
         {

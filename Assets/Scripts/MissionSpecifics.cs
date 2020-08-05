@@ -96,14 +96,14 @@ public static class MissionSpecifics
         switch (missionName)
         {
             case "ASinkingFeeling":
-                int totalPrimedBombsRemaining = GameObject.FindGameObjectsWithTag("PrimedBomb").Length;
+                int totalPrimedBombsRemaining = GetTotalActiveTokens(new List<string>() { "Bomb", "PrimedBomb" });
                 if (totalPrimedBombsRemaining < 2)
                 {
                     return true;
                 }
                 break;
             case "IceToSeeYou":
-                int totalPrimedBombs = GameObject.FindGameObjectsWithTag("PrimedBomb").Length;
+                int totalPrimedBombs = GetTotalActiveTokens(new List<string>() { "PrimedBomb" }); ;
                 if (totalPrimedBombs >= 3)
                 {
                     return true;

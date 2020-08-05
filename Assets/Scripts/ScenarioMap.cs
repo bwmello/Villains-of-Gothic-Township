@@ -134,7 +134,7 @@ public class ScenarioMap : MonoBehaviour
                 missionSpecificActionsWeightTable["THOUGHT"] = new List<(string, int, double, ActionCallback)>();
                 if (totalComputers > 0)
                 {
-                    missionSpecificActionsWeightTable["THOUGHT"].Add(("Computer", 3, 20, ActivateCryogenicDevice));  // Assume you cost the hero at least 1 movepoint and auto deal 2/3 of a wound per cryogenic token, 0 weight if would hit anyone except frosty
+                    missionSpecificActionsWeightTable["THOUGHT"].Add(("Computer", 1, 20, ActivateCryogenicDevice));  // Assume you cost the hero at least 1 movepoint and auto deal 2/3 of a wound per cryogenic token, 0 weight if would hit anyone except frosty
                 }
 
                 missionSpecificActionsWeightTable["GUARD"] = new List<(string, int, double, ActionCallback)>();
@@ -237,7 +237,7 @@ public class ScenarioMap : MonoBehaviour
             if (chosenBombZone != null)
             {
                 unitZoneInfo.RemoveComputer();
-                yield return StartCoroutine(animate.MoveObjectOverTime(new List<GameObject>() { mainCamera }, mainCamera.transform.position, chosenBombZone.GetBomb().transform.position));  // Move camera to bomb being armed
+                yield return StartCoroutine(animate.MoveCameraUntilOnscreen(mainCamera.transform.position, chosenBombZone.GetBomb().transform.position));  // Move camera to bomb being armed
                 chosenBombZone.PrimeBomb();
                 yield return new WaitForSecondsRealtime(2);
                 //unitTurn.targetedZone = chosenBombZone.transform.gameObject;  // Only useful for DEBUG statement at end of PerformAction()
@@ -329,7 +329,7 @@ public class ScenarioMap : MonoBehaviour
             for (int i = 0; i < cryoZoneTargets.Count-1 && i < 2; i++)
             {
                 GameObject zoneToCryo = cryoZoneTargets[i].Item2;
-                yield return StartCoroutine(animate.MoveObjectOverTime(new List<GameObject>() { mainCamera }, mainCamera.transform.position, zoneToCryo.transform.position));
+                yield return StartCoroutine(animate.MoveCameraUntilOnscreen(mainCamera.transform.position, zoneToCryo.transform.position));
                 yield return new WaitForSecondsRealtime(1);
                 yield return StartCoroutine(zoneToCryo.GetComponent<ZoneInfo>().AddEnvironTokens(new EnvironTokenSave("Cryogenic", 1, false, true)));
                 yield return new WaitForSecondsRealtime(2);
@@ -341,6 +341,7 @@ public class ScenarioMap : MonoBehaviour
         yield return 0;
     }
 
+    public bool isPlayerUIEnabled = true;
     public void DisablePlayerUI()
     {
         foreach (Button button in transform.GetComponentsInChildren<Button>())
@@ -351,6 +352,21 @@ public class ScenarioMap : MonoBehaviour
         {
             wallRubble.GetComponent<WallRubble>().isClickable = false;
         }
+        isPlayerUIEnabled = false;
+    }
+
+    public void EnablePlayerUI()
+    {
+        // Re-Enable all the UI buttons which were disabled at EndHeroTurn()
+        foreach (Button button in transform.GetComponentsInChildren<Button>())
+        {
+            button.enabled = true;
+        }
+        foreach (GameObject wallRubble in GameObject.FindGameObjectsWithTag("WallRubble"))
+        {
+            wallRubble.GetComponent<WallRubble>().isClickable = true;
+        }
+        isPlayerUIEnabled = true;
     }
 
     public void CameraToFixedZoom()
@@ -362,15 +378,15 @@ public class ScenarioMap : MonoBehaviour
     // The flow: Player uses UI to end turn -> EndHeroTurn() -> StartVillainTurn() -> StartHeroTurn() -> Player takes their next turn
     public void EndHeroTurn()
     {
+        DisablePlayerUI();  // Disable all UI so Villain turn isn't interrupted, and so GameOver screen doesn't have to worry about round clock advancing/rewinding
+        CameraToFixedZoom();
+
         if (MissionSpecifics.IsGameOver(currentRound))
         {
             animate.ShowGameOver();
         }
         else
         {
-            DisablePlayerUI();  // Disable all UI so Villain turn isn't interrupted
-            CameraToFixedZoom();
-
             // Dredge the river, removing any tiles with 0 units on the map
             foreach (string unitTag in new List<string>(villainRiver))
             {
@@ -391,7 +407,6 @@ public class ScenarioMap : MonoBehaviour
     IEnumerator StartVillainTurn()
     {
         DissipateEnvironTokens(false);
-        yield return StartCoroutine(ActivateRiverTiles());
 
         if (MissionSpecifics.IsGameOver(currentRound))
         {
@@ -402,6 +417,8 @@ public class ScenarioMap : MonoBehaviour
             // Disable camera controls
             PanAndZoom panAndZoom = this.GetComponent<PanAndZoom>();
             panAndZoom.controlCamera = false;
+
+            yield return StartCoroutine(ActivateRiverTiles());
             yield return StartCoroutine(StartHeroTurn());
 
             // Reactivate camera controls
@@ -463,14 +480,7 @@ public class ScenarioMap : MonoBehaviour
         }
 
         // Re-Enable all the UI buttons which were disabled at EndHeroTurn()
-        foreach (Button button in transform.GetComponentsInChildren<Button>())
-        {
-            button.enabled = true;
-        }
-        foreach (GameObject wallRubble in GameObject.FindGameObjectsWithTag("WallRubble"))
-        {
-            wallRubble.GetComponent<WallRubble>().isClickable = true;
-        }
+        EnablePlayerUI();
         yield return 0;
     }
 
