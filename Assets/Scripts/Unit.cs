@@ -81,11 +81,11 @@ public class Unit : MonoBehaviour
         return transform.parent.parent.parent.gameObject;  // Grabs ZoneInfoPanel instead of UnitsContainer. If changes in future, only need to change this function.
     }
 
-    public IEnumerator ActivateUnit(Dictionary<string, List<(string, int, double, MissionSpecifics.ActionCallback)>> actionsWeightTable)
+    public IEnumerator ActivateUnit()
     {
         GameObject currentZone = GetZone();
         Dictionary<GameObject, MovementPath> possibleDestinations = GetPossibleDestinations(currentZone);
-        List<UnitPossibleAction> allPossibleUnitActions = GetPossibleActions(possibleDestinations, actionsWeightTable);
+        List<UnitPossibleAction> allPossibleUnitActions = GetPossibleActions(possibleDestinations);
 
         if (allPossibleUnitActions != null && allPossibleUnitActions.Count > 0)
         {
@@ -98,6 +98,7 @@ public class Unit : MonoBehaviour
                     chosenAction = unitAction;
                 }
             }
+
             if (currentZone != chosenAction.actionZone)
             {
                 chosenAction.pathTaken.zones.Add(chosenAction.actionZone);  // Otherwise token is never animated moving the last zone to the destination
@@ -109,14 +110,14 @@ public class Unit : MonoBehaviour
                 Dictionary<GameObject, MovementPath> possibleFinalDestinations = GetPossibleDestinations(currentZone);
                 if (!possibleFinalDestinations.ContainsKey(chosenAction.finalDestinationZone))  // If moving to chosenAction.finalDestinationZone is no longer possible (due to performed action)
                 {
-                    if (actionsWeightTable.ContainsKey("GUARD"))
+                    if (MissionSpecifics.actionsWeightTable.ContainsKey("GUARD"))
                     {
                         double mostValuableFinalDestinationWeight = 0;
                         foreach (GameObject possibleFinalDestinationZone in possibleFinalDestinations.Keys)
                         {
                             double currentFinalDestinationWeight = 0;
                             ZoneInfo possibleFinalDestinationZoneInfo = possibleFinalDestinationZone.GetComponent<ZoneInfo>();
-                            foreach ((string, int, double, MissionSpecifics.ActionCallback) guardable in actionsWeightTable["GUARD"])
+                            foreach ((string, int, double, MissionSpecifics.ActionCallback) guardable in MissionSpecifics.actionsWeightTable["GUARD"])
                             {
                                 if (possibleFinalDestinationZoneInfo.HasObjectiveToken(guardable.Item1))
                                 {
@@ -138,7 +139,7 @@ public class Unit : MonoBehaviour
         }
         else
         {
-            GameObject destinationZone = GetPartialMoveAndWeight(possibleDestinations, actionsWeightTable).Item1;
+            GameObject destinationZone = GetPartialMoveAndWeight(possibleDestinations).Item1;
             if (destinationZone != null && currentZone != destinationZone)
             {
                 possibleDestinations[destinationZone].zones.Add(destinationZone);  // Otherwise token is never animated moving the last zone to the destination
@@ -267,7 +268,7 @@ public class Unit : MonoBehaviour
         return possibleDestinations;
     }
 
-    private Tuple<GameObject, double> GetPartialMoveAndWeight(Dictionary<GameObject, MovementPath> reachableDestinations, Dictionary<string, List<(string, int, double, MissionSpecifics.ActionCallback)>> actionsWeightTable)
+    private Tuple<GameObject, double> GetPartialMoveAndWeight(Dictionary<GameObject, MovementPath> reachableDestinations)
     {
         double mostValuableActionWeight = 0;
         GameObject chosenDestination = null;
@@ -280,7 +281,7 @@ public class Unit : MonoBehaviour
         foreach (GameObject reachableZone in reachableDestinations.Keys)
         {
             Dictionary<GameObject, MovementPath> nextPossibleDestinations = GetPossibleDestinations(reachableZone, new Dictionary<GameObject, MovementPath>(reachableDestinations), new HashSet<GameObject>(reachableDestinations.Keys));
-            List<UnitPossibleAction> futurePossibleActions = GetPossibleActions(nextPossibleDestinations, actionsWeightTable);
+            List<UnitPossibleAction> futurePossibleActions = GetPossibleActions(nextPossibleDestinations);
             if (futurePossibleActions != null && futurePossibleActions.Count > 0)
             {
                 foreach (UnitPossibleAction unitAction in futurePossibleActions)
@@ -308,55 +309,18 @@ public class Unit : MonoBehaviour
     private double GetAverageSuccesses(List<GameObject> dice, int rerolls = 0)
     {
         double averageSuccesses = 0;
-        //if (rerolls > 0)
-        //{
-        //    // TODO now how do you calculate the improved averageSuccesses from rerolls? Have to make all possible combinations of all dieResults lists and reroll the most below average die number.
-        //    // Sum the values multiplied by their odds
-        //    // For a YellowDie, dieResults = [0,0,0,1,1,2], average = 0/6 + 0/6 + 0/6 + 1/6 + 1/6 + 2/6 = 2/3.  For a YellowRerollableDie, dieResults = [[0,0,0,1,1,2],[0,0,0,1,1,2],[0,0,0,1,1,2],1,1,2], average = (0/6 + 0/6 + 0/6 + 1/6 + 1/6 + 2/6)/6 + 2/3/6 + 2/3/6 + 1/6 + 1/6 + 2/6 = 1.
-        //    List<List<(double, List<int>)>> diceCombinations = new List<List<(double, List<int>)>>();  // probably not, though
-        //    // averageSuccesses = sum over all[result * probability of result]
-        //    // For two YellowDice, totalCombinations = 6*6 = 36,  average = dieResults * occurences / totalCombinations = (0,0)*9/36 + (0,1)*6*2/36 + (0,2)*3*2/36 + (1,1)*4/36 + (1,2)*2*2/36 + (2,2)*1/36 = 4/3
-        //    // For two YellowDice with one reroll, average = ((0,0)*3/6 + (0,1)*2/6 + (0,2)*1/6)*9/36 + ((0,1)*3 + (1,1)*2 + (1,2)*1)*12/216 + ((0,2)*3 + (1,2)*2 + (2,2)*1)*6/216 + (1,1)*4/36 + (1,2)*2*2/36 + (2,2)*1/36 = 1.95238095238?
-
-        //    foreach (Dice die in dice)
-        //    {
-        //        //List<double> dieResults = new List<double>(Array.ConvertAll<int, double>(die.faces, num => (double)num));
-        //        List<int> dieResults = new List<int>();
-        //        if (die.rerollable)
-        //        {
-        //            for (int i = 0; i < dieResults.Count; i++)
-        //            {
-        //                if (dieResults[i] < die.averageSuccesses)
-        //                {
-        //                    //    dieResults[i] = die.averageSuccesses;  // I think this only works when rerolls = 0. Otherwise, have to inject die.faces into this result and calculate yet more possible combinations in next step (assuming rerolls > 0).
-        //                }
-        //                else
-        //                {
-        //                    break;
-        //                }
-        //            }
-        //        }
-        //    }
-        //}
-        //else  // No generic rerolls, so getting the average is easy
-        //{
-        //    foreach (Dice die in dice)
-        //    {
-        //        averageSuccesses += die.averageSuccessesWithReroll;  // Accounts for dice specific rerolls, but not generic rerolls
-        //    }
-        //}
         foreach (GameObject die in dice)
         {
-            averageSuccesses += die.GetComponent<Dice>().averageSuccessesWithReroll;  // Accounts for dice specific rerolls, but not generic rerolls
+            averageSuccesses += die.GetComponent<Dice>().GetExpectedValue(rerolls);
         }
-
-        averageSuccesses += dice.Count * rerolls / 3;  // For two YellowDice average = 1.33333333333, with reroll average = 1.95238095238, this func's estimation = 1.33333339 + 2 * 1 / 3 =  1.999999999
         return averageSuccesses;
     }
 
     public double GetChanceOfSuccess(int requiredSuccesses, List<GameObject> dice, int rerolls = 0)
     {
         double chanceOfSuccess = 0;
+        //List<double> dieProbabilitiesOfResultIndex = new List<double>();
+
         // TODO proper method from NiceToHaves vs this incredibly rough estimation
         chanceOfSuccess = GetAverageSuccesses(dice, rerolls) / requiredSuccesses;
         return chanceOfSuccess;
@@ -386,7 +350,7 @@ public class Unit : MonoBehaviour
         }
     }
 
-    private List<UnitPossibleAction> GetPossibleActions(Dictionary<GameObject, MovementPath> possibleDestinationsAndPaths, Dictionary<string, List<(string, int, double, MissionSpecifics.ActionCallback)>> actionsWeightTable)
+    private List<UnitPossibleAction> GetPossibleActions(Dictionary<GameObject, MovementPath> possibleDestinationsAndPaths)
     {
         List<UnitPossibleAction> allPossibleActions = new List<UnitPossibleAction>();
 
@@ -400,14 +364,14 @@ public class Unit : MonoBehaviour
             if (GetZone() == possibleZone)
             {
                 availableRerolls -= supportRerolls;
-                if (actionsWeightTable.ContainsKey("GUARD"))
+                if (MissionSpecifics.actionsWeightTable.ContainsKey("GUARD"))
                 {
                     double mostValuableFinalDestinationWeight = 0;
                     foreach (GameObject possibleFinalDestinationZone in possibleDestinationsAndPaths.Keys)
                     {
                         double currentFinalDestinationWeight = 0;
                         ZoneInfo possibleFinalDestinationZoneInfo = possibleFinalDestinationZone.GetComponent<ZoneInfo>();
-                        foreach ((string, int, double, MissionSpecifics.ActionCallback) guardable in actionsWeightTable["GUARD"])
+                        foreach ((string, int, double, MissionSpecifics.ActionCallback) guardable in MissionSpecifics.actionsWeightTable["GUARD"])
                         {
                             if (possibleFinalDestinationZoneInfo.HasObjectiveToken(guardable.Item1))
                             {
@@ -420,11 +384,12 @@ public class Unit : MonoBehaviour
                             mostValuableFinalDestinationWeight = currentFinalDestinationWeight;
                         }
                     }
+                    guardZoneWeight += mostValuableFinalDestinationWeight;
                 }
             }
-            else if (actionsWeightTable.ContainsKey("GUARD"))
+            else if (MissionSpecifics.actionsWeightTable.ContainsKey("GUARD"))
             {
-                foreach ((string, int, double, MissionSpecifics.ActionCallback) guardable in actionsWeightTable["GUARD"])
+                foreach ((string, int, double, MissionSpecifics.ActionCallback) guardable in MissionSpecifics.actionsWeightTable["GUARD"])
                 {
                     if (possibleZoneInfo.HasObjectiveToken(guardable.Item1))
                     {
@@ -444,12 +409,12 @@ public class Unit : MonoBehaviour
                         {
                             double averageWounds = GetAverageSuccesses(actionProficiency.proficiencyDice, availableRerolls) + martialArtsSuccesses;
                             averageWounds *= actionProficiency.actionMultiplier;
-                            actionWeight += averageWounds * actionsWeightTable["MELEE"][0].Item3;
+                            actionWeight += averageWounds * MissionSpecifics.actionsWeightTable["MELEE"][0].Item3;
                             if (possibleDestinationsAndPaths[possibleZone].terrainDanger > 0)
                             {
                                 actionWeight /= (2 * possibleDestinationsAndPaths[possibleZone].terrainDanger);
                             }
-                            allPossibleActions.Add(new UnitPossibleAction(this, actionsWeightTable["MELEE"][0], actionProficiency, actionWeight, possibleZone, finalDestinationZone, null, possibleDestinationsAndPaths[finalDestinationZone]));
+                            allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["MELEE"][0], actionProficiency, actionWeight, possibleZone, finalDestinationZone, null, possibleDestinationsAndPaths[finalDestinationZone]));
                         }
                         break;
                     case "RANGED":
@@ -475,18 +440,18 @@ public class Unit : MonoBehaviour
                                 averageWounds += actionProficiency.actionMultiplier / 10;
                             }
                             averageWounds *= actionProficiency.actionMultiplier;
-                            actionWeight += averageWounds * actionsWeightTable["RANGED"][0].Item3;
+                            actionWeight += averageWounds * MissionSpecifics.actionsWeightTable["RANGED"][0].Item3;
                             if (possibleDestinationsAndPaths[possibleZone].terrainDanger > 0)
                             {
                                 actionWeight /= (2 * possibleDestinationsAndPaths[possibleZone].terrainDanger);
                             }
-                            allPossibleActions.Add(new UnitPossibleAction(this, actionsWeightTable["RANGED"][0], actionProficiency, actionWeight, possibleZone, finalDestinationZone, targetedZone, possibleDestinationsAndPaths[finalDestinationZone]));
+                            allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["RANGED"][0], actionProficiency, actionWeight, possibleZone, finalDestinationZone, targetedZone, possibleDestinationsAndPaths[finalDestinationZone]));
                         }
                         break;
                     case "MANIPULATION":
-                        if (actionsWeightTable.ContainsKey("MANIPULATION"))
+                        if (MissionSpecifics.actionsWeightTable.ContainsKey("MANIPULATION"))
                         {
-                            foreach ((string, int, double, MissionSpecifics.ActionCallback) manipulatable in actionsWeightTable["MANIPULATION"])
+                            foreach ((string, int, double, MissionSpecifics.ActionCallback) manipulatable in MissionSpecifics.actionsWeightTable["MANIPULATION"])
                             {
                                 if (manipulatable.Item1 == "Grenade")
                                 {
@@ -535,9 +500,9 @@ public class Unit : MonoBehaviour
                         }
                         break;
                     case "THOUGHT":
-                        if (actionsWeightTable.ContainsKey("THOUGHT"))
+                        if (MissionSpecifics.actionsWeightTable.ContainsKey("THOUGHT"))
                         {
-                            foreach ((string, int, double, MissionSpecifics.ActionCallback) thoughtable in actionsWeightTable["THOUGHT"])
+                            foreach ((string, int, double, MissionSpecifics.ActionCallback) thoughtable in MissionSpecifics.actionsWeightTable["THOUGHT"])
                             {
                                 if (possibleZoneInfo.HasObjectiveToken(thoughtable.Item1))
                                 {
@@ -560,13 +525,13 @@ public class Unit : MonoBehaviour
         return allPossibleActions;
     }
 
-    public double GetMostValuableActionWeight(Dictionary<string, List<(string, int, double, MissionSpecifics.ActionCallback)>> actionsWeightTable)
+    public double GetMostValuableActionWeight()
     {
         double mostValuableActionWeight = 0;
         GameObject currentZone = GetZone();
 
         Dictionary<GameObject, MovementPath> possibleDestinations = GetPossibleDestinations(currentZone);
-        List<UnitPossibleAction> allPossibleUnitActions = GetPossibleActions(possibleDestinations, actionsWeightTable);
+        List<UnitPossibleAction> allPossibleUnitActions = GetPossibleActions(possibleDestinations);
 
         if (allPossibleUnitActions != null && allPossibleUnitActions.Count > 0)
         {
@@ -580,7 +545,7 @@ public class Unit : MonoBehaviour
         }
         else
         {
-            mostValuableActionWeight = GetPartialMoveAndWeight(possibleDestinations, actionsWeightTable).Item2;
+            mostValuableActionWeight = GetPartialMoveAndWeight(possibleDestinations).Item2;
         }
 
         return mostValuableActionWeight;
@@ -604,7 +569,17 @@ public class Unit : MonoBehaviour
         if (movementPath.zones.Count > 1)
         {
             Vector3 finalCoordinates = movementPath.zones[movementPath.zones.Count - 1].GetComponent<ZoneInfo>().GetAvailableUnitSlot().transform.position;
-            StartCoroutine(animate.MoveCameraUntilOnscreen(transform.position, finalCoordinates));
+            Vector3 startCoordinates;
+            if (animate.IsPointOnScreen(transform.position))
+            {
+                startCoordinates = animate.mainCamera.transform.position;
+            }
+            else
+            {
+                startCoordinates = animate.GetCameraCoordsBetweenFocusAndTarget(transform.position, finalCoordinates);
+            }
+            StartCoroutine(animate.MoveCameraUntilOnscreen(startCoordinates, finalCoordinates));
+            //StartCoroutine(animate.MoveCameraUntilOnscreen(transform.position, finalCoordinates));
         }
         for (int i = 1; i < movementPath.zones.Count; i++)
         {

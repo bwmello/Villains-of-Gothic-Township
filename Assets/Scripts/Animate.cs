@@ -5,8 +5,8 @@ using TMPro;  // To update TMP_Text
 
 public class Animate : MonoBehaviour
 {
-    GameObject mainCamera;
-    Camera cameraStuff;
+    public GameObject mainCamera;
+    public Camera cameraStuff;
 
     public GameObject grenadePrefab;
     public GameObject gameOverPrefab;
@@ -17,7 +17,7 @@ public class Animate : MonoBehaviour
         cameraStuff = mainCamera.GetComponent<Camera>();  // Not initialized quickly enough if in Start()
     }
 
-    public IEnumerator MoveObjectOverTime(List<GameObject> objectsToMove, Vector3 origin, Vector3 destination, float timeCoefficient = .5f)  // Right now mainCamera is also being passed in objectsToMove for Unit.AnimateWounds
+    public IEnumerator MoveObjectOverTime(List<GameObject> objectsToMove, Vector3 origin, Vector3 destination, float timeCoefficient = .5f)
     {
         float t = 0;
         while (t < 1f)
@@ -32,17 +32,37 @@ public class Animate : MonoBehaviour
         yield return 0;
     }
 
-    public bool IsPointOnScreen(Vector3 point, double buffer = .2)
+    public bool IsPointOnScreen(Vector3 point, float buffer = .2f)
     {
         Vector3 screenPoint = cameraStuff.WorldToViewportPoint(point);
-        if (screenPoint.z > 0 && screenPoint.x > buffer && screenPoint.x < 1 - buffer && screenPoint.y > buffer && screenPoint.y < 1 - buffer)  // If destination is on camera, stop moving camera
+        if (screenPoint.z > 0 && screenPoint.x > buffer && screenPoint.x < 1 - buffer && screenPoint.y > buffer && screenPoint.y < 1 - buffer)
         {
             return true;
         }
         return false;
     }
 
-    public IEnumerator MoveCameraUntilOnscreen(Vector3 origin, Vector3 destination, float timeCoefficient = .3f)  // Right now mainCamera is also being passed in objectsToMove for Unit.AnimateWounds
+    public Vector3 GetCameraCoordsBetweenFocusAndTarget(Vector3 focus, Vector3 target, float buffer = .2f)
+    {
+        float height = 2f * cameraStuff.orthographicSize - buffer;
+        float width = height * cameraStuff.aspect - buffer;
+        Vector3 halfwayPoint = (focus + target) / 2;
+
+        if (width >= Mathf.Abs(focus.x - halfwayPoint.x) && height >= Mathf.Abs(focus.y - halfwayPoint.y))
+        {
+            //Debug.Log("!!!GetCameraCoordsBetweenFocusAndTarget focus: " + focus.ToString() + "   target: " + target.ToString() + "   halfwayPoint: " + halfwayPoint.ToString() + "   Mathf.Abs(focus.x - halfwayPoint.x): " + Mathf.Abs(focus.x - halfwayPoint.x).ToString() + "\ncameraWidth: " + width.ToString() + "   cameraHeight: " + height.ToString());
+            return halfwayPoint;
+        }
+        else
+        {
+            float x = focus.x < target.x ? focus.x + width : focus.x - width;
+            float y = focus.y < target.y ? focus.y + width : focus.y - width;
+            //Debug.Log("!!!GetCameraCoordsBetweenFocusAndTarget focus: " + focus.ToString() + "   target: " + target.ToString() + "   halfwayPoint: " + halfwayPoint.ToString() + "   inFocusPoint: " + new Vector3(x, y, halfwayPoint.z).ToString() + "\ncameraWidth: " + width.ToString() + "   cameraHeight: " + height.ToString());
+            return new Vector3(x, y, halfwayPoint.z);
+        }
+    }
+
+    public IEnumerator MoveCameraUntilOnscreen(Vector3 origin, Vector3 destination, float timeCoefficient = .3f)
     {
         float t = 0;
         while (t < 1f)
@@ -66,7 +86,8 @@ public class Animate : MonoBehaviour
     {
         GameObject grenade = Instantiate(grenadePrefab, transform);
         grenade.transform.position = origin;
-        StartCoroutine(MoveCameraUntilOnscreen(origin, destination));
+        Vector3 cameraStartCoords = IsPointOnScreen(origin) ? mainCamera.transform.position : origin;
+        StartCoroutine(MoveCameraUntilOnscreen(cameraStartCoords, destination));
         yield return StartCoroutine(MoveObjectOverTime(new List<GameObject>() { grenade }, origin, destination));
         Destroy(grenade);
         yield return 0;

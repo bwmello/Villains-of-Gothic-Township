@@ -195,7 +195,7 @@ public static class MissionSpecifics
                 GameObject superBarn = GameObject.FindGameObjectWithTag("SUPERBARN");
                 if (superBarn != null)
                 {
-                    weight = superBarn.GetComponent<Unit>().GetMostValuableActionWeight(MissionSpecifics.actionsWeightTable);
+                    weight = superBarn.GetComponent<Unit>().GetMostValuableActionWeight();
                 }
                 break;
         }
@@ -232,7 +232,7 @@ public static class MissionSpecifics
                 else
                 {
                     Unit superBarnInfo = superBarn.GetComponent<Unit>();
-                    yield return animate.StartCoroutine(superBarnInfo.ActivateUnit(MissionSpecifics.actionsWeightTable));
+                    yield return animate.StartCoroutine(superBarnInfo.ActivateUnit());
                     superBarnInfo.ModifyLifePoints(-2);
                     if (superBarnInfo.lifePoints < 1)
                     {

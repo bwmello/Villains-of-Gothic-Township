@@ -7,6 +7,7 @@ using TMPro;  // For adding heroes to the zone and knowing which button to light
 
 public class ZoneInfo : MonoBehaviour
 {
+    public int id;
     readonly System.Random random = new System.Random();
 
     public List<GameObject> adjacentZones;
@@ -605,8 +606,10 @@ public class ZoneInfo : MonoBehaviour
 
         EmptyOutZone();
         Transform tokensRow = transform.Find("TokensRow");
+        string debugString = "LoadZoneSave for " + gameObject.name + "\ntokensAndHeroesTags: { ";
         foreach (string tokenOrHeroTag in zoneSave.tokensAndHeroesTags)
         {
+            debugString += tokenOrHeroTag + ", ";
             switch (tokenOrHeroTag)
             {
                 case "Computer":
@@ -625,8 +628,10 @@ public class ZoneInfo : MonoBehaviour
                     break;
             }
         }
+        debugString += "}\nfadedTokensTags: { ";
         foreach (string fadedTokenTag in zoneSave.fadedTokensTags)
         {
+            debugString += fadedTokenTag + ", ";
             switch (fadedTokenTag)
             {
                 case "Computer":
@@ -640,7 +645,7 @@ public class ZoneInfo : MonoBehaviour
                     break;
             }
         }
-        //zoneSave.environTokens = new List<EnvironTokenSave> { new EnvironTokenSave("Frost", 2, false, true), new EnvironTokenSave("Cryogenic", 1, false, false) };  // For testing frost and cryogenic tokens
+        //debugString += "}\nenvironTokens: { ";
         foreach (EnvironTokenSave environTokenSave in zoneSave.environTokens)
         {
             GameObject environTokenCreated = null;
@@ -670,8 +675,10 @@ public class ZoneInfo : MonoBehaviour
         }
         ReorganizeTokens();
 
+        debugString += "}\nunits: { ";
         foreach (UnitSave unit in zoneSave.units)
         {
+            debugString += unit.tag + ", ";
             GameObject unitPrefab = transform.GetComponentInParent<ScenarioMap>().unitPrefabsMasterDict[unit.tag];
             if (unitPrefab != null)
             {
@@ -688,6 +695,7 @@ public class ZoneInfo : MonoBehaviour
                 Debug.LogError("ERROR! In ZoneInfo.LoadZoneSave(), unable to find prefab asset for " + unit.tag + " for " + transform.name);
             }
         }
+        Debug.Log(debugString + "}");
     }
 }
 

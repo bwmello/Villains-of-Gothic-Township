@@ -4,5 +4,5 @@ using UnityEngine;
 
 public static class SceneHandler
 {
-    public static string saveName;
+    public static string saveName = null;
 }

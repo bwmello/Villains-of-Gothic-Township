@@ -2,11 +2,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;  // For File.ReadAllText for loading json save files
+using System.Linq;  // For converting array.ToList()
 using UnityEngine;
 using UnityEngine.UI;  // For button
-using UnityEngine.SceneManagement;  // For SceneManager
 //using UnityEditor;  // For AssetDatabase.LoadAssetAtPath() for getting unit prefabs
-using TMPro;  // for TMP_Text to edit SuccessVsFailure's successContainer blanks
 
 public class ScenarioMap : MonoBehaviour
 {
@@ -67,7 +66,16 @@ public class ScenarioMap : MonoBehaviour
         {
             unitPrefabsMasterDict[unitPrefab.name] = unitPrefab;
         }
-        ScenarioSave scenarioSave = JsonUtility.FromJson<ScenarioSave>(File.ReadAllText(Application.persistentDataPath + "/" + SceneHandler.saveName));
+
+        ScenarioSave scenarioSave;
+        if (SceneHandler.saveName == null)
+        {
+            scenarioSave = JsonUtility.FromJson<ScenarioSave>(Resources.Load<TextAsset>("MissionSetupSaves/" + MissionSpecifics.missionName).text);
+        }
+        else
+        {
+            scenarioSave = JsonUtility.FromJson<ScenarioSave>(File.ReadAllText(Application.persistentDataPath + "/" + SceneHandler.saveName));
+        }
         LoadScenarioSave(scenarioSave);
     }
 
@@ -195,7 +203,7 @@ public class ScenarioMap : MonoBehaviour
             Unit unitInfo = unit.GetComponent<Unit>();
             if (unitInfo.IsActive())  // Check if killed (but not yet removed) by previous unit's turn
             {
-                yield return StartCoroutine(unit.GetComponent<Unit>().ActivateUnit(MissionSpecifics.actionsWeightTable));
+                yield return StartCoroutine(unit.GetComponent<Unit>().ActivateUnit());
             }
         }
         yield return 0;
@@ -269,7 +277,7 @@ public class ScenarioMap : MonoBehaviour
             {
                 foreach (GameObject unit in GameObject.FindGameObjectsWithTag(unitTag))
                 {
-                    currentWeightOfUnitTurn += unit.GetComponent<Unit>().GetMostValuableActionWeight(MissionSpecifics.actionsWeightTable);
+                    currentWeightOfUnitTurn += unit.GetComponent<Unit>().GetMostValuableActionWeight();
                 }
             }
 
@@ -358,7 +366,7 @@ public class ScenarioMap : MonoBehaviour
                         {
                             GameObject availableUnitSlot = spawnZone.GetComponent<ZoneInfo>().GetAvailableUnitSlot();
                             GameObject tempUnit = Instantiate(unitPool.unit, availableUnitSlot.transform);
-                            double currentSpawnActionWeight = tempUnit.GetComponent<Unit>().GetMostValuableActionWeight(MissionSpecifics.actionsWeightTable);
+                            double currentSpawnActionWeight = tempUnit.GetComponent<Unit>().GetMostValuableActionWeight();
                             DestroyImmediate(tempUnit);
                             if (currentSpawnActionWeight > highestSpawnActionWeight)
                             {
@@ -519,17 +527,17 @@ public class ScenarioMap : MonoBehaviour
             }
         }
 
-        GameObject[] zones = GameObject.FindGameObjectsWithTag("ZoneInfoPanel");
-        int zoneIndex = 0;
-        foreach (ZoneSave zoneSave in scenarioSave.zones)
+        GameObject[] randomizedZones = GameObject.FindGameObjectsWithTag("ZoneInfoPanel");
+        List<GameObject> zones = randomizedZones.ToList();
+        zones.Sort((x, y) => x.GetComponent<ZoneInfo>().id.CompareTo(y.GetComponent<ZoneInfo>().id));  // Sorts from lowest zone id to highest
+        for (int i = 0; i < scenarioSave.zones.Count; i++)
         {
-            GameObject currentZone = zones[zoneIndex];
-            currentZone.GetComponent<ZoneInfo>().LoadZoneSave(zoneSave, totalHeroes);
+            GameObject currentZone = zones[i];
+            currentZone.GetComponent<ZoneInfo>().LoadZoneSave(scenarioSave.zones[i], totalHeroes);
             if (currentZone.GetComponent<ZoneInfo>().isSpawnZone)
             {
                 spawnZones.Add(currentZone);
             }
-            zoneIndex++;
         }
     }
 }

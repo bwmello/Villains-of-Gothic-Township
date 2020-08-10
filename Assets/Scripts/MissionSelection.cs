@@ -21,7 +21,8 @@ public class MissionSelection : MonoBehaviour
     public void NewGame()
     {
         MissionSpecifics.missionName = missionName;
-        SceneHandler.saveName = missionName + ".json";
+        //SceneHandler.saveName = missionName + ".json";
+        SceneHandler.saveName = null;  // Set to null again in case returning to MissionSelect after completing another mission
         SceneManager.LoadScene(mapName);
     }
 
