@@ -606,10 +606,10 @@ public class ZoneInfo : MonoBehaviour
 
         EmptyOutZone();
         Transform tokensRow = transform.Find("TokensRow");
-        string debugString = "LoadZoneSave for " + gameObject.name + "\ntokensAndHeroesTags: { ";
+        //string debugString = "LoadZoneSave for " + gameObject.name + "\ntokensAndHeroesTags: { ";
         foreach (string tokenOrHeroTag in zoneSave.tokensAndHeroesTags)
         {
-            debugString += tokenOrHeroTag + ", ";
+            //debugString += tokenOrHeroTag + ", ";
             switch (tokenOrHeroTag)
             {
                 case "Computer":
@@ -628,10 +628,10 @@ public class ZoneInfo : MonoBehaviour
                     break;
             }
         }
-        debugString += "}\nfadedTokensTags: { ";
+        //debugString += "}\nfadedTokensTags: { ";
         foreach (string fadedTokenTag in zoneSave.fadedTokensTags)
         {
-            debugString += fadedTokenTag + ", ";
+            //debugString += fadedTokenTag + ", ";
             switch (fadedTokenTag)
             {
                 case "Computer":
@@ -675,10 +675,10 @@ public class ZoneInfo : MonoBehaviour
         }
         ReorganizeTokens();
 
-        debugString += "}\nunits: { ";
+        //debugString += "}\nunits: { ";
         foreach (UnitSave unit in zoneSave.units)
         {
-            debugString += unit.tag + ", ";
+            //debugString += unit.tag + ", ";
             GameObject unitPrefab = transform.GetComponentInParent<ScenarioMap>().unitPrefabsMasterDict[unit.tag];
             if (unitPrefab != null)
             {
@@ -695,7 +695,7 @@ public class ZoneInfo : MonoBehaviour
                 Debug.LogError("ERROR! In ZoneInfo.LoadZoneSave(), unable to find prefab asset for " + unit.tag + " for " + transform.name);
             }
         }
-        Debug.Log(debugString + "}");
+        //Debug.Log(debugString + "}");
     }
 }
 
@@ -703,6 +703,7 @@ public class ZoneInfo : MonoBehaviour
 [Serializable]
 public class ZoneSave
 {
+    public int id;
     public Boolean isSpawnZone = false;
     public List<string> tokensAndHeroesTags = new List<string>();  // Ex: ["Computer", "2ndHero", "3rdHero"]
     public List<string> fadedTokensTags = new List<string>();
@@ -711,6 +712,7 @@ public class ZoneSave
 
     public ZoneSave(ZoneInfo zone)
     {
+        id = zone.id;
         isSpawnZone = zone.isSpawnZone;
         Transform tokensRow = zone.transform.Find("TokensRow");
         List<string> objectiveTokenTags = new List<string> { "Computer", "Bomb", "PrimedBomb" };

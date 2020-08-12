@@ -318,12 +318,76 @@ public class Unit : MonoBehaviour
 
     public double GetChanceOfSuccess(int requiredSuccesses, List<GameObject> dice, int rerolls = 0)
     {
-        double chanceOfSuccess = 0;
-        //List<double> dieProbabilitiesOfResultIndex = new List<double>();
+        List<(int, GameObject)> firstFailureResult = new List<(int, GameObject)>();
+        foreach (GameObject die in dice)
+        {
+            firstFailureResult.Add((0, die));
+        }
+        List<List<(int, GameObject)>> failureResults = new List<List<(int, GameObject)>>() { firstFailureResult };
 
-        // TODO proper method from NiceToHaves vs this incredibly rough estimation
-        chanceOfSuccess = GetAverageSuccesses(dice, rerolls) / requiredSuccesses;
-        return chanceOfSuccess;
+        while (true)
+        {
+            List<(int, GameObject)> nextFailCombo = GetNextDiceFailCombo(requiredSuccesses, failureResults[failureResults.Count - 1]);
+            if (nextFailCombo != null)
+            {
+                failureResults.Add(nextFailCombo);
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        double probabilityOfFailure = 0;
+        foreach (List<(int, GameObject)> failCombo in failureResults)
+        {
+            double comboProbability = 1;
+            foreach ((int successes, GameObject die) in failCombo)
+            {
+                //Debug.Log(successes.ToString() + " " + die.name + "  probabilityOfResult: " + die.GetComponent<Dice>().GetProbabilityOfResult(successes, rerolls).ToString());
+                comboProbability *= die.GetComponent<Dice>().GetProbabilityOfResult(successes, rerolls);
+            }
+            //Debug.Log("comboProbability: " + comboProbability.ToString());
+            probabilityOfFailure += comboProbability;
+        }
+        //return GetAverageSuccesses(dice, rerolls) / requiredSuccesses;  // Old, rough estimation method
+        return 1 - probabilityOfFailure;
+    }
+
+    // For requiredSuccesses = 4 and 3 dice:
+    // 0,0,0->1,0,0->2,0,0->3,0,0->0,1,0->1,1,0->2,1,0->0,2,0->1,2,0->0,3,0->0,0,1->1,0,1->2,0,1->0,1,1->1,1,1->0,2,1->0,0,2->1,0,2->0,1,2->0,0,3
+    public List<(int, GameObject)> GetNextDiceFailCombo(int requiredSuccesses, List<(int, GameObject)> previousFailCombo)
+    {
+        List<(int, GameObject)> nextFailCombo = new List<(int, GameObject)>(previousFailCombo);
+        while (true)
+        {
+            if (nextFailCombo[nextFailCombo.Count - 1].Item1 >= requiredSuccesses - 1)  // If max successes already for last die, no more failCombos
+            {
+                break;
+            }
+            for (int i = 0; i < nextFailCombo.Count; i++)
+            {
+                if (nextFailCombo[i].Item1 < requiredSuccesses - 1)
+                {
+                    nextFailCombo[i] = (nextFailCombo[i].Item1 + 1, nextFailCombo[i].Item2);
+                    break;
+                }
+                else
+                {
+                    nextFailCombo[i] = (0, nextFailCombo[i].Item2);
+                }
+            }
+            int totalSuccesses = 0;
+            foreach ((int successes, GameObject die) in nextFailCombo)
+            {
+                totalSuccesses += successes;
+            }
+            if (totalSuccesses < requiredSuccesses)
+            {
+                return nextFailCombo;
+            }
+        }
+        return null;
     }
 
     public class UnitPossibleAction
@@ -681,7 +745,7 @@ public class Unit : MonoBehaviour
             yield return StartCoroutine(PauseUntilPlayerPushesContinue(animationContainer, targetedZoneInfo, targetedHero));
 
             // Fading the wounds out
-            float fadeoutTime = 0.7f;
+            float fadeoutTime = 0.9f;
             float t = 0;
             CanvasGroup animationContainerTransparency = animationContainer.GetComponent<CanvasGroup>();
             while (t < 1f)
@@ -1046,6 +1110,15 @@ public class Unit : MonoBehaviour
     public void ModifyLifePoints(int difference)
     {
         lifePoints += difference;
+        if (lifePoints > lifePointsMax)
+        {
+            lifePoints = lifePointsMax;
+        }
+        else if (lifePoints < 0)
+        {
+            lifePoints = 0;
+        }
+
         if (lifePointsMax > 1)  // Will be a VillainRow with a UnitNumber object instead of just a token button like Unit.
         {
             try

@@ -26,7 +26,7 @@ public class Dice : MonoBehaviour
 
         if (totalRerolls > 0)
         {
-            double resultProbablility = Mathf.Pow((float)(1 - GetProbabilityOfResult(result, 0, true)), totalRerolls + 1);  // This assumes you're using rerolls to avoid the result, giving you a lower probability. If that's not the case, resultProbability = 1 - this equation
+            double resultProbablility = Mathf.Pow((float)(GetProbabilityOfResult(result, 0, true)), totalRerolls + 1);  // This assumes you're using rerolls to avoid the result, giving you a lower probability. If that's not the case, resultProbability = 1 - this equation
             return resultProbablility;
         }
         else

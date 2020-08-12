@@ -141,7 +141,7 @@ public class ScenarioMap : MonoBehaviour
             {
                 if (unitTag != "REINFORCEMENT" && GameObject.FindGameObjectsWithTag(unitTag).Length == 0)
                 {
-                    Debug.Log("EndHeroTurn() DREDGING " + unitTag);
+                    Debug.Log("Dredging " + unitTag);
                     villainRiver.Remove(unitTag);
                 }
             }
@@ -592,7 +592,10 @@ public class ScenarioSave
             }
         }
 
-        foreach (GameObject zone in GameObject.FindGameObjectsWithTag("ZoneInfoPanel"))
+        GameObject[] randomizedZones = GameObject.FindGameObjectsWithTag("ZoneInfoPanel");
+        List<GameObject> orderedZones = randomizedZones.ToList();
+        orderedZones.Sort((x, y) => x.GetComponent<ZoneInfo>().id.CompareTo(y.GetComponent<ZoneInfo>().id));  // Sorts from lowest zone id to highest
+        foreach (GameObject zone in orderedZones)
         {
             zones.Add(new ZoneSave(zone.GetComponent<ZoneInfo>()));
         }

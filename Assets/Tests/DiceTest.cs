@@ -95,7 +95,7 @@ namespace Tests
             Assert.AreEqual(.5, yellowDie.GetProbabilityOfResult(0, 0), .001);
             Assert.AreEqual(.25, yellowDie.GetProbabilityOfResult(0, 1), .001);
             Assert.AreEqual((1d / 3d), yellowDie.GetProbabilityOfResult(1, 0), .001);
-            Assert.AreEqual((1d / 6d), yellowDie.GetProbabilityOfResult(1, 1), .001);
+            Assert.AreEqual((1d / 9d), yellowDie.GetProbabilityOfResult(1, 1), .001);
         }
 
         [Test]
@@ -104,8 +104,8 @@ namespace Tests
             Dice yellowRerollableDie = Resources.Load<GameObject>("Prefabs/Dice/YellowRerollableDie").GetComponent<Dice>();
             Assert.AreEqual(.25, yellowRerollableDie.GetProbabilityOfResult(0, 0), .001);
             Assert.AreEqual(.125, yellowRerollableDie.GetProbabilityOfResult(0, 1), .001);
-            Assert.AreEqual((1d / 6d), yellowRerollableDie.GetProbabilityOfResult(1, 0), .001);
-            Assert.AreEqual((1d / 12d), yellowRerollableDie.GetProbabilityOfResult(1, 1), .001);
+            Assert.AreEqual((1d / 9d), yellowRerollableDie.GetProbabilityOfResult(1, 0), .001);
+            Assert.AreEqual((1d / 27d), yellowRerollableDie.GetProbabilityOfResult(1, 1), .001);
         }
 
         [Test]
@@ -115,7 +115,7 @@ namespace Tests
             Assert.AreEqual(.5, blackDie.GetProbabilityOfResult(0, 0), .001);
             Assert.AreEqual(.25, blackDie.GetProbabilityOfResult(0, 1), .001);
             Assert.AreEqual((1d / 6d), blackDie.GetProbabilityOfResult(1, 0), .001);
-            Assert.AreEqual((1d / 12d), blackDie.GetProbabilityOfResult(1, 1), .001);
+            Assert.AreEqual((1d / 36d), blackDie.GetProbabilityOfResult(1, 1), .001);
         }
 
         [Test]
@@ -124,8 +124,8 @@ namespace Tests
             Dice blackRerollableDie = Resources.Load<GameObject>("Prefabs/Dice/BlackRerollableDie").GetComponent<Dice>();
             Assert.AreEqual(.25, blackRerollableDie.GetProbabilityOfResult(0, 0), .001);
             Assert.AreEqual(.125, blackRerollableDie.GetProbabilityOfResult(0, 1), .001);
-            Assert.AreEqual((1d / 12d), blackRerollableDie.GetProbabilityOfResult(1, 0), .001);
-            Assert.AreEqual((1d / 24d), blackRerollableDie.GetProbabilityOfResult(1, 1), .001);
+            Assert.AreEqual((1d / 36d), blackRerollableDie.GetProbabilityOfResult(1, 0), .001);
+            Assert.AreEqual((1d / 216d), blackRerollableDie.GetProbabilityOfResult(1, 1), .001);
         }
     }
 }
