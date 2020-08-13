@@ -128,14 +128,15 @@ public class ScenarioMap : MonoBehaviour
     public void EndHeroTurn()
     {
         DisablePlayerUI();  // Disable all UI so Villain turn isn't interrupted, and so GameOver screen doesn't have to worry about round clock advancing/rewinding
-        CameraToFixedZoom();
 
         if (MissionSpecifics.IsGameOver(currentRound))
         {
+            MissionSpecifics.EndGameAnimation();
             animate.ShowGameOver();
         }
         else
         {
+            CameraToFixedZoom();
             // Dredge the river, removing any tiles with 0 units on the map
             foreach (string unitTag in new List<string>(villainRiver))
             {
@@ -159,6 +160,7 @@ public class ScenarioMap : MonoBehaviour
 
         if (MissionSpecifics.IsGameOver(currentRound))
         {
+            MissionSpecifics.EndGameAnimation();
             animate.ShowGameOver();
         }
         else

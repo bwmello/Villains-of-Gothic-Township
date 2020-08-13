@@ -15,6 +15,11 @@ public class Token : MonoBehaviour  // Should be called ObjectiveToken as there 
     {
         MissionSpecifics.ObjectiveTokenClicked(button);
         // Can't call MissionSpecifics function directly from token button prefab as doesn't list any of MissionSpecifics functions (probably because not MonoBehavior)
+        Animation explosion = gameObject.GetComponent<Animation>();
+        if (explosion != null)
+        {
+            explosion.Play();
+        }
     }
 
     public bool IsActive()

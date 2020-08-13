@@ -35,14 +35,14 @@ public static class MissionSpecifics
 
                 actionsWeightTable["MANIPULATION"] = new List<(string, int, double, ActionCallback)>();
                 if (totalBombs > 0)
-                {    // 60 * GetChanceOfSuccess(), which returns 1 for a 50/50 chance (where averageSuccesses = requiredSuccesses). CROWBARS have a .55556 chance of priming a bomb unhindered, which gives a weight of 33.33333.
-                    actionsWeightTable["MANIPULATION"].Add(("Bomb", 3, 60, PrimeBombManually));
+                {
+                    actionsWeightTable["MANIPULATION"].Add(("Bomb", 3, 100, PrimeBombManually));  // 100 * chanceOfSuccess, 
                 }
 
                 actionsWeightTable["THOUGHT"] = new List<(string, int, double, ActionCallback)>();
                 if (totalComputers > 0 && totalBombs > 0)
                 {
-                    actionsWeightTable["THOUGHT"].Add(("Computer", 3, 60, PrimeBombRemotely));
+                    actionsWeightTable["THOUGHT"].Add(("Computer", 3, 100, PrimeBombRemotely));
                 }
 
                 actionsWeightTable["GUARD"] = new List<(string, int, double, ActionCallback)>();
@@ -63,7 +63,7 @@ public static class MissionSpecifics
                 totalBombs = MissionSpecifics.GetTotalActiveTokens(new List<string>() { "Bomb" });
                 totalComputers = MissionSpecifics.GetTotalActiveTokens(new List<string>() { "Computer" });
 
-                actionsWeightTable["MANIPULATION"] = new List<(string, int, double, ActionCallback)>() { ("Grenade", 0, 20, null) };  // 20 * averageAutoWounds
+                actionsWeightTable["MANIPULATION"] = new List<(string, int, double, ActionCallback)>() { ("Grenade", 0, 15, null) };  // 15 * averageAutoWounds * chanceOfSuccess - friendlyFire
 
                 actionsWeightTable["THOUGHT"] = new List<(string, int, double, ActionCallback)>();
                 if (totalComputers > 0)
@@ -123,7 +123,12 @@ public static class MissionSpecifics
 
     public static int GetTotalActiveTokens(List<string> tokenTags)  // Not really MissionSpecific, so maybe this function belongs in another script
     {
-        int totalActiveTokens = 0;
+        return GetActiveTokens(tokenTags).Count;
+    }
+
+    public static List<GameObject> GetActiveTokens(List<string> tokenTags)  // Not really MissionSpecific, so maybe this function belongs in another script
+    {
+        List<GameObject> activeTokens = new List<GameObject>();
         foreach (string tokenTag in tokenTags)
         {
             GameObject[] activeAndInactiveTokens = GameObject.FindGameObjectsWithTag(tokenTag);
@@ -131,11 +136,11 @@ public static class MissionSpecifics
             {
                 if (maybeActiveToken.GetComponent<Token>().IsActive())
                 {
-                    totalActiveTokens++;
+                    activeTokens.Add(maybeActiveToken);
                 }
             }
         }
-        return totalActiveTokens;
+        return activeTokens;
     }
 
     public static bool IsGameOver(int currentRound)
@@ -167,7 +172,7 @@ public static class MissionSpecifics
         switch (missionName)
         {
             case "ASinkingFeeling":
-                int totalPrimedBombsRemaining = GetTotalActiveTokens(new List<string>() { "Bomb", "PrimedBomb" });
+                int totalPrimedBombsRemaining = GetTotalActiveTokens(new List<string>() { "PrimedBomb" });
                 if (totalPrimedBombsRemaining < 2)
                 {
                     return true;
@@ -184,6 +189,34 @@ public static class MissionSpecifics
                 break;
         }
         return false;
+    }
+
+    public static void EndGameAnimation()
+    {
+        switch (missionName)
+        {
+            case "ASinkingFeeling":
+                if (!IsHeroVictory())
+                {
+                    foreach (GameObject primedBomb in GetActiveTokens(new List<string>() { "PrimedBomb" }))
+                    {
+                        animate.ShowExplosion(primedBomb.transform.position);
+                        //primedBomb.GetComponent<Animation>().Play();  // Seems like primedBombs should always go off at the end of the mission regardless of who won
+                    }
+                }
+                break;
+            case "IceToSeeYou":
+                if (IsHeroVictory())
+                {
+                    foreach (GameObject primedBomb in GetActiveTokens(new List<string>() { "PrimedBomb" }))
+                    {
+                        primedBomb.GetComponent<Animation>().Play();
+                    }
+                }
+                break;
+            default:
+                break;
+        }
     }
 
     public static double GetReinforcementWeight()
