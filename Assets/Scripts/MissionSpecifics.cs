@@ -88,8 +88,8 @@ public static class MissionSpecifics
             {
                 case "IceToSeeYou":
                     GameObject tokenZone = button.gameObject.GetComponent<Token>().GetZone();
-                    GameObject.DestroyImmediate(button.gameObject);
-                    GameObject.Instantiate(primedBombPrefab, tokenZone.transform.Find("TokensRow"));
+                    Object.DestroyImmediate(button.gameObject);
+                    Object.Instantiate(primedBombPrefab, tokenZone.transform.Find("TokensRow"));
                     tokenZone.GetComponent<ZoneInfo>().ReorganizeTokens();
                     return;
                 default:
@@ -102,11 +102,12 @@ public static class MissionSpecifics
             {
                 case "IceToSeeYou":
                     GameObject tokenZone = button.gameObject.GetComponent<Token>().GetZone();
-                    GameObject.DestroyImmediate(button.gameObject);
-                    GameObject.Instantiate(bombPrefab, tokenZone.transform.Find("TokensRow"));
+                    Object.DestroyImmediate(button.gameObject);
+                    Object.Instantiate(bombPrefab, tokenZone.transform.Find("TokensRow"));
                     tokenZone.GetComponent<ZoneInfo>().ReorganizeTokens();
                     return;
                 default:
+                    button.transform.Find("RedLight").gameObject.SetActive(false);
                     break;
             }
         }

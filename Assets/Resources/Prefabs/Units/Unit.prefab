@@ -78,9 +78,13 @@ MonoBehaviour:
   martialArtsSuccesses: 0
   circularStrike: 0
   counterAttack: 0
-  marskmanSuccesses: 0
+  marksmanSuccesses: 0
   pointBlankRerolls: 0
   munitionSpecialist: 0
+  gasImmunity: 0
+  frosty: 0
+  fiery: 0
+  grenade: 0
   actionProficiencies: []
 --- !u!114 &6549735627474174586
 MonoBehaviour:
@@ -95,7 +99,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.88235295, g: 0.88235295, b: 0.88235295, a: 1}
   m_RaycastTarget: 1
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -293,7 +297,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.88235295, g: 0.88235295, b: 0.88235295, a: 1}
   m_RaycastTarget: 1
   m_Maskable: 1
   m_OnCullStateChanged:
