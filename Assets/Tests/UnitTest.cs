@@ -74,8 +74,8 @@ namespace Tests
         public void GetChanceOfSuccessBarn()
         {
             Unit barnUnit = Resources.Load<GameObject>("Prefabs/Units/BARN").GetComponent<Unit>();
-            Assert.AreEqual(.3333, barnUnit.GetChanceOfSuccess(3, barnUnit.actionProficiencies[1].proficiencyDice), .001);  // Manipulate bomb
-            Assert.AreEqual(.9259, barnUnit.GetChanceOfSuccess(3, barnUnit.actionProficiencies[1].proficiencyDice, 1), .001);
+            Assert.AreEqual(.6666, barnUnit.GetChanceOfSuccess(2, barnUnit.actionProficiencies[1].proficiencyDice), .001);  // Manipulate bomb, munitionSpecialist 1
+            Assert.AreEqual(.9629, barnUnit.GetChanceOfSuccess(2, barnUnit.actionProficiencies[1].proficiencyDice, 1), .001);
         }
 
         [Test]

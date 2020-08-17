@@ -64,15 +64,15 @@ public class Animate : MonoBehaviour
         float width = height * cameraStuff.aspect - buffer;
         Vector3 halfwayPoint = (focus + target) / 2;
 
-        if (width >= Mathf.Abs(focus.x - halfwayPoint.x) && height >= Mathf.Abs(focus.y - halfwayPoint.y))
+        if (width / 2 >= Mathf.Abs(focus.x - halfwayPoint.x) && height / 2 >= Mathf.Abs(focus.y - halfwayPoint.y))
         {
-            //Debug.Log("!!!GetCameraCoordsBetweenFocusAndTarget focus: " + focus.ToString() + "   target: " + target.ToString() + "   halfwayPoint: " + halfwayPoint.ToString() + "   Mathf.Abs(focus.x - halfwayPoint.x): " + Mathf.Abs(focus.x - halfwayPoint.x).ToString() + "\ncameraWidth: " + width.ToString() + "   cameraHeight: " + height.ToString());
+            //Debug.Log("!!!GetCameraCoordsBetweenFocusAndTarget focus: " + focus.ToString() + "   target: " + target.ToString() + "   halfwayPoint: " + halfwayPoint.ToString() + "   Mathf.Abs(focus.x - halfwayPoint.x): " + Mathf.Abs(focus.x - halfwayPoint.x).ToString() + "   Mathf.Abs(focus.y - halfwayPoint.y): " + Mathf.Abs(focus.y - halfwayPoint.y).ToString() + "\ncameraWidth: " + width.ToString() + "   cameraHeight: " + height.ToString());
             return halfwayPoint;
         }
         else
         {
-            float x = focus.x < target.x ? focus.x + width : focus.x - width;
-            float y = focus.y < target.y ? focus.y + width : focus.y - width;
+            float x = focus.x < target.x ? focus.x + width / 2 : focus.x - width / 2;
+            float y = focus.y < target.y ? focus.y + height / 2 : focus.y - height / 2;
             //Debug.Log("!!!GetCameraCoordsBetweenFocusAndTarget focus: " + focus.ToString() + "   target: " + target.ToString() + "   halfwayPoint: " + halfwayPoint.ToString() + "   inFocusPoint: " + new Vector3(x, y, halfwayPoint.z).ToString() + "\ncameraWidth: " + width.ToString() + "   cameraHeight: " + height.ToString());
             return new Vector3(x, y, halfwayPoint.z);
         }
