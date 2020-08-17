@@ -18,6 +18,21 @@ public class Animate : MonoBehaviour
         cameraStuff = mainCamera.GetComponent<Camera>();  // Not initialized quickly enough if in Start()
     }
 
+    public IEnumerator FadeOut(CanvasGroup canvasGroupToFade, float fadedAlpha,  float fadeTimeCoefficient = .5f)
+    {
+        float t = 0;
+        while (t < 1f)
+        {
+            t += Time.deltaTime * fadeTimeCoefficient;
+
+            float transparency = Mathf.Lerp(1, fadedAlpha, t);
+            canvasGroupToFade.alpha = transparency;
+
+            yield return null;
+        }
+        yield return 0;
+    }
+
     public IEnumerator MoveObjectOverTime(List<GameObject> objectsToMove, Vector3 origin, Vector3 destination, float timeCoefficient = .5f)
     {
         float t = 0;

@@ -15,13 +15,12 @@ public class Token : MonoBehaviour  // Should be called ObjectiveToken as there 
     {
         if (gameObject.CompareTag("PrimedBomb"))
         {
-            InvokeRepeating(nameof(Blink), 2f, 2f);
+            InvokeRepeating(nameof(Blink), Random.Range(1f, 3.5f), 2f);
         }
     }
 
     void Blink()
     {
-        //Light redLight = gameObject.GetComponentInChildren<Light>();
         GameObject redLight = transform.Find("RedLight").gameObject;
         if (IsActive() && !redLight.activeSelf)
         {

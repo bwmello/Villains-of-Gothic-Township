@@ -9,6 +9,7 @@ public class ZoneInfo : MonoBehaviour
 {
     public int id;
     readonly System.Random random = new System.Random();
+    private Animate animate;
 
     public List<GameObject> adjacentZones;
     public List<GameObject> steeplyAdjacentZones;
@@ -44,19 +45,15 @@ public class ZoneInfo : MonoBehaviour
 
     public int frostTokens = 0;  // Increases terrainDifficulty when incremented, ignored by unit.frostwalker
     public int cryogenicTokens = 0;  // Increases terrainDifficulty/Danger when incremented, ignored by unit.frostwalker
-    public int supportRerolls = 0;  // Determined by total Unit.supportRerolls of each unit in zone
+
+    private void Awake()
+    {
+        animate = GameObject.FindGameObjectWithTag("AnimationContainer").GetComponent<Animate>();
+    }
 
     private void Start()
     {
         List<string> unitTags = transform.GetComponentInParent<ScenarioMap>().villainRiver;  // Fetch this list every time you need it as ScenarioMap removes unit tiles by dredging river
-        foreach (Transform row in transform.Find("UnitsContainer"))
-        {
-            if (unitTags.Contains(row.tag))
-            {
-                Unit unit = row.gameObject.GetComponent<Unit>();
-                supportRerolls += unit.supportRerolls;
-            }
-        }
     }
 
     [Serializable]
@@ -78,15 +75,29 @@ public class ZoneInfo : MonoBehaviour
         return -1;  // An invalid zone id
     }
 
-    public Unit[] GetUnitsInfo()
+    public List<Unit> GetUnitsInfo(bool onlyActive = true)
     {
-        // TODO Don't include faded/inactive/dead units (that way more likely to grenade zone with already dead unit in it)
-        return transform.GetComponentsInChildren<Unit>();
+        List<Unit> unitsInfo = new List<Unit>(transform.GetComponentsInChildren<Unit>());
+        if (onlyActive)
+        {
+            List<Unit> activeUnitsInfo = new List<Unit>();
+            foreach (Unit maybeActiveUnit in unitsInfo)
+            {
+                if (maybeActiveUnit.IsActive())
+                {
+                    activeUnitsInfo.Add(maybeActiveUnit);
+                }
+            }
+            return activeUnitsInfo;
+        }
+        else
+        {
+            return unitsInfo;
+        }
     }
 
     public List<GameObject> GetUnits()
     {
-        // TODO Don't include faded/inactive/dead units
         List<GameObject> units = new List<GameObject>();
         foreach (Unit unit in GetUnitsInfo())
         {
@@ -138,6 +149,19 @@ public class ZoneInfo : MonoBehaviour
         return null;
     }
 
+    public int GetSupportRerolls(GameObject unitToDiscount = null)
+    {
+        int supportRerolls = 0;
+        foreach (Unit unit in GetUnitsInfo())
+        {
+            if (unitToDiscount != unit.gameObject)
+            {
+                supportRerolls += unit.supportRerolls;
+            }
+        }
+        return supportRerolls;
+    }
+
     public double GetOccupantsManipulationLikelihood(GameObject unitToDiscount)
     {
         double chanceOfFailure = 1;
@@ -149,8 +173,7 @@ public class ZoneInfo : MonoBehaviour
             {
                 if (proficiency.actionType == "MANIPULATION")
                 {
-                    int rerolls = supportRerolls - unit.supportRerolls;
-                    chanceOfFailure *= unit.GetChanceOfSuccess(requiredSuccesses, proficiency.proficiencyDice, rerolls);
+                    chanceOfFailure *= unit.GetChanceOfSuccess(requiredSuccesses, proficiency.proficiencyDice, GetSupportRerolls(unitToDiscount));
                 }
             }
         }
@@ -354,6 +377,10 @@ public class ZoneInfo : MonoBehaviour
                 automaticWounds += damageDie.Roll();
             }
             affectedUnit.ModifyLifePoints(-automaticWounds);
+            if (!affectedUnit.IsActive())
+            {
+                yield return StartCoroutine(animate.FadeOut(affectedUnit.gameObject.GetComponent<CanvasGroup>(), affectedUnit.fadedAlpha));  // Should this happen one at a time or should I ditch the "yield return"
+            }
         }
         if (HasHeroes())  // Gives heroes chance to roll damage on themselves (as they can use their rerolls)
         {

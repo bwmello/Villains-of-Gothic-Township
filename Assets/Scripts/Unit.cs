@@ -9,6 +9,7 @@ public class Unit : MonoBehaviour
 {
     readonly System.Random random = new System.Random();
     private Animate animate;
+    public float fadedAlpha = .2f;  // Public so can be used by ZoneInfo.cs when terrain danger increases
 
     public int lifePoints = 1;
     public int lifePointsMax = 1;
@@ -104,7 +105,17 @@ public class Unit : MonoBehaviour
                 chosenAction.pathTaken.zones.Add(chosenAction.actionZone);  // Otherwise token is never animated moving the last zone to the destination
                 yield return StartCoroutine(MoveToken(chosenAction.pathTaken));
             }
+
+            if (!IsActive())  // If killed by first move
+            {
+                yield break;
+            }
             yield return StartCoroutine(PerformAction(chosenAction));
+
+            if (!IsActive())  // If killed by own action
+            {
+                yield break;
+            }
             if (chosenAction.finalDestinationZone != chosenAction.actionZone)
             {
                 Dictionary<GameObject, MovementPath> possibleFinalDestinations = GetPossibleDestinations(currentZone);
@@ -422,12 +433,11 @@ public class Unit : MonoBehaviour
         {
             ZoneInfo possibleZoneInfo = possibleZone.GetComponent<ZoneInfo>();
             int actionZoneHindrance = possibleZoneInfo.GetCurrentHindrance(gameObject);
-            int availableRerolls = possibleZoneInfo.supportRerolls;
+            int availableRerolls = possibleZoneInfo.GetSupportRerolls(gameObject);
             double guardZoneWeight = 0;
             GameObject finalDestinationZone = possibleZone;
             if (GetZone() == possibleZone)
             {
-                availableRerolls -= supportRerolls;
                 if (MissionSpecifics.actionsWeightTable.ContainsKey("GUARD"))
                 {
                     double mostValuableFinalDestinationWeight = 0;
@@ -540,7 +550,7 @@ public class Unit : MonoBehaviour
                                             double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
                                             actionWeight += averageAutoWounds * manipulatable.Item3 * chanceOfSuccess;
                                             //Debug.Log("!!!Weighing grenade throw, actionWeight " + actionWeight.ToString() + " += " + averageAutoWounds.ToString() + " * " + manipulatable.Item3.ToString() + " * " + chanceOfSuccess.ToString());
-                                            actionWeight -= grenadeTargetZone.GetComponent<ZoneInfo>().GetUnitsInfo().Length * grenade * 6.6666666666;  // Chance of unit dying is 2/3 per grenade/terrainDanger die
+                                            actionWeight -= grenadeTargetZone.GetComponent<ZoneInfo>().GetUnitsInfo().Count * grenade * 6.6666666666;  // Chance of unit dying is 2/3 per grenade/terrainDanger die
                                             if (possibleDestinationsAndPaths[possibleZone].terrainDanger > 0)
                                             {
                                                 actionWeight /= (2 * possibleDestinationsAndPaths[possibleZone].terrainDanger);
@@ -643,7 +653,6 @@ public class Unit : MonoBehaviour
                 startCoordinates = animate.GetCameraCoordsBetweenFocusAndTarget(transform.position, finalCoordinates);
             }
             StartCoroutine(animate.MoveCameraUntilOnscreen(startCoordinates, finalCoordinates));
-            //StartCoroutine(animate.MoveCameraUntilOnscreen(transform.position, finalCoordinates));
         }
         for (int i = 1; i < movementPath.zones.Count; i++)
         {
@@ -677,8 +686,9 @@ public class Unit : MonoBehaviour
                 automaticWounds += damageDie.Roll();
             }
             ModifyLifePoints(-automaticWounds);
-            if (lifePoints <= 0)
+            if (!IsActive())
             {
+                yield return StartCoroutine(animate.FadeOut(gameObject.GetComponent<CanvasGroup>(), fadedAlpha));
                 break;
             }
         }
@@ -745,18 +755,8 @@ public class Unit : MonoBehaviour
             yield return StartCoroutine(PauseUntilPlayerPushesContinue(animationContainer, targetedZoneInfo, targetedHero));
 
             // Fading the wounds out
-            float fadeoutTime = 0.9f;
-            float t = 0;
             CanvasGroup animationContainerTransparency = animationContainer.GetComponent<CanvasGroup>();
-            while (t < 1f)
-            {
-                t += Time.deltaTime * fadeoutTime;
-
-                float transparency = Mathf.Lerp(1, .2f, t);
-                animationContainerTransparency.alpha = transparency;
-
-                yield return null;
-            }
+            yield return StartCoroutine(animate.FadeOut(animationContainerTransparency, fadedAlpha, .9f));
 
             for (int i = woundsTotal - 1; i >= 0; i--)
             {
@@ -774,7 +774,7 @@ public class Unit : MonoBehaviour
         GameObject currentZone = GetZone();
         ZoneInfo currentZoneInfo = currentZone.GetComponent<ZoneInfo>();
         int currentZoneHindrance = currentZoneInfo.GetCurrentHindrance(gameObject);
-        int availableRerolls = currentZoneInfo.supportRerolls - supportRerolls;
+        int availableRerolls = currentZoneInfo.GetSupportRerolls(gameObject);
 
         if (!animate.IsPointOnScreen(transform.position))
         {
@@ -1137,7 +1137,7 @@ public class Unit : MonoBehaviour
         }
         else
         {
-            this.GetComponent<CanvasGroup>().alpha = (float).2;
+            this.GetComponent<CanvasGroup>().alpha = fadedAlpha;
         }
     }
 

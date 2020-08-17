@@ -1,16 +1,15 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-//using UnityEngine.Experimental.Rendering.Universal;  // To fetch 2d light
-//using UnityEngine.Experimental.Rendering.LWRP;
+//using UnityEngine.Experimental.Rendering.Universal;  // To fetch 2d light, but Unity can't find namespace
+
 
 public class Spotlight : MonoBehaviour
 {
-    //readonly System.Random random = new System.Random();
     public Vector3 leftPoint;
     public Vector3 rightPoint;
     private Vector3 startingPoint;
-    private float startingIntensity;
+    //private float startingIntensity;
     private float randomOscillationProgress;
 
     private void Awake()
@@ -18,15 +17,11 @@ public class Spotlight : MonoBehaviour
         startingPoint = transform.localPosition;
         randomOscillationProgress = Random.Range(0f, 3.0f);
         //startingIntensity = transform.GetComponent<Light2D>().intensity;
-        //startingIntensity = transform.GetComponent<Light>().intensity;
-        //transform.GetComponent<Light>().intensity = 0;
     }
 
     IEnumerator Start()
     {
         startingPoint = transform.localPosition;
-        //yield return new WaitForSecondsRealtime(Random.Range(0f, 3.0f));
-        //transform.GetComponent<Light>().intensity = startingIntensity;
         while (true)
         {
             yield return StartCoroutine(OscillateLeftAndRight());
@@ -37,7 +32,7 @@ public class Spotlight : MonoBehaviour
     {
         float xScalar = (leftPoint.x - startingPoint.x);
         float yScalar = (leftPoint.y - startingPoint.y);
-        transform.localPosition = new Vector3(Mathf.Sin(Time.time) * xScalar + startingPoint.x, Mathf.Sin(Time.time) * yScalar + startingPoint.y, 0);
+        transform.localPosition = new Vector3(Mathf.Sin(Time.time + randomOscillationProgress) * xScalar + startingPoint.x, Mathf.Sin(Time.time + randomOscillationProgress) * yScalar + startingPoint.y, 0);
         yield return null;
     }
 
