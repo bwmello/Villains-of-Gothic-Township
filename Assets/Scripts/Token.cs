@@ -11,15 +11,31 @@ public class Token : MonoBehaviour  // Should be called ObjectiveToken as there 
         transform.name = transform.tag;
     }
 
+    void Start()
+    {
+        if (gameObject.CompareTag("PrimedBomb"))
+        {
+            InvokeRepeating(nameof(Blink), 2f, 2f);
+        }
+    }
+
+    void Blink()
+    {
+        //Light redLight = gameObject.GetComponentInChildren<Light>();
+        GameObject redLight = transform.Find("RedLight").gameObject;
+        if (IsActive() && !redLight.activeSelf)
+        {
+            redLight.SetActive(true);
+        }
+        else
+        {
+            redLight.SetActive(false);
+        }
+    }
+
     public void TokenButtonClicked(Button button)
     {
-        MissionSpecifics.ObjectiveTokenClicked(button);
-        // Can't call MissionSpecifics function directly from token button prefab as doesn't list any of MissionSpecifics functions (probably because not MonoBehavior)
-        Animation explosion = gameObject.GetComponent<Animation>();
-        if (explosion != null)
-        {
-            explosion.Play();
-        }
+        MissionSpecifics.ObjectiveTokenClicked(button); // Can't call MissionSpecifics function directly from token button prefab as doesn't list any of MissionSpecifics functions (probably because not MonoBehavior)
     }
 
     public bool IsActive()

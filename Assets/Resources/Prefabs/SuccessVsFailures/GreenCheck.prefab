@@ -10,7 +10,7 @@ PrefabInstance:
     - target: {fileID: 3989726647576400915, guid: 32f0cdfb10ff446298d70758741e0a6f,
         type: 3}
       propertyPath: m_Name
-      value: GreenCheck Variant
+      value: GreenCheck
       objectReference: {fileID: 0}
     - target: {fileID: 5410057770340757479, guid: 32f0cdfb10ff446298d70758741e0a6f,
         type: 3}
@@ -18,6 +18,21 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 21300000, guid: c5bd63ea3c8074f499e5cdda7821edb2,
         type: 3}
+    - target: {fileID: 5410057770340757479, guid: 32f0cdfb10ff446298d70758741e0a6f,
+        type: 3}
+      propertyPath: m_Color.r
+      value: 0.88235295
+      objectReference: {fileID: 0}
+    - target: {fileID: 5410057770340757479, guid: 32f0cdfb10ff446298d70758741e0a6f,
+        type: 3}
+      propertyPath: m_Color.g
+      value: 0.88235295
+      objectReference: {fileID: 0}
+    - target: {fileID: 5410057770340757479, guid: 32f0cdfb10ff446298d70758741e0a6f,
+        type: 3}
+      propertyPath: m_Color.b
+      value: 0.88235295
+      objectReference: {fileID: 0}
     - target: {fileID: 7630046624657820833, guid: 32f0cdfb10ff446298d70758741e0a6f,
         type: 3}
       propertyPath: m_LocalPosition.x

@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 8703257534192432721}
   - component: {fileID: 4461530451907345595}
   m_Layer: 5
-  m_Name: TerrainDangerDieIcon
+  m_Name: TerrainDangerIcon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -58,7 +58,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.88235295, g: 0.88235295, b: 0.88235295, a: 1}
   m_RaycastTarget: 0
   m_Maskable: 1
   m_OnCullStateChanged:

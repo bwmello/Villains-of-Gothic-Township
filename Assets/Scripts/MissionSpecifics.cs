@@ -88,8 +88,8 @@ public static class MissionSpecifics
             {
                 case "IceToSeeYou":
                     GameObject tokenZone = button.gameObject.GetComponent<Token>().GetZone();
-                    GameObject.DestroyImmediate(button.gameObject);
-                    GameObject.Instantiate(primedBombPrefab, tokenZone.transform.Find("TokensRow"));
+                    Object.DestroyImmediate(button.gameObject);
+                    Object.Instantiate(primedBombPrefab, tokenZone.transform.Find("TokensRow"));
                     tokenZone.GetComponent<ZoneInfo>().ReorganizeTokens();
                     return;
                 default:
@@ -102,11 +102,12 @@ public static class MissionSpecifics
             {
                 case "IceToSeeYou":
                     GameObject tokenZone = button.gameObject.GetComponent<Token>().GetZone();
-                    GameObject.DestroyImmediate(button.gameObject);
-                    GameObject.Instantiate(bombPrefab, tokenZone.transform.Find("TokensRow"));
+                    Object.DestroyImmediate(button.gameObject);
+                    Object.Instantiate(bombPrefab, tokenZone.transform.Find("TokensRow"));
                     tokenZone.GetComponent<ZoneInfo>().ReorganizeTokens();
                     return;
                 default:
+                    button.transform.Find("RedLight").gameObject.SetActive(false);
                     break;
             }
         }
@@ -201,7 +202,6 @@ public static class MissionSpecifics
                     foreach (GameObject primedBomb in GetActiveTokens(new List<string>() { "PrimedBomb" }))
                     {
                         animate.ShowExplosion(primedBomb.transform.position);
-                        //primedBomb.GetComponent<Animation>().Play();  // Seems like primedBombs should always go off at the end of the mission regardless of who won
                     }
                 }
                 break;
@@ -210,7 +210,7 @@ public static class MissionSpecifics
                 {
                     foreach (GameObject primedBomb in GetActiveTokens(new List<string>() { "PrimedBomb" }))
                     {
-                        primedBomb.GetComponent<Animation>().Play();
+                        animate.ShowExplosion(primedBomb.transform.position);
                     }
                 }
                 break;
