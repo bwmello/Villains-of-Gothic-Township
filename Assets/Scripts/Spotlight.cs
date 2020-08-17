@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-////using UnityEngine.Experimental.Rendering.Universal;  // To fetch 2d light
+//using UnityEngine.Experimental.Rendering.Universal;  // To fetch 2d light
 //using UnityEngine.Experimental.Rendering.LWRP;
 
 public class Spotlight : MonoBehaviour
@@ -11,18 +11,21 @@ public class Spotlight : MonoBehaviour
     public Vector3 rightPoint;
     private Vector3 startingPoint;
     private float startingIntensity;
+    private float randomOscillationProgress;
 
     private void Awake()
     {
         startingPoint = transform.localPosition;
+        randomOscillationProgress = Random.Range(0f, 3.0f);
         //startingIntensity = transform.GetComponent<Light2D>().intensity;
+        //startingIntensity = transform.GetComponent<Light>().intensity;
         //transform.GetComponent<Light>().intensity = 0;
     }
 
     IEnumerator Start()
     {
         startingPoint = transform.localPosition;
-        yield return new WaitForSecondsRealtime(Random.Range(0f, 3.0f));
+        //yield return new WaitForSecondsRealtime(Random.Range(0f, 3.0f));
         //transform.GetComponent<Light>().intensity = startingIntensity;
         while (true)
         {
