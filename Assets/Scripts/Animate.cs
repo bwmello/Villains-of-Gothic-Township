@@ -33,8 +33,12 @@ public class Animate : MonoBehaviour
         yield return 0;
     }
 
-    public IEnumerator MoveObjectOverTime(List<GameObject> objectsToMove, Vector3 origin, Vector3 destination, float timeCoefficient = .5f)
+    public IEnumerator MoveObjectOverTime(List<GameObject> objectsToMove, Vector3 origin, Vector3 destination, float timeCoefficient = .5f)  // TODO maybe remove this timeCoefficient param
     {
+        float xDistance = Mathf.Abs(origin.x - destination.x);
+        float yDistance = Mathf.Abs(origin.y - destination.y);
+        float longestDistance = xDistance >= yDistance ? xDistance : yDistance;
+        timeCoefficient = 1 / Mathf.Sqrt(longestDistance);
         float t = 0;
         while (t < 1f)
         {
@@ -51,7 +55,7 @@ public class Animate : MonoBehaviour
     public bool IsPointOnScreen(Vector3 point, float buffer = .2f)
     {
         Vector3 screenPoint = cameraStuff.WorldToViewportPoint(point);
-        if (screenPoint.z > 0 && screenPoint.x > buffer && screenPoint.x < 1 - buffer && screenPoint.y > buffer && screenPoint.y < 1 - buffer)
+        if (screenPoint.x > buffer && screenPoint.x < 1 - buffer && screenPoint.y > buffer && screenPoint.y < 1 - buffer)
         {
             return true;
         }
@@ -78,17 +82,30 @@ public class Animate : MonoBehaviour
         }
     }
 
-    public IEnumerator MoveCameraUntilOnscreen(Vector3 origin, Vector3 destination, float timeCoefficient = .3f)
+    public IEnumerator MoveCameraUntilOnscreen(Vector3 origin, Vector3 destination, float timeCoefficient = .3f)  // Pass camera's position as origin if you don't want camera to jump
     {
         float t = 0;
+        Vector3 camStartCoords;
+        if (IsPointOnScreen(origin))
+        {
+            //Debug.Log("!!!MoveCameraUntilOnscreen, origin " + origin.ToString() + "  is on screen.");
+            if (IsPointOnScreen(destination))
+            {
+                //Debug.Log("destination " + destination.ToString() + "  is also on screen, so exiting.");
+                yield break;
+            }
+            camStartCoords = mainCamera.transform.position;
+            //Debug.Log("destination not on screen, so setting camStartCoords to mainCamera.transform.position: " + mainCamera.transform.position.ToString());
+        }
+        else
+        {
+            camStartCoords = GetCameraCoordsBetweenFocusAndTarget(origin, destination);
+            //Debug.Log("!!!MoveCameraUntilOnscreen, origin " + origin.ToString() + "  not on screen, so setting camStartCoords to between FocusAndTarget: " + camStartCoords.ToString());
+        }
         while (t < 1f)
         {
             t += Time.deltaTime * timeCoefficient;
-            if (IsPointOnScreen(origin) && IsPointOnScreen(destination))  // If destination is on camera, stop moving camera
-            {
-                break;
-            }
-            mainCamera.transform.position = new Vector3(Mathf.Lerp(origin.x, destination.x, t), Mathf.Lerp(origin.y, destination.y, t), mainCamera.transform.position.z);
+            mainCamera.transform.position = new Vector3(Mathf.Lerp(camStartCoords.x, destination.x, t), Mathf.Lerp(camStartCoords.y, destination.y, t), mainCamera.transform.position.z);
             if (IsPointOnScreen(destination))  // If destination is on camera, stop moving camera
             {
                 break;
@@ -102,8 +119,7 @@ public class Animate : MonoBehaviour
     {
         GameObject grenade = Instantiate(grenadePrefab, transform);
         grenade.transform.position = origin;
-        Vector3 cameraStartCoords = IsPointOnScreen(origin) ? mainCamera.transform.position : origin;
-        StartCoroutine(MoveCameraUntilOnscreen(cameraStartCoords, destination));
+        StartCoroutine(MoveCameraUntilOnscreen(origin, destination));
         yield return StartCoroutine(MoveObjectOverTime(new List<GameObject>() { grenade }, origin, destination));
         Destroy(grenade);
         yield return 0;

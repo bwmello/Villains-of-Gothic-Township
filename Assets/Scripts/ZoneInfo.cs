@@ -41,7 +41,7 @@ public class ZoneInfo : MonoBehaviour
     public int elevation;
     public int maxOccupancy;
     public int terrainDifficulty = 0;
-    public int terrainDanger = 0;
+    public int terrainDanger = 0;  // Shouldn't change from initial, use GetTerrainDangerTotal to get current
 
     public int frostTokens = 0;  // Increases terrainDifficulty when incremented, ignored by unit.frostwalker
     public int cryogenicTokens = 0;  // Increases terrainDifficulty/Danger when incremented, ignored by unit.frostwalker
@@ -339,7 +339,7 @@ public class ZoneInfo : MonoBehaviour
             List<GameObject> flameTokens = GetAllTokensWithTag("Flame");
             foreach (GameObject flameToken in flameTokens)
             {
-                terrainDanger += flameToken.GetComponent<EnvironToken>().quantity;
+                terrainDangerTotal += flameToken.GetComponent<EnvironToken>().quantity;
             }
         }
         if (!unit.frosty)
@@ -347,7 +347,7 @@ public class ZoneInfo : MonoBehaviour
             List<GameObject> cryogenicTokens = GetAllTokensWithTag("Cryogenic");
             foreach (GameObject cryogenicToken in cryogenicTokens)
             {
-                terrainDanger += cryogenicToken.GetComponent<EnvironToken>().quantity;
+                terrainDangerTotal += cryogenicToken.GetComponent<EnvironToken>().quantity;
             }
         }
         if (!unit.gasImmunity)
@@ -355,7 +355,7 @@ public class ZoneInfo : MonoBehaviour
             List<GameObject> gasTokens = GetAllTokensWithTag("Gas");
             foreach (GameObject gasToken in gasTokens)
             {
-                terrainDanger += gasToken.GetComponent<EnvironToken>().quantity;
+                terrainDangerTotal += gasToken.GetComponent<EnvironToken>().quantity;
             }
         }
         return terrainDangerTotal;

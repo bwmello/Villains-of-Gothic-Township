@@ -643,16 +643,7 @@ public class Unit : MonoBehaviour
         if (movementPath.zones.Count > 1)
         {
             Vector3 finalCoordinates = movementPath.zones[movementPath.zones.Count - 1].GetComponent<ZoneInfo>().GetAvailableUnitSlot().transform.position;
-            Vector3 startCoordinates;
-            if (animate.IsPointOnScreen(transform.position))
-            {
-                startCoordinates = animate.mainCamera.transform.position;
-            }
-            else
-            {
-                startCoordinates = animate.GetCameraCoordsBetweenFocusAndTarget(transform.position, finalCoordinates);
-            }
-            StartCoroutine(animate.MoveCameraUntilOnscreen(startCoordinates, finalCoordinates));
+            StartCoroutine(animate.MoveCameraUntilOnscreen(transform.position, finalCoordinates));
         }
         for (int i = 1; i < movementPath.zones.Count; i++)
         {
@@ -737,7 +728,7 @@ public class Unit : MonoBehaviour
             {
                 if (i == (woundsTotal - 1) / 2)  // If halfway or less through woundsTotal
                 {
-                    StartCoroutine(animate.MoveCameraUntilOnscreen(mainCamera.transform.position, targetedHero.transform.position));
+                    StartCoroutine(animate.MoveCameraUntilOnscreen(transform.position, targetedHero.transform.position));
                 }
                 GameObject wound = Instantiate(targetedZoneInfo.woundPrefab, transform);
                 Vector3 newDestination = targetedHero.transform.TransformPoint(woundPlacement[i].x, woundPlacement[i].y, 0);
