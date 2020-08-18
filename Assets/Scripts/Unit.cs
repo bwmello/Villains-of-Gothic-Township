@@ -82,7 +82,7 @@ public class Unit : MonoBehaviour
         return transform.parent.parent.parent.gameObject;  // Grabs ZoneInfoPanel instead of UnitsContainer. If changes in future, only need to change this function.
     }
 
-    public IEnumerator ActivateUnit()
+    public IEnumerator ActivateUnit(bool activatingLast = false)
     {
         GameObject currentZone = GetZone();
         Dictionary<GameObject, MovementPath> possibleDestinations = GetPossibleDestinations(currentZone);
@@ -98,6 +98,11 @@ public class Unit : MonoBehaviour
                 {
                     chosenAction = unitAction;
                 }
+            }
+            if (!activatingLast && chosenAction.missionSpecificAction.activateLast)  // If will negatively impact other unit turns, come back to this unit
+            {
+                UnitIntel.unitsToActivateLast.Push(gameObject);
+                yield break;
             }
 
             if (currentZone != chosenAction.actionZone)
@@ -128,11 +133,11 @@ public class Unit : MonoBehaviour
                         {
                             double currentFinalDestinationWeight = 0;
                             ZoneInfo possibleFinalDestinationZoneInfo = possibleFinalDestinationZone.GetComponent<ZoneInfo>();
-                            foreach ((string, int, double, MissionSpecifics.ActionCallback) guardable in MissionSpecifics.actionsWeightTable["GUARD"])
+                            foreach (MissionSpecifics.ActionWeight guardable in MissionSpecifics.actionsWeightTable["GUARD"])
                             {
-                                if (possibleFinalDestinationZoneInfo.HasObjectiveToken(guardable.Item1))
+                                if (possibleFinalDestinationZoneInfo.HasObjectiveToken(guardable.targetType))
                                 {
-                                    currentFinalDestinationWeight += guardable.Item3;
+                                    currentFinalDestinationWeight += guardable.weightFactor;
                                 }
                             }
                             if (currentFinalDestinationWeight > mostValuableFinalDestinationWeight)
@@ -404,7 +409,7 @@ public class Unit : MonoBehaviour
     public class UnitPossibleAction
     {
         public Unit myUnit;
-        public (string, int, double, MissionSpecifics.ActionCallback) missionSpecificAction;
+        public MissionSpecifics.ActionWeight missionSpecificAction;
         public ActionProficiency actionProficiency;
         public double actionWeight;
         public GameObject actionZone;  // Zone where action is to be performed
@@ -412,7 +417,7 @@ public class Unit : MonoBehaviour
         public MovementPath pathTaken;
         public GameObject targetedZone;
 
-        public UnitPossibleAction(Unit theUnit, (string, int, double, MissionSpecifics.ActionCallback) unitMissionSpecificAction, ActionProficiency unitActionProficiency, double unitActionWeight, GameObject unitActionZone, GameObject unitFinalDestinationZone, GameObject unitTargetedZone = null, MovementPath unitPathTaken = null)
+        public UnitPossibleAction(Unit theUnit, MissionSpecifics.ActionWeight unitMissionSpecificAction, ActionProficiency unitActionProficiency, double unitActionWeight, GameObject unitActionZone, GameObject unitFinalDestinationZone, GameObject unitTargetedZone = null, MovementPath unitPathTaken = null)
         {
             myUnit = theUnit;
             missionSpecificAction = unitMissionSpecificAction;
@@ -445,11 +450,11 @@ public class Unit : MonoBehaviour
                     {
                         double currentFinalDestinationWeight = 0;
                         ZoneInfo possibleFinalDestinationZoneInfo = possibleFinalDestinationZone.GetComponent<ZoneInfo>();
-                        foreach ((string, int, double, MissionSpecifics.ActionCallback) guardable in MissionSpecifics.actionsWeightTable["GUARD"])
+                        foreach (MissionSpecifics.ActionWeight guardable in MissionSpecifics.actionsWeightTable["GUARD"])
                         {
-                            if (possibleFinalDestinationZoneInfo.HasObjectiveToken(guardable.Item1))
+                            if (possibleFinalDestinationZoneInfo.HasObjectiveToken(guardable.targetType))
                             {
-                                currentFinalDestinationWeight += guardable.Item3;
+                                currentFinalDestinationWeight += guardable.weightFactor;
                             }
                         }
                         if (currentFinalDestinationWeight > mostValuableFinalDestinationWeight)
@@ -463,11 +468,11 @@ public class Unit : MonoBehaviour
             }
             else if (MissionSpecifics.actionsWeightTable.ContainsKey("GUARD"))
             {
-                foreach ((string, int, double, MissionSpecifics.ActionCallback) guardable in MissionSpecifics.actionsWeightTable["GUARD"])
+                foreach (MissionSpecifics.ActionWeight guardable in MissionSpecifics.actionsWeightTable["GUARD"])
                 {
-                    if (possibleZoneInfo.HasObjectiveToken(guardable.Item1))
+                    if (possibleZoneInfo.HasObjectiveToken(guardable.targetType))
                     {
-                        guardZoneWeight += guardable.Item3;
+                        guardZoneWeight += guardable.weightFactor;
                     }
                 }
             }
@@ -483,7 +488,7 @@ public class Unit : MonoBehaviour
                         {
                             double averageWounds = GetAverageSuccesses(actionProficiency.proficiencyDice, availableRerolls) + martialArtsSuccesses;
                             averageWounds *= actionProficiency.actionMultiplier;
-                            actionWeight += averageWounds * MissionSpecifics.actionsWeightTable["MELEE"][0].Item3;
+                            actionWeight += averageWounds * MissionSpecifics.actionsWeightTable["MELEE"][0].weightFactor;
                             if (possibleDestinationsAndPaths[possibleZone].terrainDanger > 0)
                             {
                                 actionWeight /= (2 * possibleDestinationsAndPaths[possibleZone].terrainDanger);
@@ -514,7 +519,7 @@ public class Unit : MonoBehaviour
                                 averageWounds += actionProficiency.actionMultiplier / 10;
                             }
                             averageWounds *= actionProficiency.actionMultiplier;
-                            actionWeight += averageWounds * MissionSpecifics.actionsWeightTable["RANGED"][0].Item3;
+                            actionWeight += averageWounds * MissionSpecifics.actionsWeightTable["RANGED"][0].weightFactor;
                             if (possibleDestinationsAndPaths[possibleZone].terrainDanger > 0)
                             {
                                 actionWeight /= (2 * possibleDestinationsAndPaths[possibleZone].terrainDanger);
@@ -525,9 +530,9 @@ public class Unit : MonoBehaviour
                     case "MANIPULATION":
                         if (MissionSpecifics.actionsWeightTable.ContainsKey("MANIPULATION"))
                         {
-                            foreach ((string, int, double, MissionSpecifics.ActionCallback) manipulatable in MissionSpecifics.actionsWeightTable["MANIPULATION"])
+                            foreach (MissionSpecifics.ActionWeight manipulatable in MissionSpecifics.actionsWeightTable["MANIPULATION"])
                             {
-                                if (manipulatable.Item1 == "Grenade")
+                                if (manipulatable.targetType == "Grenade")
                                 {
                                     if (grenade > 0)
                                     {
@@ -548,7 +553,7 @@ public class Unit : MonoBehaviour
                                             }
                                             int requiredSuccesses = lineOfSight.IndexOf(grenadeTargetZone);
                                             double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
-                                            actionWeight += averageAutoWounds * manipulatable.Item3 * chanceOfSuccess;
+                                            actionWeight += averageAutoWounds * manipulatable.weightFactor * chanceOfSuccess;
                                             //Debug.Log("!!!Weighing grenade throw, actionWeight " + actionWeight.ToString() + " += " + averageAutoWounds.ToString() + " * " + manipulatable.Item3.ToString() + " * " + chanceOfSuccess.ToString());
                                             actionWeight -= grenadeTargetZone.GetComponent<ZoneInfo>().GetUnitsInfo().Count * grenade * 6.6666666666;  // Chance of unit dying is 2/3 per grenade/terrainDanger die
                                             if (possibleDestinationsAndPaths[possibleZone].terrainDanger > 0)
@@ -559,11 +564,11 @@ public class Unit : MonoBehaviour
                                         }
                                     }
                                 }
-                                else if (possibleZoneInfo.HasObjectiveToken(manipulatable.Item1))
+                                else if (possibleZoneInfo.HasObjectiveToken(manipulatable.targetType))
                                 {
-                                    int requiredSuccesses = manipulatable.Item2 + actionZoneHindrance - (manipulatable.Item1 == "Bomb" ? munitionSpecialist : 0);
+                                    int requiredSuccesses = manipulatable.requiredSuccesses + actionZoneHindrance - (manipulatable.targetType == "Bomb" ? munitionSpecialist : 0);
                                     double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
-                                    actionWeight += chanceOfSuccess * manipulatable.Item3;
+                                    actionWeight += chanceOfSuccess * manipulatable.weightFactor;
                                     if (possibleDestinationsAndPaths[possibleZone].terrainDanger > 0)
                                     {
                                         actionWeight /= (2 * possibleDestinationsAndPaths[possibleZone].terrainDanger);
@@ -576,13 +581,13 @@ public class Unit : MonoBehaviour
                     case "THOUGHT":
                         if (MissionSpecifics.actionsWeightTable.ContainsKey("THOUGHT"))
                         {
-                            foreach ((string, int, double, MissionSpecifics.ActionCallback) thoughtable in MissionSpecifics.actionsWeightTable["THOUGHT"])
+                            foreach (MissionSpecifics.ActionWeight thoughtable in MissionSpecifics.actionsWeightTable["THOUGHT"])
                             {
-                                if (possibleZoneInfo.HasObjectiveToken(thoughtable.Item1))
+                                if (possibleZoneInfo.HasObjectiveToken(thoughtable.targetType))
                                 {
-                                    int requiredSuccesses = thoughtable.Item2 + actionZoneHindrance;
+                                    int requiredSuccesses = thoughtable.requiredSuccesses + actionZoneHindrance;
                                     double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
-                                    actionWeight += chanceOfSuccess * thoughtable.Item3;
+                                    actionWeight += chanceOfSuccess * thoughtable.weightFactor;
                                     if (possibleDestinationsAndPaths[possibleZone].terrainDanger > 0)
                                     {
                                         actionWeight /= (2 * possibleDestinationsAndPaths[possibleZone].terrainDanger);
@@ -838,7 +843,7 @@ public class Unit : MonoBehaviour
                 }
                 break;
             case "MANIPULATION":
-                if (unitTurn.missionSpecificAction.Item1 == "Grenade")
+                if (unitTurn.missionSpecificAction.targetType == "Grenade")
                 {
                     if (grenade > 0)
                     {
@@ -863,15 +868,15 @@ public class Unit : MonoBehaviour
                 }
                 else
                 {
-                    requiredSuccesses = unitTurn.missionSpecificAction.Item2 + currentZoneHindrance - (unitTurn.missionSpecificAction.Item1 == "Bomb" ? munitionSpecialist : 0);
+                    requiredSuccesses = unitTurn.missionSpecificAction.requiredSuccesses + currentZoneHindrance - (unitTurn.missionSpecificAction.targetType == "Bomb" ? munitionSpecialist : 0);
                     actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls, requiredSuccesses);
-                    yield return StartCoroutine(unitTurn.missionSpecificAction.Item4(gameObject, null, actionSuccesses, requiredSuccesses));
+                    yield return StartCoroutine(unitTurn.missionSpecificAction.actionCallback(gameObject, null, actionSuccesses, requiredSuccesses));
                 }
                 break;
             case "THOUGHT":
-                requiredSuccesses = unitTurn.missionSpecificAction.Item2;
+                requiredSuccesses = unitTurn.missionSpecificAction.requiredSuccesses;
                 actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls, requiredSuccesses);
-                yield return StartCoroutine(unitTurn.missionSpecificAction.Item4(gameObject, null, actionSuccesses, requiredSuccesses));
+                yield return StartCoroutine(unitTurn.missionSpecificAction.actionCallback(gameObject, null, actionSuccesses, requiredSuccesses));
                 break;
         }
         string debugString = tag + " in " + unitTurn.actionZone.name + " performed " + unitTurn.actionProficiency.actionType;

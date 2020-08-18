@@ -208,6 +208,24 @@ public class ScenarioMap : MonoBehaviour
                 yield return StartCoroutine(unit.GetComponent<Unit>().ActivateUnit());
             }
         }
+        while (UnitIntel.unitsToActivateLast.Count > 0)  // Now activate any units that were going to use an activateLast ActionWeight
+        {
+            Unit unitInfo = UnitIntel.unitsToActivateLast.Pop().GetComponent<Unit>();
+            if (unitInfo.CompareTag(unitTypeToActivate))
+            {
+                Debug.Log("unitInfo.CompareTag(unitTypeToActivate) == true");
+                if (unitInfo.IsActive())
+                {
+                    Debug.Log("unitInfo.IsActive() == true");
+                    yield return StartCoroutine(unitInfo.ActivateUnit(true));  // param activatingLast = true
+                    Debug.Log("After StartCoroutine(unitInfo.ActivateUnit())");
+                }
+            }
+            else
+            {
+                Debug.LogError("ERROR! ScenarioMap.ActivateUnitsWithTag(" + unitTypeToActivate + ") tried to activate " + unitInfo.tag + " from UnitIntel.unitsToActivateLast.");
+            }
+        }
         yield return 0;
     }
 

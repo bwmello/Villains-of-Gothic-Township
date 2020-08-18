@@ -14,11 +14,29 @@ public static class MissionSpecifics
     public static Animate animate;
     public static ScenarioMap scenarioMap;
 
-    public delegate IEnumerator ActionCallback(GameObject unit, GameObject target, int totalSuccesses, int requiredSuccesses);
-    public static Dictionary<string, List<(string, int, double, ActionCallback)>> actionsWeightTable = new Dictionary<string, List<(string, int, double, ActionCallback)>>() {
-        { "MELEE", new List<(string, int, double, ActionCallback)>() { (null, 0, 10, null) } },  // 10 * averageTotalWounds
-        { "RANGED", new List<(string, int, double, ActionCallback)>() { (null, 0, 10, null) } }
+    public static Dictionary<string, List<ActionWeight>> actionsWeightTable = new Dictionary<string, List<ActionWeight>>() {
+        { "MELEE", new List<ActionWeight>() { new ActionWeight(null, 0, 10, null) } },  // 10 * averageTotalWounds
+        { "RANGED", new List<ActionWeight>() { new ActionWeight(null, 0, 10, null) } }
     };
+
+    public delegate IEnumerator ActionCallback(GameObject unit, GameObject target, int totalSuccesses, int requiredSuccesses);
+    public struct ActionWeight
+    {
+        public string targetType;
+        public int requiredSuccesses;
+        public double weightFactor;  // Might be per wound or * chanceOfSuccess
+        public ActionCallback actionCallback;
+        public bool activateLast;
+
+        public ActionWeight(string newTargetType, int newRequiredSuccesses, double newWeightFactor, ActionCallback newActionCallback, bool newActivateLast = false)
+        {
+            targetType = newTargetType;
+            requiredSuccesses = newRequiredSuccesses;
+            weightFactor = newWeightFactor;
+            actionCallback = newActionCallback;
+            activateLast = newActivateLast;
+        }
+    }
 
 
     public static void SetActionsWeightTable()
@@ -29,52 +47,52 @@ public static class MissionSpecifics
         switch (missionName)  // Each nonconstant key (ex: "THOUGHT") should be wiped each time and only added back in if conditions are still met
         {
             case "ASinkingFeeling":
-                totalBombs = MissionSpecifics.GetTotalActiveTokens(new List<string>() { "Bomb" });
-                totalPrimedBombs = MissionSpecifics.GetTotalActiveTokens(new List<string>() { "PrimedBomb" });
-                totalComputers = MissionSpecifics.GetTotalActiveTokens(new List<string>() { "Computer" });
+                totalBombs = GetTotalActiveTokens(new List<string>() { "Bomb" });
+                totalPrimedBombs = GetTotalActiveTokens(new List<string>() { "PrimedBomb" });
+                totalComputers = GetTotalActiveTokens(new List<string>() { "Computer" });
 
-                actionsWeightTable["MANIPULATION"] = new List<(string, int, double, ActionCallback)>();
+                actionsWeightTable["MANIPULATION"] = new List<ActionWeight>();
                 if (totalBombs > 0)
                 {
-                    actionsWeightTable["MANIPULATION"].Add(("Bomb", 3, 100, PrimeBombManually));  // 100 * chanceOfSuccess, 
+                    actionsWeightTable["MANIPULATION"].Add(new ActionWeight("Bomb", 3, 100, PrimeBombManually));  // 100 * chanceOfSuccess, 
                 }
 
-                actionsWeightTable["THOUGHT"] = new List<(string, int, double, ActionCallback)>();
+                actionsWeightTable["THOUGHT"] = new List<ActionWeight>();
                 if (totalComputers > 0 && totalBombs > 0)
                 {
-                    actionsWeightTable["THOUGHT"].Add(("Computer", 3, 100, PrimeBombRemotely));
+                    actionsWeightTable["THOUGHT"].Add(new ActionWeight("Computer", 3, 100, PrimeBombRemotely));
                 }
 
-                actionsWeightTable["GUARD"] = new List<(string, int, double, ActionCallback)>();
+                actionsWeightTable["GUARD"] = new List<ActionWeight>();
                 if (totalPrimedBombs > 0)
                 {
-                    actionsWeightTable["GUARD"].Add(("PrimedBomb", 0, 15, null));  // Flat weight bonus for hindering heroes attempting to disable objectives
+                    actionsWeightTable["GUARD"].Add(new ActionWeight("PrimedBomb", 0, 15, null));  // Flat weight bonus for hindering heroes attempting to disable objectives
                 }
                 if (totalBombs > 0)
                 {
-                    actionsWeightTable["GUARD"].Add(("Bomb", 0, 10, null));
+                    actionsWeightTable["GUARD"].Add(new ActionWeight("Bomb", 0, 10, null));
                     if (totalComputers > 0)
                     {
-                        actionsWeightTable["GUARD"].Add(("Computer", 0, 5, null));
+                        actionsWeightTable["GUARD"].Add(new ActionWeight("Computer", 0, 5, null));
                     }
                 }
                 break;
             case "IceToSeeYou":
-                totalBombs = MissionSpecifics.GetTotalActiveTokens(new List<string>() { "Bomb" });
-                totalComputers = MissionSpecifics.GetTotalActiveTokens(new List<string>() { "Computer" });
+                totalBombs = GetTotalActiveTokens(new List<string>() { "Bomb" });
+                totalComputers = GetTotalActiveTokens(new List<string>() { "Computer" });
 
-                actionsWeightTable["MANIPULATION"] = new List<(string, int, double, ActionCallback)>() { ("Grenade", 0, 15, null) };  // 15 * averageAutoWounds * chanceOfSuccess - friendlyFire
+                actionsWeightTable["MANIPULATION"] = new List<ActionWeight>() { new ActionWeight("Grenade", 0, 15, null) };  // 15 * averageAutoWounds * chanceOfSuccess - friendlyFire
 
-                actionsWeightTable["THOUGHT"] = new List<(string, int, double, ActionCallback)>();
+                actionsWeightTable["THOUGHT"] = new List<ActionWeight>();
                 if (totalComputers > 0)
                 {
-                    actionsWeightTable["THOUGHT"].Add(("Computer", 3, 20, ActivateCryogenicDevice));  // Assume you cost the hero at least 1 movepoint and auto deal 2/3 of a wound per cryogenic token, 0 weight if would hit anyone except frosty
+                    actionsWeightTable["THOUGHT"].Add(new ActionWeight("Computer", 3, 20, ActivateCryogenicDevice, true));  // Assume you cost the hero at least 1 movepoint and auto deal 2/3 of a wound per cryogenic token, 0 weight if would hit anyone except frosty
                 }
 
-                actionsWeightTable["GUARD"] = new List<(string, int, double, ActionCallback)>();
+                actionsWeightTable["GUARD"] = new List<ActionWeight>();
                 if (totalBombs > 0)
                 {
-                    actionsWeightTable["GUARD"].Add(("Bomb", 0, 15, null));
+                    actionsWeightTable["GUARD"].Add(new ActionWeight("Bomb", 0, 15, null));
                 }
                 break;
         }
