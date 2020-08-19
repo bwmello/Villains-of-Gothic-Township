@@ -219,7 +219,7 @@ public static class MissionSpecifics
                 {
                     foreach (GameObject primedBomb in GetActiveTokens(new List<string>() { "PrimedBomb" }))
                     {
-                        animate.ShowExplosion(primedBomb.transform.position);
+                        animate.ShowLoopingExplosion(primedBomb.transform.position);
                     }
                 }
                 break;
@@ -228,7 +228,7 @@ public static class MissionSpecifics
                 {
                     foreach (GameObject primedBomb in GetActiveTokens(new List<string>() { "PrimedBomb" }))
                     {
-                        animate.ShowExplosion(primedBomb.transform.position);
+                        animate.ShowLoopingExplosion(primedBomb.transform.position);
                     }
                 }
                 break;

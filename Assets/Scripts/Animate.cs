@@ -9,6 +9,7 @@ public class Animate : MonoBehaviour
     public Camera cameraStuff;
 
     public GameObject explosionPrefab;
+    public GameObject explosionLoopingPrefab;
     public GameObject grenadePrefab;
     public GameObject gameOverPrefab;
 
@@ -121,6 +122,7 @@ public class Animate : MonoBehaviour
         grenade.transform.position = origin;
         StartCoroutine(MoveCameraUntilOnscreen(origin, destination));
         yield return StartCoroutine(MoveObjectOverTime(new List<GameObject>() { grenade }, origin, destination));
+        ShowExplosion(grenade.transform.position);
         Destroy(grenade);
         yield return 0;
     }
@@ -128,6 +130,12 @@ public class Animate : MonoBehaviour
     public void ShowExplosion(Vector3 targetCoords)
     {
         GameObject explosionObject = Instantiate(explosionPrefab, transform);
+        explosionObject.transform.position = targetCoords;
+    }
+
+    public void ShowLoopingExplosion(Vector3 targetCoords)
+    {
+        GameObject explosionObject = Instantiate(explosionLoopingPrefab, transform);
         explosionObject.transform.position = targetCoords;
     }
 
