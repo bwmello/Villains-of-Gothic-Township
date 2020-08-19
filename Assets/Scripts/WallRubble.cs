@@ -15,7 +15,7 @@ public class WallRubble : MonoBehaviour
         return (transparencyCanvas.alpha == 1);
     }
 
-    void OnMouseDown()  // Necessary to determine when polygon collider is clicked and not the image itself.
+    void OnMouseUpAsButton()  // Necessary to determine when polygon collider is clicked and not the image itself.
     {
         if (isClickable)
         {

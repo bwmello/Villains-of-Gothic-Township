@@ -711,7 +711,7 @@ public class Unit : MonoBehaviour
         heroButton.enabled = true;
         waitingOnPlayerInput = true;
         GameObject continueButton = Instantiate(targetedZoneInfo.confirmButtonPrefab, targetedZoneInfo.transform.parent.transform);
-        continueButton.transform.position = targetedHero.transform.TransformPoint(0, 20f, 0);
+        continueButton.transform.position = targetedHero.transform.TransformPoint(0, 25f, 0);
         continueButton.GetComponent<Button>().onClick.AddListener(delegate { waitingOnPlayerInput = false; });
         yield return new WaitUntil(() => !waitingOnPlayerInput);
         heroButton.enabled = false;

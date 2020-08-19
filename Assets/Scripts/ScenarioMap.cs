@@ -213,12 +213,9 @@ public class ScenarioMap : MonoBehaviour
             Unit unitInfo = UnitIntel.unitsToActivateLast.Pop().GetComponent<Unit>();
             if (unitInfo.CompareTag(unitTypeToActivate))
             {
-                Debug.Log("unitInfo.CompareTag(unitTypeToActivate) == true");
                 if (unitInfo.IsActive())
                 {
-                    Debug.Log("unitInfo.IsActive() == true");
                     yield return StartCoroutine(unitInfo.ActivateUnit(true));  // param activatingLast = true
-                    Debug.Log("After StartCoroutine(unitInfo.ActivateUnit())");
                 }
             }
             else
