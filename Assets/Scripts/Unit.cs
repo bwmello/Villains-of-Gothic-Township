@@ -684,7 +684,8 @@ public class Unit : MonoBehaviour
             ModifyLifePoints(-automaticWounds);
             if (!IsActive())
             {
-                yield return StartCoroutine(animate.FadeOut(gameObject.GetComponent<CanvasGroup>(), fadedAlpha));
+                //yield return StartCoroutine(animate.FadeOut(gameObject.GetComponent<CanvasGroup>(), fadedAlpha));
+                yield return StartCoroutine(animate.FadeObjects(new List<GameObject>() { gameObject }, 1, fadedAlpha));
                 break;
             }
         }
@@ -701,65 +702,6 @@ public class Unit : MonoBehaviour
         GameObject destinationUnitSlot = destination.GetComponent<ZoneInfo>().GetAvailableUnitSlot();
         transform.SetParent(GameObject.FindGameObjectWithTag("AnimationContainer").transform);  // Needed so unit animating is always drawn last (above everything it might pass over).
         yield return StartCoroutine(animate.MoveObjectOverTime(new List<GameObject>() { transform.gameObject }, transform.position, destinationUnitSlot.transform.position));
-        yield return 0;
-    }
-
-    Boolean waitingOnPlayerInput = false;
-    public IEnumerator PauseUntilPlayerPushesContinue(GameObject animationContainer, ZoneInfo targetedZoneInfo, GameObject targetedHero)
-    {
-        Button heroButton = targetedHero.GetComponent<Button>();
-        heroButton.enabled = true;
-        waitingOnPlayerInput = true;
-        GameObject continueButton = Instantiate(targetedZoneInfo.confirmButtonPrefab, targetedZoneInfo.transform.parent.transform);
-        continueButton.transform.position = targetedHero.transform.TransformPoint(0, 25f, 0);
-        continueButton.GetComponent<Button>().onClick.AddListener(delegate { waitingOnPlayerInput = false; });
-        yield return new WaitUntil(() => !waitingOnPlayerInput);
-        heroButton.enabled = false;
-        Destroy(continueButton);
-        yield return 0;
-    }
-
-    private readonly Vector2[] woundPlacement = new[] { new Vector2(-9f, 8f), new Vector2(9f, 8f), new Vector2(-9f, -8f), new Vector2(9f, -8f), new Vector2(-9f, 0f), new Vector2(9f, 0f), new Vector2(-3f, 8f), new Vector2(3f, -8f), new Vector2(3f, 8f), new Vector2(-3f, -8f) };
-    public IEnumerator AnimateWounds(ZoneInfo targetedZoneInfo, int woundsTotal)
-    {
-        GameObject targetedHero = targetedZoneInfo.GetRandomHero();
-
-        if (targetedHero != null)
-        {
-            GameObject animationContainer = GameObject.FindGameObjectWithTag("AnimationContainer");
-            GameObject mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
-
-            for (int i = 0; i < woundsTotal; i++)
-            {
-                if (i == (woundsTotal - 1) / 2)  // If halfway or less through woundsTotal
-                {
-                    StartCoroutine(animate.MoveCameraUntilOnscreen(transform.position, targetedHero.transform.position));
-                }
-                GameObject wound = Instantiate(targetedZoneInfo.woundPrefab, transform);
-                Vector3 newDestination = targetedHero.transform.TransformPoint(woundPlacement[i].x, woundPlacement[i].y, 0);
-                wound.transform.SetParent(animationContainer.transform);  // Needed so unit animating is always drawn last (above everything it might pass over).
-                if (i < woundsTotal - 1)
-                {
-                    StartCoroutine(animate.MoveObjectOverTime(new List<GameObject>() { wound }, wound.transform.position, newDestination, .7f));
-                    yield return new WaitForSecondsRealtime(.5f);
-                }
-                else  // If last wound
-                {
-                    yield return StartCoroutine(animate.MoveObjectOverTime(new List<GameObject>() { wound }, wound.transform.position, newDestination, .7f));
-                }
-            }
-            yield return StartCoroutine(PauseUntilPlayerPushesContinue(animationContainer, targetedZoneInfo, targetedHero));
-
-            // Fading the wounds out
-            CanvasGroup animationContainerTransparency = animationContainer.GetComponent<CanvasGroup>();
-            yield return StartCoroutine(animate.FadeOut(animationContainerTransparency, fadedAlpha, .9f));
-
-            for (int i = woundsTotal - 1; i >= 0; i--)
-            {
-                Destroy(animationContainer.transform.GetChild(i).gameObject);
-            }
-            animationContainerTransparency.alpha = 1f;  // Reset animationContainer transparency
-        }
         yield return 0;
     }
 
@@ -783,12 +725,18 @@ public class Unit : MonoBehaviour
             case "MELEE":
                 for (int i = 0; i < unitTurn.actionProficiency.actionMultiplier; i++)
                 {
+                    if (!IsActive())  // If Counterattacked and killed, stop attacking
+                    {
+                        yield break;
+                    }
+
+                    GameObject targetedHero = currentZoneInfo.GetRandomHero();  // TODO mirror unitTurn.targetedZone like RANGED for when Reach trait comes into play
                     actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls);
                     if (actionSuccesses > 0)
                     {
                         actionSuccesses += martialArtsSuccesses;
-                        yield return StartCoroutine(AnimateWounds(currentZoneInfo, actionSuccesses));
                     }
+                    yield return StartCoroutine(animate.MeleeAttack(gameObject, targetedHero, actionSuccesses));
                     if (fiery)
                     {
                         yield return StartCoroutine(currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Flame", 1, false, true)));
@@ -817,16 +765,20 @@ public class Unit : MonoBehaviour
 
                     for (int i = 0; i < unitTurn.actionProficiency.actionMultiplier; i++)
                     {
+                        if (!IsActive())  // If Retaliated and killed, stop attacking
+                        {
+                            yield break;
+                        }
+
+                        GameObject targetedHero = targetedLineOfSightZoneInfo.GetRandomHero();
                         actionSuccesses = RollAndReroll(dicePool, availableRerolls);
                         if (actionSuccesses > 0)
                         {
                             actionSuccesses += marksmanSuccesses;
                         }
                         actionSuccesses -= currentZoneInfo.GetCurrentHindrance(gameObject);
-                        if (actionSuccesses > 0)
-                        {
-                            yield return StartCoroutine(AnimateWounds(targetedLineOfSightZoneInfo, actionSuccesses));
-                        }
+
+                        yield return StartCoroutine(animate.RangedAttack(gameObject, targetedHero, actionSuccesses));
                     }
                     if (fiery)  // Not sure these ever get triggered as the villains with these traits don't have a ranged attack, but the Frost/Fire text: During an attack or after an explosion...
                     {

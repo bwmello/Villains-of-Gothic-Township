@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 6549735627474174587}
   - component: {fileID: 6549735627474174584}
   - component: {fileID: 6549735627474174580}
+  - component: {fileID: 5704508268551111341}
   m_Layer: 5
   m_Name: Unit
   m_TagString: Untagged
@@ -62,6 +63,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 208ef6e8bb7534f498190648a5fd2080, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  fadedAlpha: 0.2
   lifePoints: 1
   lifePointsMax: 1
   defense: 0
@@ -101,6 +103,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 0.88235295, g: 0.88235295, b: 0.88235295, a: 1}
   m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
@@ -159,6 +162,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 2811787638521928167}
+        m_TargetAssemblyTypeName: 
         m_MethodName: TokenClicked
         m_Mode: 1
         m_Arguments:
@@ -239,6 +243,19 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!114 &5704508268551111341
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6549735627474174590}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 188aeeaef3dee434784901a33e3eb0d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  shakeDecay: 0.002
 --- !u!1 &6549735627731685882
 GameObject:
   m_ObjectHideFlags: 0
@@ -299,6 +316,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 0.88235295, g: 0.88235295, b: 0.88235295, a: 1}
   m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:

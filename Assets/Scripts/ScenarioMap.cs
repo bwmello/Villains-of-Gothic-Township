@@ -84,7 +84,7 @@ public class ScenarioMap : MonoBehaviour
         if (currentRound < 1)  // Start with villain's turn
         {
             DisablePlayerUI();
-            CameraToFixedZoom();
+            animate.CameraToFixedZoom();
             MissionSpecifics.SetActionsWeightTable();
             StartCoroutine(StartVillainTurn());
         }
@@ -118,12 +118,6 @@ public class ScenarioMap : MonoBehaviour
         isPlayerUIEnabled = true;
     }
 
-    public void CameraToFixedZoom()
-    {
-        Camera mainCamera = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
-        mainCamera.orthographicSize = 2.2f;
-    }
-
     // The flow: Player uses UI to end turn -> EndHeroTurn() -> StartVillainTurn() -> StartHeroTurn() -> Player takes their next turn
     public void EndHeroTurn()
     {
@@ -136,7 +130,7 @@ public class ScenarioMap : MonoBehaviour
         }
         else
         {
-            CameraToFixedZoom();
+            animate.CameraToFixedZoom();
             // Dredge the river, removing any tiles with 0 units on the map
             foreach (string unitTag in new List<string>(villainRiver))
             {
@@ -166,7 +160,7 @@ public class ScenarioMap : MonoBehaviour
         else
         {
             // Disable camera controls
-            PanAndZoom panAndZoom = this.GetComponent<PanAndZoom>();
+            PanAndZoom panAndZoom = mainCamera.GetComponent<PanAndZoom>();
             panAndZoom.controlCamera = false;
 
             yield return StartCoroutine(ActivateRiverTiles());

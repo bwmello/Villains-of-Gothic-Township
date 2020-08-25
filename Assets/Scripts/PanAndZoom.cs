@@ -294,7 +294,8 @@ public class PanAndZoom : MonoBehaviour
 
     void CameraInBounds()
     {
-        if (controlCamera && useBounds && cam != null && cam.orthographic)
+        //Debug.Log("!!!ForceCameraInBounds(), useBounds: " + useBounds.ToString() + "  cam: " + cam.name + "  cam.orthographic: " + cam.orthographic.ToString() + "    cameraOldPosition: " + cam.transform.position.ToString());
+        if (useBounds && cam != null && cam.orthographic)
         {
             cam.orthographicSize = Mathf.Min(cam.orthographicSize, ((boundMaxY - boundMinY) / 2) - 0.001f);
             cam.orthographicSize = Mathf.Min(cam.orthographicSize, (Screen.height * (boundMaxX - boundMinX) / (2 * Screen.width)) - 0.001f);
@@ -313,6 +314,7 @@ public class PanAndZoom : MonoBehaviour
             float camY = Mathf.Clamp(cam.transform.position.y, camMinY, camMaxY);
 
             cam.transform.position = new Vector3(camX, camY, cam.transform.position.z);
+            //Debug.Log("New cam.transform.position: " + cam.transform.position.ToString());
         }
     }
 }

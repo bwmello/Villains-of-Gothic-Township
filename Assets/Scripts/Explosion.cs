@@ -9,6 +9,9 @@ public class Explosion : MonoBehaviour
 
     void Start()
     {
-        Destroy(gameObject, this.GetComponent<Animator>().GetCurrentAnimatorStateInfo(0).length);  // Never called for explosionLooping
+        if (!isLooping)
+        {
+            Destroy(gameObject, transform.GetComponentInChildren<Animator>().GetCurrentAnimatorStateInfo(0).length);
+        }
     }
 }

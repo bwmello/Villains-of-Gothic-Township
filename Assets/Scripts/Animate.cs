@@ -1,6 +1,8 @@
-﻿using System.Collections;
+﻿using System;  // For DateTime
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;  // For button
 using TMPro;  // To update TMP_Text
 
 public class Animate : MonoBehaviour
@@ -8,10 +10,15 @@ public class Animate : MonoBehaviour
     public GameObject mainCamera;
     public Camera cameraStuff;
 
+    public GameObject woundPrefab;
+    public GameObject bulletPrefab;
+    public GameObject impactPrefab;
+    public GameObject grenadePrefab;
     public GameObject explosionPrefab;
     public GameObject explosionLoopingPrefab;
-    public GameObject grenadePrefab;
+    public GameObject continueButtonPrefab;
     public GameObject gameOverPrefab;
+
 
     private void Awake()
     {
@@ -19,16 +26,30 @@ public class Animate : MonoBehaviour
         cameraStuff = mainCamera.GetComponent<Camera>();  // Not initialized quickly enough if in Start()
     }
 
-    public IEnumerator FadeOut(CanvasGroup canvasGroupToFade, float fadedAlpha,  float fadeTimeCoefficient = .5f)
+    public IEnumerator FadeObjects(List<GameObject> objectsToFade, float alphaStart, float alphaEnd, float fadeTimeCoefficient = .5f)
+    {
+        for (int i = 0; i < objectsToFade.Count; i++)
+        {
+            if (i < objectsToFade.Count - 1)
+            {
+                StartCoroutine(FadeCanvasGroup(objectsToFade[i].GetComponent<CanvasGroup>(), alphaStart, alphaEnd, fadeTimeCoefficient));
+            }
+            else
+            {
+                yield return StartCoroutine(FadeCanvasGroup(objectsToFade[i].GetComponent<CanvasGroup>(), alphaStart, alphaEnd, fadeTimeCoefficient));
+            }
+        }
+        yield return 0;
+    }
+
+    public IEnumerator FadeCanvasGroup(CanvasGroup canvasGroupToFade, float alphaStart, float alphaEnd, float fadeTimeCoefficient)
     {
         float t = 0;
         while (t < 1f)
         {
             t += Time.deltaTime * fadeTimeCoefficient;
-
-            float transparency = Mathf.Lerp(1, fadedAlpha, t);
+            float transparency = Mathf.Lerp(alphaStart, alphaEnd, t);
             canvasGroupToFade.alpha = transparency;
-
             yield return null;
         }
         yield return 0;
@@ -51,6 +72,26 @@ public class Animate : MonoBehaviour
             yield return null;
         }
         yield return 0;
+    }
+
+    public IEnumerator ScaleObjectOverTime(List<GameObject> objectsToMove, Vector3 start, Vector3 end, float timeCoefficient = .5f)  // TODO maybe remove this timeCoefficient param
+    {
+        float t = 0;
+        while (t < 1f)
+        {
+            t += Time.deltaTime * timeCoefficient;
+            foreach (GameObject currentObject in objectsToMove)
+            {
+                currentObject.transform.localScale = new Vector3(Mathf.Lerp(start.x, end.x, t), Mathf.Lerp(start.y, end.y, t), currentObject.transform.localScale.z);
+            }
+            yield return null;
+        }
+        yield return 0;
+    }
+
+    public void CameraToFixedZoom()
+    {
+        cameraStuff.orthographicSize = 2.2f;
     }
 
     public bool IsPointOnScreen(Vector3 point, float buffer = .2f)
@@ -113,6 +154,180 @@ public class Animate : MonoBehaviour
             }
             yield return null;
         }
+        yield return 0;
+    }
+
+
+    bool waitingOnPlayerInput = false;
+    public IEnumerator PauseUntilPlayerPushesContinue(GameObject targetedHero)
+    {
+        Button heroButton = targetedHero.GetComponent<Button>();
+        heroButton.enabled = true;
+        waitingOnPlayerInput = true;
+        GameObject zone = targetedHero.GetComponent<Hero>().GetZone();
+        GameObject continueButton = Instantiate(continueButtonPrefab, zone.transform);
+        continueButton.transform.position = zone.transform.TransformPoint(0, -50f, 0);
+        //continueButton.transform.position = targetedHero.transform.TransformPoint(0, 25f, 0);
+        continueButton.GetComponent<Button>().onClick.AddListener(delegate { waitingOnPlayerInput = false; });
+        yield return new WaitUntil(() => !waitingOnPlayerInput);
+        heroButton.enabled = false;
+        Destroy(continueButton);
+        yield return 0;
+    }
+
+
+    private bool showingImpact = false;
+    public IEnumerator ShowImpact(Vector3 impactPosition, float frequency)
+    {
+        showingImpact = true;
+        while (showingImpact)
+        {
+            DateTime nextBulletPathStartTime = DateTime.Now.AddSeconds(frequency);
+            GameObject impact = Instantiate(impactPrefab, transform);
+            impact.transform.position = impactPosition;
+            StartCoroutine(ScaleObjectOverTime(new List<GameObject>() { impact }, new Vector3(.5f, .5f, .5f), new Vector3(2f, 2f, 2f)));
+            yield return StartCoroutine(FadeObjects(new List<GameObject>() { impact }, 1f, 0, .5f));
+
+            Destroy(impact);
+            while (showingImpact && DateTime.Now < nextBulletPathStartTime)
+            {
+                yield return null;
+            }
+        }
+        yield return 0;
+    }
+
+    public void EndShowImpact()
+    {
+        showingImpact = false;
+    }
+
+    private readonly Vector2[] woundPlacement = new[] { new Vector2(-9f, 8f), new Vector2(9f, 8f), new Vector2(-9f, -8f), new Vector2(9f, -8f), new Vector2(-9f, 0f), new Vector2(9f, 0f), new Vector2(-3f, 8f), new Vector2(3f, -8f), new Vector2(3f, 8f), new Vector2(-3f, -8f) };
+    public IEnumerator MeleeAttack(GameObject attacker, GameObject target, int woundsTotal)
+    {
+        attacker.GetComponent<ObjectShake>().StartShaking();
+        target.GetComponent<ObjectShake>().StartShaking();
+
+        //Vector3 pointFacingEnemy = Vector3.Lerp(target.transform.position, attacker.transform.position, 0.3f);
+        // vector pointing from the planet to the player
+        Vector3 difference = attacker.transform.position - target.transform.position;
+        // the direction of the launch, normalized
+        Vector3 directionOnly = difference.normalized;
+        // the point along this vector you are requesting
+        Vector3 pointAlongDirection = target.transform.position + (directionOnly * .07f);  // * float is the distance along this direction
+        Debug.Log("!!!target.transform.position: " + target.transform.position.ToString() + "  pointAlongDirection: " + pointAlongDirection.ToString());
+        StartCoroutine(ShowImpact(pointAlongDirection, 3f));
+
+        yield return StartCoroutine(MoveCameraUntilOnscreen(attacker.transform.position, target.transform.position));
+
+        List<GameObject> wounds = new List<GameObject>();
+        for (int i = 0; i < woundsTotal; i++)
+        {
+            wounds.Add(Instantiate(woundPrefab, target.transform));
+            wounds[i].transform.localPosition = new Vector3(woundPlacement[i].x, woundPlacement[i].y, 0);
+        }
+        StartCoroutine(FadeObjects(wounds, 0, 1, .9f));
+
+        foreach (Button unitButton in attacker.transform.GetComponentsInChildren<Button>())
+        {
+            unitButton.enabled = true;
+        }
+        PanAndZoom panAndZoom = mainCamera.GetComponent<PanAndZoom>();
+        if (!IsPointOnScreen(transform.position, .1f))
+        {
+            panAndZoom.controlCamera = true;
+        }
+        yield return StartCoroutine(PauseUntilPlayerPushesContinue(target));
+
+        foreach (Button unitButton in attacker.transform.GetComponentsInChildren<Button>())
+        {
+            unitButton.enabled = false;
+        }
+        panAndZoom.controlCamera = false;
+        CameraToFixedZoom();
+
+        EndShowImpact();
+        attacker.GetComponent<ObjectShake>().StopShaking();
+        target.GetComponent<ObjectShake>().StopShaking();
+
+        yield return StartCoroutine(FadeObjects(wounds, 1, 0, .9f));
+        for (int i = wounds.Count - 1; i >= 0; i--)
+        {
+            Destroy(wounds[i]);
+        }
+
+        yield return 0;
+    }
+
+    private bool firingBullets = false;
+    public IEnumerator ShowBulletPath(Vector3 start, Vector3 end, float frequency)
+    {
+        firingBullets = true;
+        while (firingBullets)
+        {
+            DateTime nextBulletPathStartTime = DateTime.Now.AddSeconds(frequency);
+            GameObject bullet = Instantiate(bulletPrefab, transform);
+            bullet.transform.rotation = Quaternion.Euler(new Vector3(0, 0, Mathf.Atan2((end.y - start.y), (end.x - start.x)) * Mathf.Rad2Deg));
+
+            yield return StartCoroutine(MoveObjectOverTime(new List<GameObject>() { bullet }, start, end, .9f));
+            Destroy(bullet);
+            while (firingBullets && DateTime.Now < nextBulletPathStartTime)
+            {
+                yield return null;
+            }
+        }
+        yield return 0;
+    }
+
+    public void EndBulletPaths()
+    {
+        firingBullets = false;
+    }
+
+    public IEnumerator RangedAttack(GameObject attacker, GameObject target, int woundsTotal)
+    {
+        attacker.GetComponent<ObjectShake>().StartShaking();
+        target.GetComponent<ObjectShake>().StartShaking();
+        StartCoroutine(ShowBulletPath(attacker.transform.position, target.transform.position, 3f));
+
+        yield return StartCoroutine(MoveCameraUntilOnscreen(attacker.transform.position, target.transform.position));
+
+        List<GameObject> wounds = new List<GameObject>();
+        for (int i = 0; i < woundsTotal; i++)
+        {
+            wounds.Add(Instantiate(woundPrefab, target.transform));
+            wounds[i].transform.localPosition = new Vector3(woundPlacement[i].x, woundPlacement[i].y, 0);
+        }
+        StartCoroutine(FadeObjects(wounds, 0, 1, .9f));
+
+        foreach (Button unitButton in attacker.transform.GetComponentsInChildren<Button>())
+        {
+            unitButton.enabled = true;
+        }
+        PanAndZoom panAndZoom = mainCamera.GetComponent<PanAndZoom>();
+        if (!IsPointOnScreen(attacker.transform.position, .1f))  // If you can still see the attacker after panning to the target, player doesn't need camera control
+        {
+            panAndZoom.controlCamera = true;
+        }
+        yield return StartCoroutine(PauseUntilPlayerPushesContinue(target));
+
+        foreach (Button unitButton in attacker.transform.GetComponentsInChildren<Button>())
+        {
+            unitButton.enabled = false;
+        }
+        panAndZoom.controlCamera = false;
+        CameraToFixedZoom();
+
+        EndBulletPaths();
+        attacker.GetComponent<ObjectShake>().StopShaking();
+        target.GetComponent<ObjectShake>().StopShaking();
+
+        yield return StartCoroutine(FadeObjects(wounds, 1, 0, .9f));
+        for (int i = wounds.Count - 1; i >= 0; i--)
+        {
+            Destroy(wounds[i]);
+        }
+
         yield return 0;
     }
 

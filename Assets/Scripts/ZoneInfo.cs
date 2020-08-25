@@ -368,6 +368,7 @@ public class ZoneInfo : MonoBehaviour
         {
             affectedUnits = new List<Unit>(GetUnitsInfo());
         }
+        List<GameObject> unitCasualties = new List<GameObject>();
         foreach (Unit affectedUnit in affectedUnits)
         {
             int automaticWounds = 0;
@@ -379,9 +380,15 @@ public class ZoneInfo : MonoBehaviour
             affectedUnit.ModifyLifePoints(-automaticWounds);
             if (!affectedUnit.IsActive())
             {
-                yield return StartCoroutine(animate.FadeOut(affectedUnit.gameObject.GetComponent<CanvasGroup>(), affectedUnit.fadedAlpha));  // Should this happen one at a time or should I ditch the "yield return"
+                unitCasualties.Add(affectedUnit.gameObject);
             }
         }
+        if (unitCasualties.Count > 0)
+        {
+            float unitFadeAlpha = unitCasualties[0].GetComponent<Unit>().fadedAlpha;
+            yield return StartCoroutine(animate.FadeObjects(unitCasualties, 1, unitFadeAlpha));
+        }
+
         if (HasHeroes())  // Gives heroes chance to roll damage on themselves (as they can use their rerolls)
         {
             List<GameObject> terrainDangerIcons = new List<GameObject>();
