@@ -71,10 +71,10 @@ public static class MissionSpecifics
                 if (totalBombs > 0)
                 {
                     actionsWeightTable["GUARD"].Add(new ActionWeight("Bomb", 0, 10, null));
-                    if (totalComputers > 0)
-                    {
-                        actionsWeightTable["GUARD"].Add(new ActionWeight("Computer", 0, 5, null));
-                    }
+                    //if (totalComputers > 0)  // Heroes should always be going after bombs, not computers
+                    //{
+                    //    actionsWeightTable["GUARD"].Add(new ActionWeight("Computer", 0, 5, null));
+                    //}
                 }
                 break;
             case "IceToSeeYou":

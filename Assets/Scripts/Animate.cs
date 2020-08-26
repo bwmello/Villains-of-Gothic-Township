@@ -180,20 +180,20 @@ public class Animate : MonoBehaviour
     public IEnumerator ShowImpact(Vector3 impactPosition, float frequency)
     {
         showingImpact = true;
+        GameObject impact = Instantiate(impactPrefab, transform);
         while (showingImpact)
         {
             DateTime nextBulletPathStartTime = DateTime.Now.AddSeconds(frequency);
-            GameObject impact = Instantiate(impactPrefab, transform);
             impact.transform.position = impactPosition;
             StartCoroutine(ScaleObjectOverTime(new List<GameObject>() { impact }, new Vector3(.5f, .5f, .5f), new Vector3(2f, 2f, 2f)));
             yield return StartCoroutine(FadeObjects(new List<GameObject>() { impact }, 1f, 0, .5f));
 
-            Destroy(impact);
             while (showingImpact && DateTime.Now < nextBulletPathStartTime)
             {
                 yield return null;
             }
         }
+        Destroy(impact);
         yield return 0;
     }
 
@@ -215,7 +215,7 @@ public class Animate : MonoBehaviour
         Vector3 directionOnly = difference.normalized;
         // the point along this vector you are requesting
         Vector3 pointAlongDirection = target.transform.position + (directionOnly * .07f);  // * float is the distance along this direction
-        Debug.Log("!!!target.transform.position: " + target.transform.position.ToString() + "  pointAlongDirection: " + pointAlongDirection.ToString());
+        //Debug.Log("!!!target.transform.position: " + target.transform.position.ToString() + "  pointAlongDirection: " + pointAlongDirection.ToString());
         StartCoroutine(ShowImpact(pointAlongDirection, 3f));
 
         yield return StartCoroutine(MoveCameraUntilOnscreen(attacker.transform.position, target.transform.position));

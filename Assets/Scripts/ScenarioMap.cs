@@ -163,6 +163,8 @@ public class ScenarioMap : MonoBehaviour
             PanAndZoom panAndZoom = mainCamera.GetComponent<PanAndZoom>();
             panAndZoom.controlCamera = false;
 
+            UnitIntel.ResetPerRoundResources();
+
             yield return StartCoroutine(ActivateRiverTiles());
             yield return StartCoroutine(StartHeroTurn());
 
@@ -496,6 +498,7 @@ public class ScenarioMap : MonoBehaviour
         currentRound = scenarioSave.currentRound;
         reinforcementPoints = scenarioSave.reinforcementPoints;
         totalHeroes = scenarioSave.totalHeroes;
+        UnitIntel.LoadUnitIntelSave(scenarioSave.unitIntel);
         float startingClockHandAngle = -(currentRound * 30) + 2;
         clockHand.transform.eulerAngles = new Vector3(0, 0, startingClockHandAngle);
         if (!clockTurnBack.activeSelf && currentRound > 1)
@@ -561,6 +564,7 @@ public class ScenarioSave
     public int currentRound;
     public int reinforcementPoints;
     public int totalHeroes;
+    public UnitIntelSave unitIntel;
     public List<string> villainRiver = new List<string>();
     public List<string> unitTagsMasterList = new List<string>();
     public List<string> brokenWalls = new List<string>();
@@ -587,6 +591,7 @@ public class ScenarioSave
         currentRound = scenarioMap.currentRound;
         reinforcementPoints = scenarioMap.reinforcementPoints;
         totalHeroes = scenarioMap.totalHeroes;
+        unitIntel = UnitIntel.ToJSON();
         villainRiver.AddRange(scenarioMap.villainRiver);
         unitTagsMasterList.AddRange(scenarioMap.unitTagsMasterList);
         foreach (ScenarioMap.UnitPool unitPool in scenarioMap.unitsPool)
