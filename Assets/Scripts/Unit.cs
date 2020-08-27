@@ -742,6 +742,8 @@ public class Unit : MonoBehaviour
         if (movementPath.zones.Count > 1)
         {
             Vector3 finalCoordinates = movementPath.zones[movementPath.zones.Count - 1].GetComponent<ZoneInfo>().GetAvailableUnitSlot().transform.position;
+            animate.PostionCameraBeforeCameraMove(transform.position, finalCoordinates);
+            yield return new WaitForSecondsRealtime(1);  // Pause with camera on unit before move
             StartCoroutine(animate.MoveCameraUntilOnscreen(transform.position, finalCoordinates));
         }
         for (int i = 1; i < movementPath.zones.Count; i++)
@@ -790,6 +792,7 @@ public class Unit : MonoBehaviour
             {
                 UnitIntel.bonusMovePointsRemaining -= movementPath.movementSpent - movePoints;
             }
+            yield return new WaitForSecondsRealtime(1);  // Pause with camera on unit after move
         }
         yield return 0;
     }
@@ -813,8 +816,8 @@ public class Unit : MonoBehaviour
 
         if (!animate.IsPointOnScreen(transform.position))
         {
-            GameObject mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
-            mainCamera.transform.position = new Vector3(transform.position.x, transform.position.y, mainCamera.transform.position.z);
+            animate.mainCamera.transform.position = new Vector3(transform.position.x, transform.position.y, animate.mainCamera.transform.position.z);
+            yield return new WaitForSecondsRealtime(1);  // Pause after camera jump to unit but before action
         }
 
         switch (unitTurn.actionProficiency.actionType)
@@ -928,6 +931,7 @@ public class Unit : MonoBehaviour
                 yield return StartCoroutine(unitTurn.missionSpecificAction.actionCallback(gameObject, null, actionSuccesses, requiredSuccesses));
                 break;
         }
+
         string debugString = tag + " in " + unitTurn.actionZone.name + " performed " + unitTurn.actionProficiency.actionType;
         if (unitTurn.targetedZone != null)
         {

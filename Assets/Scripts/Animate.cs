@@ -26,6 +26,7 @@ public class Animate : MonoBehaviour
         cameraStuff = mainCamera.GetComponent<Camera>();  // Not initialized quickly enough if in Start()
     }
 
+    private readonly float woundFadeTimeCoefficient = 2f;
     public IEnumerator FadeObjects(List<GameObject> objectsToFade, float alphaStart, float alphaEnd, float fadeTimeCoefficient = .5f, float timeBetweenObjectsFading = .3f)
     {
         foreach (GameObject objectToFade in objectsToFade)
@@ -131,14 +132,22 @@ public class Animate : MonoBehaviour
         if (width / 2 >= Mathf.Abs(focus.x - halfwayPoint.x) && height / 2 >= Mathf.Abs(focus.y - halfwayPoint.y))
         {
             //Debug.Log("!!!GetCameraCoordsBetweenFocusAndTarget focus: " + focus.ToString() + "   target: " + target.ToString() + "   halfwayPoint: " + halfwayPoint.ToString() + "   Mathf.Abs(focus.x - halfwayPoint.x): " + Mathf.Abs(focus.x - halfwayPoint.x).ToString() + "   Mathf.Abs(focus.y - halfwayPoint.y): " + Mathf.Abs(focus.y - halfwayPoint.y).ToString() + "\ncameraWidth: " + width.ToString() + "   cameraHeight: " + height.ToString());
-            return halfwayPoint;
+            return new Vector3(halfwayPoint.x, halfwayPoint.y, mainCamera.transform.position.z);
         }
         else
         {
             float x = focus.x < target.x ? focus.x + width / 2 : focus.x - width / 2;
             float y = focus.y < target.y ? focus.y + height / 2 : focus.y - height / 2;
             //Debug.Log("!!!GetCameraCoordsBetweenFocusAndTarget focus: " + focus.ToString() + "   target: " + target.ToString() + "   halfwayPoint: " + halfwayPoint.ToString() + "   inFocusPoint: " + new Vector3(x, y, halfwayPoint.z).ToString() + "\ncameraWidth: " + width.ToString() + "   cameraHeight: " + height.ToString());
-            return new Vector3(x, y, halfwayPoint.z);
+            return new Vector3(x, y, mainCamera.transform.position.z);
+        }
+    }
+
+    public void PostionCameraBeforeCameraMove(Vector3 origin, Vector3 destination)
+    {
+        if (!IsPointOnScreen(origin))
+        {
+            mainCamera.transform.position = GetCameraCoordsBetweenFocusAndTarget(origin, destination);
         }
     }
 
@@ -162,6 +171,7 @@ public class Animate : MonoBehaviour
             camStartCoords = GetCameraCoordsBetweenFocusAndTarget(origin, destination);
             //Debug.Log("!!!MoveCameraUntilOnscreen, origin " + origin.ToString() + "  not on screen, so setting camStartCoords to between FocusAndTarget: " + camStartCoords.ToString());
         }
+
         while (t < 1f)
         {
             t += Time.deltaTime * timeCoefficient;
@@ -255,7 +265,7 @@ public class Animate : MonoBehaviour
             wounds.Add(Instantiate(woundPrefab, target.transform));
             wounds[i].transform.localPosition = new Vector3(woundPlacement[i].x, woundPlacement[i].y, 0);
         }
-        StartCoroutine(FadeObjects(wounds, 0, 1, .9f));
+        StartCoroutine(FadeObjects(wounds, 0, 1, woundFadeTimeCoefficient));
 
         foreach (Button unitButton in attacker.transform.GetComponentsInChildren<Button>())
         {
@@ -279,7 +289,7 @@ public class Animate : MonoBehaviour
         attacker.GetComponent<ObjectShake>().StopShaking();
         target.GetComponent<ObjectShake>().StopShaking();
 
-        yield return StartCoroutine(FadeObjects(wounds, 1, 0, .9f));
+        yield return StartCoroutine(FadeObjects(wounds, 1, 0, woundFadeTimeCoefficient));
         for (int i = wounds.Count - 1; i >= 0; i--)
         {
             Destroy(wounds[i]);
@@ -328,7 +338,7 @@ public class Animate : MonoBehaviour
             wounds.Add(Instantiate(woundPrefab, target.transform));
             wounds[i].transform.localPosition = new Vector3(woundPlacement[i].x, woundPlacement[i].y, 0);
         }
-        StartCoroutine(FadeObjects(wounds, 0, 1, .9f));
+        StartCoroutine(FadeObjects(wounds, 0, 1, woundFadeTimeCoefficient));
 
         foreach (Button unitButton in attacker.transform.GetComponentsInChildren<Button>())
         {
@@ -352,7 +362,7 @@ public class Animate : MonoBehaviour
         attacker.GetComponent<ObjectShake>().StopShaking();
         target.GetComponent<ObjectShake>().StopShaking();
 
-        yield return StartCoroutine(FadeObjects(wounds, 1, 0, .9f));
+        yield return StartCoroutine(FadeObjects(wounds, 1, 0, woundFadeTimeCoefficient));
         for (int i = wounds.Count - 1; i >= 0; i--)
         {
             Destroy(wounds[i]);
