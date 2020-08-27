@@ -178,14 +178,14 @@ public class ScenarioMap : MonoBehaviour
     {
         for (int i = 0; i < 2; i++)
         {
-            string unitTypeToActivate = GetVillainTileToActivate(i);
+            (string unitTypeToActivate, GameObject[] unitsToActivate) = GetVillainTileToActivate(i);
             if (unitTypeToActivate == "REINFORCEMENT")
             {
                 yield return StartCoroutine(CallReinforcements());
             }
             else
             {
-                yield return StartCoroutine(ActivateUnitsWithTag(unitTypeToActivate));
+                yield return StartCoroutine(ActivateUnits(unitsToActivate, unitTypeToActivate));
             }
 
             villainRiver.Remove(unitTypeToActivate);
@@ -194,9 +194,9 @@ public class ScenarioMap : MonoBehaviour
         yield return 0;
     }
 
-    IEnumerator ActivateUnitsWithTag(string unitTypeToActivate)
+    IEnumerator ActivateUnits(GameObject[] unitsToActivate, string unitTypeToActivate)
     {
-        foreach (GameObject unit in GameObject.FindGameObjectsWithTag(unitTypeToActivate))
+        foreach (GameObject unit in unitsToActivate)
         {
             Unit unitInfo = unit.GetComponent<Unit>();
             if (unitInfo.IsActive())  // Check if killed (but not yet removed) by previous unit's turn
@@ -206,7 +206,7 @@ public class ScenarioMap : MonoBehaviour
         }
         while (UnitIntel.unitsToActivateLast.Count > 0)  // Now activate any units that were going to use an activateLast ActionWeight
         {
-            Unit unitInfo = UnitIntel.unitsToActivateLast.Pop().GetComponent<Unit>();
+            Unit unitInfo = UnitIntel.unitsToActivateLast.Dequeue().GetComponent<Unit>();
             if (unitInfo.CompareTag(unitTypeToActivate))
             {
                 if (unitInfo.IsActive())
@@ -246,7 +246,7 @@ public class ScenarioMap : MonoBehaviour
         yield return 0;
     }
 
-    string GetVillainTileToActivate(int unitsAlreadyActivated)
+    (string, GameObject[]) GetVillainTileToActivate(int unitsAlreadyActivated)
     {
         //string debugVillainRiverString = "GetVillainTileToActivate  villainRiver: ";
         //foreach (string unitTag in villainRiver)
@@ -255,12 +255,14 @@ public class ScenarioMap : MonoBehaviour
         //}
         //Debug.Log(debugVillainRiverString);
         double totalWeightOfMostValuableUnitTurn = -1;  // Any negative number as work, still want to activate a unit even if their highest weight is 0
+        List<(GameObject, double)> unitsOfTagByWeight = null;
         string mostValuableUnitType = null;
         string debugVillainTilesString = "GetVillainTileToActivate() each unit weight {  ";
         for (int j = 0; j < 3; j++)  // Only first 3 tiles compared
         {
             string unitTag = villainRiver[j];
             double currentWeightOfUnitTurn = 0;
+            List<(GameObject, double)> unitsOfTag = new List<(GameObject, double)>();
 
             if (unitTag == "REINFORCEMENT")
             {
@@ -290,12 +292,15 @@ public class ScenarioMap : MonoBehaviour
             {
                 foreach (GameObject unit in GameObject.FindGameObjectsWithTag(unitTag))
                 {
-                    currentWeightOfUnitTurn += unit.GetComponent<Unit>().GetMostValuableActionWeight();
+                    double currentUnitMostValuableActionWeight = unit.GetComponent<Unit>().GetMostValuableActionWeight();
+                    unitsOfTag.Add((unit, currentUnitMostValuableActionWeight));
+                    currentWeightOfUnitTurn += currentUnitMostValuableActionWeight;
                 }
             }
 
             if (currentWeightOfUnitTurn > totalWeightOfMostValuableUnitTurn)
             {
+                unitsOfTagByWeight = new List<(GameObject, double)>(unitsOfTag);
                 totalWeightOfMostValuableUnitTurn = currentWeightOfUnitTurn;
                 mostValuableUnitType = unitTag;
             }
@@ -310,10 +315,18 @@ public class ScenarioMap : MonoBehaviour
             {
                 villainRiverString += unitType + ", ";
             }
-            Debug.LogError("ERROR! ScenarioMap.GetVillainTileToActivate() returned null. Are there no tiles in the river to activate? villainRiver: " + villainRiverString);
+            Debug.LogError("ERROR! ScenarioMap.GetVillainTileToActivate() mostValuableUnitType is null. Are there no tiles in the river to activate? villainRiver: " + villainRiverString);
         }
 
-        return mostValuableUnitType;
+        if (unitsOfTagByWeight != null)
+        {
+            unitsOfTagByWeight.Sort((x, y) => y.Item2.CompareTo(x.Item2));  // Sorts from highest weight tuple to lowest
+            return (mostValuableUnitType, unitsOfTagByWeight.Select(item => item.Item1).ToArray());
+        }
+        else
+        {
+            return (mostValuableUnitType, null);  // Should always be "REINFORCEMENT"
+        }
     }
 
     IEnumerator CallReinforcements()

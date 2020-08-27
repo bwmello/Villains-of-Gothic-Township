@@ -21,7 +21,7 @@ public static class UnitIntel
     //public static double breakingThroughWallWeight = 10;  // To encourage Superbarn to break through walls just because it's cool
 
     // Helpers for activating units during villain turn
-    public static Stack<GameObject> unitsToActivateLast = new Stack<GameObject>();  // Needed for when a unit's turn negatively impacts other units activating the same turn. Ex: Crowbars in IceToSeeYou activating computers blocking not yet activated Crowbars
+    public static Queue<GameObject> unitsToActivateLast = new Queue<GameObject>();  // Needed for when a unit's turn negatively impacts other units activating the same turn. Ex: Crowbars in IceToSeeYou activating computers blocking not yet activated Crowbars
 
 
     public static void ResetPerRoundResources()

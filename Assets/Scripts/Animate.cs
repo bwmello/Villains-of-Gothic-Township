@@ -26,17 +26,25 @@ public class Animate : MonoBehaviour
         cameraStuff = mainCamera.GetComponent<Camera>();  // Not initialized quickly enough if in Start()
     }
 
-    public IEnumerator FadeObjects(List<GameObject> objectsToFade, float alphaStart, float alphaEnd, float fadeTimeCoefficient = .5f)
+    public IEnumerator FadeObjects(List<GameObject> objectsToFade, float alphaStart, float alphaEnd, float fadeTimeCoefficient = .5f, float timeBetweenObjectsFading = .3f)
     {
+        foreach (GameObject objectToFade in objectsToFade)
+        {
+            objectToFade.GetComponent<CanvasGroup>().alpha = alphaStart;  // Otherwise objects blink before timeBetweenObjectsFading passes and they start their FadeCanvasGroup coroutine
+        }
         for (int i = 0; i < objectsToFade.Count; i++)
         {
-            if (i < objectsToFade.Count - 1)
+            if (objectsToFade[i] != null)
             {
-                StartCoroutine(FadeCanvasGroup(objectsToFade[i].GetComponent<CanvasGroup>(), alphaStart, alphaEnd, fadeTimeCoefficient));
-            }
-            else
-            {
-                yield return StartCoroutine(FadeCanvasGroup(objectsToFade[i].GetComponent<CanvasGroup>(), alphaStart, alphaEnd, fadeTimeCoefficient));
+                if (i < objectsToFade.Count - 1)
+                {
+                    StartCoroutine(FadeCanvasGroup(objectsToFade[i].GetComponent<CanvasGroup>(), alphaStart, alphaEnd, fadeTimeCoefficient));
+                    yield return new WaitForSecondsRealtime(timeBetweenObjectsFading);
+                }
+                else
+                {
+                    yield return StartCoroutine(FadeCanvasGroup(objectsToFade[i].GetComponent<CanvasGroup>(), alphaStart, alphaEnd, fadeTimeCoefficient));
+                }
             }
         }
         yield return 0;
@@ -49,7 +57,14 @@ public class Animate : MonoBehaviour
         {
             t += Time.deltaTime * fadeTimeCoefficient;
             float transparency = Mathf.Lerp(alphaStart, alphaEnd, t);
-            canvasGroupToFade.alpha = transparency;
+            if (canvasGroupToFade != null)
+            {
+                canvasGroupToFade.alpha = transparency;
+            }
+            else
+            {
+                break;
+            }
             yield return null;
         }
         yield return 0;
@@ -82,7 +97,10 @@ public class Animate : MonoBehaviour
             t += Time.deltaTime * timeCoefficient;
             foreach (GameObject currentObject in objectsToMove)
             {
-                currentObject.transform.localScale = new Vector3(Mathf.Lerp(start.x, end.x, t), Mathf.Lerp(start.y, end.y, t), currentObject.transform.localScale.z);
+                if (currentObject != null)
+                {
+                    currentObject.transform.localScale = new Vector3(Mathf.Lerp(start.x, end.x, t), Mathf.Lerp(start.y, end.y, t), currentObject.transform.localScale.z);
+                }
             }
             yield return null;
         }
@@ -166,8 +184,19 @@ public class Animate : MonoBehaviour
         waitingOnPlayerInput = true;
         GameObject zone = targetedHero.GetComponent<Hero>().GetZone();
         GameObject continueButton = Instantiate(continueButtonPrefab, zone.transform);
-        continueButton.transform.position = zone.transform.TransformPoint(0, -50f, 0);
-        //continueButton.transform.position = targetedHero.transform.TransformPoint(0, 25f, 0);
+        if (IsPointOnScreen(zone.transform.TransformPoint(0, -50f, 0)))
+        {
+            continueButton.transform.position = zone.transform.TransformPoint(0, -50f, 0);
+        }
+        else if (IsPointOnScreen(zone.transform.TransformPoint(0, 50f, 0)))
+        {
+            continueButton.transform.position = zone.transform.TransformPoint(0, 50f, 0);
+        }
+        else
+        {
+            continueButton.transform.position = zone.transform.TransformPoint(0, -50f, 0);
+            Debug.LogError("ERROR! Continue button isn't on screen in either available position.");
+        }
         continueButton.GetComponent<Button>().onClick.AddListener(delegate { waitingOnPlayerInput = false; });
         yield return new WaitUntil(() => !waitingOnPlayerInput);
         heroButton.enabled = false;
@@ -186,7 +215,7 @@ public class Animate : MonoBehaviour
             DateTime nextBulletPathStartTime = DateTime.Now.AddSeconds(frequency);
             impact.transform.position = impactPosition;
             StartCoroutine(ScaleObjectOverTime(new List<GameObject>() { impact }, new Vector3(.5f, .5f, .5f), new Vector3(2f, 2f, 2f)));
-            yield return StartCoroutine(FadeObjects(new List<GameObject>() { impact }, 1f, 0, .5f));
+            StartCoroutine(FadeObjects(new List<GameObject>() { impact }, 1f, 0, .5f));
 
             while (showingImpact && DateTime.Now < nextBulletPathStartTime)
             {
@@ -233,7 +262,7 @@ public class Animate : MonoBehaviour
             unitButton.enabled = true;
         }
         PanAndZoom panAndZoom = mainCamera.GetComponent<PanAndZoom>();
-        if (!IsPointOnScreen(transform.position, .1f))
+        if (!IsPointOnScreen(attacker.transform.position, .1f))
         {
             panAndZoom.controlCamera = true;
         }
@@ -269,6 +298,7 @@ public class Animate : MonoBehaviour
             GameObject bullet = Instantiate(bulletPrefab, transform);
             bullet.transform.rotation = Quaternion.Euler(new Vector3(0, 0, Mathf.Atan2((end.y - start.y), (end.x - start.x)) * Mathf.Rad2Deg));
 
+            // If chaining bulletPaths for consecutive ranged attacks doesn't behave, implement same changes as for ShowImpact (don't yield MoveObjectOverTime and check if object is null)
             yield return StartCoroutine(MoveObjectOverTime(new List<GameObject>() { bullet }, start, end, .9f));
             Destroy(bullet);
             while (firingBullets && DateTime.Now < nextBulletPathStartTime)

@@ -84,6 +84,7 @@ public class Unit : MonoBehaviour
 
     public IEnumerator ActivateUnit(bool activatingLast = false)
     {
+        //Debug.Log("ActivateUnit for " + transform.tag + " in " + GetZone().name);
         GameObject currentZone = GetZone();
         Dictionary<GameObject, MovementPath> possibleDestinations = GetPossibleDestinations(currentZone);
         List<UnitPossibleAction> allPossibleUnitActions = GetPossibleActions(possibleDestinations);
@@ -101,7 +102,7 @@ public class Unit : MonoBehaviour
             }
             if (!activatingLast && chosenAction.missionSpecificAction.activateLast)  // If will negatively impact other unit turns, come back to this unit
             {
-                UnitIntel.unitsToActivateLast.Push(gameObject);
+                UnitIntel.unitsToActivateLast.Enqueue(gameObject);
                 yield break;
             }
 
