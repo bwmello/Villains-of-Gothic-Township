@@ -597,6 +597,7 @@ public class Unit : MonoBehaviour
                                     int requiredSuccesses = thoughtable.requiredSuccesses + actionZoneHindrance;
                                     double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
                                     actionWeight += chanceOfSuccess * thoughtable.weightFactor;
+                                    //Debug.Log("Possible THOUGHT action for " + gameObject.name + " in " + possibleZone.name + "  with chanceOfSuccess: " + chanceOfSuccess.ToString() + "  onlyMovingWeight: " + onlyMovingWeight.ToString() + "  actionWeight: " + actionWeight.ToString() + " which should be greater than inactiveWeight: " + inactiveWeight.ToString());
                                     if (actionWeight > inactiveWeight)
                                     {
                                         allPossibleActions.Add(new UnitPossibleAction(this, thoughtable, actionProficiency, actionWeight, possibleZone, finalDestinationZone, null, possibleDestinationsAndPaths[finalDestinationZone]));
@@ -814,7 +815,7 @@ public class Unit : MonoBehaviour
         int currentZoneHindrance = currentZoneInfo.GetCurrentHindrance(gameObject);
         int availableRerolls = currentZoneInfo.GetSupportRerolls(gameObject);
 
-        if (!animate.IsPointOnScreen(transform.position))
+        if (!animate.IsPointOnScreen(transform.position, 0))
         {
             animate.mainCamera.transform.position = new Vector3(transform.position.x, transform.position.y, animate.mainCamera.transform.position.z);
             yield return new WaitForSecondsRealtime(1);  // Pause after camera jump to unit but before action

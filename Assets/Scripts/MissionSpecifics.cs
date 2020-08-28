@@ -86,7 +86,7 @@ public static class MissionSpecifics
                 actionsWeightTable["THOUGHT"] = new List<ActionWeight>();
                 if (totalComputers > 0)
                 {
-                    actionsWeightTable["THOUGHT"].Add(new ActionWeight("Computer", 3, 20, ActivateCryogenicDevice, true));  // Assume you cost the hero at least 1 movepoint and auto deal 2/3 of a wound per cryogenic token, 0 weight if would hit anyone except frosty
+                    actionsWeightTable["THOUGHT"].Add(new ActionWeight("Computer", 3, 80, ActivateCryogenicDevice, true));  // Assume you cost the hero at least 1 movepoint and auto deal 2/3 of a wound per cryogenic token, 0 weight if would hit anyone except frosty
                 }
 
                 actionsWeightTable["GUARD"] = new List<ActionWeight>();

@@ -114,7 +114,7 @@ public class Animate : MonoBehaviour
         cameraStuff.orthographicSize = 2.2f;
     }
 
-    public bool IsPointOnScreen(Vector3 point, float buffer = .2f)
+    public bool IsPointOnScreen(Vector3 point, float buffer = .1f)
     {
         Vector3 screenPoint = cameraStuff.WorldToViewportPoint(point);
         if (screenPoint.x > buffer && screenPoint.x < 1 - buffer && screenPoint.y > buffer && screenPoint.y < 1 - buffer)
@@ -273,7 +273,7 @@ public class Animate : MonoBehaviour
             unitButton.enabled = true;
         }
         PanAndZoom panAndZoom = mainCamera.GetComponent<PanAndZoom>();
-        if (!IsPointOnScreen(attacker.transform.position, .1f))
+        if (!IsPointOnScreen(attacker.transform.position))
         {
             panAndZoom.controlCamera = true;
         }
@@ -346,7 +346,7 @@ public class Animate : MonoBehaviour
             unitButton.enabled = true;
         }
         PanAndZoom panAndZoom = mainCamera.GetComponent<PanAndZoom>();
-        if (!IsPointOnScreen(attacker.transform.position, .1f))  // If you can still see the attacker after panning to the target, player doesn't need camera control
+        if (!IsPointOnScreen(attacker.transform.position))  // If you can still see the attacker after panning to the target, player doesn't need camera control
         {
             panAndZoom.controlCamera = true;
         }
@@ -413,5 +413,7 @@ public class Animate : MonoBehaviour
     {
         GameObject bugReportScreen = Instantiate(bugReportPrefab, transform);
         bugReportScreen.transform.position = position;
+        CameraToFixedZoom();
+        mainCamera.transform.position = new Vector3(position.x, position.y, mainCamera.transform.position.z);
     }
 }
