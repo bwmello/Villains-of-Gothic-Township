@@ -44,6 +44,7 @@ public class ScenarioMap : MonoBehaviour
     private GameObject mainCamera;
     private GameObject animationContainer;
     private Animate animate;
+    public GameObject reportBugButton;
     public GameObject bombPrefab;  // These prefabs are here just to pass off to static MissionSpecifics
     public GameObject primedBombPrefab;
 
@@ -238,6 +239,10 @@ public class ScenarioMap : MonoBehaviour
             if (!clockTurnBack.activeSelf)
             {
                 clockTurnBack.SetActive(true);
+            }
+            if (!reportBugButton.activeSelf)
+            {
+                reportBugButton.SetActive(true);
             }
         }
 
@@ -492,6 +497,13 @@ public class ScenarioMap : MonoBehaviour
         LoadScenarioSave(scenarioSave);
     }
 
+    public void ReportBugButtonClicked()
+    {
+        DisablePlayerUI();
+        Vector3 bugReportScreenPosition = reportBugButton.transform.TransformPoint(0, -90f, 0);
+        animate.ShowBugReportScreen(bugReportScreenPosition);
+    }
+
     public void SaveIntoJson()
     {
         ScenarioSave scenarioToSave = new ScenarioSave(this);
@@ -517,10 +529,12 @@ public class ScenarioMap : MonoBehaviour
         if (!clockTurnBack.activeSelf && currentRound > 1)
         {
             clockTurnBack.SetActive(true);
+            reportBugButton.SetActive(true);
         }
         else if (clockTurnBack.activeSelf && currentRound <= 1)
         {
             clockTurnBack.SetActive(false);
+            reportBugButton.SetActive(false);
         }
 
         villainRiver = new List<string>(scenarioSave.villainRiver);

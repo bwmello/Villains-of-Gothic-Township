@@ -17,6 +17,7 @@ public class Animate : MonoBehaviour
     public GameObject explosionPrefab;
     public GameObject explosionLoopingPrefab;
     public GameObject continueButtonPrefab;
+    public GameObject bugReportPrefab;
     public GameObject gameOverPrefab;
 
 
@@ -406,5 +407,11 @@ public class Animate : MonoBehaviour
             gameOverPanel.transform.Find("MissionStatusText").GetComponent<TMP_Text>().text = "<color=\"red\">Mission Failure";
         }
         StartCoroutine(MoveObjectOverTime(new List<GameObject>() { mainCamera }, mainCamera.transform.position, new Vector3(0, 0, 0)));  // Move camera to center
+    }
+
+    public void ShowBugReportScreen(Vector3 position)
+    {
+        GameObject bugReportScreen = Instantiate(bugReportPrefab, transform);
+        bugReportScreen.transform.position = position;
     }
 }
