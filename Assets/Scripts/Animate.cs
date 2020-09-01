@@ -72,19 +72,22 @@ public class Animate : MonoBehaviour
         yield return 0;
     }
 
-    public IEnumerator MoveObjectOverTime(List<GameObject> objectsToMove, Vector3 origin, Vector3 destination, float timeCoefficient = .5f)  // TODO maybe remove this timeCoefficient param
+    public IEnumerator MoveObjectOverTime(List<GameObject> objectsToMove, Vector3 origin, Vector3 destination, float timeCoefficient = 1f)
     {
         float xDistance = Mathf.Abs(origin.x - destination.x);
         float yDistance = Mathf.Abs(origin.y - destination.y);
         float longestDistance = xDistance >= yDistance ? xDistance : yDistance;
-        timeCoefficient = 1 / Mathf.Sqrt(longestDistance);
+        timeCoefficient *= 1 / Mathf.Sqrt(longestDistance);
         float t = 0;
         while (t < 1f)
         {
             t += Time.deltaTime * timeCoefficient;
             foreach (GameObject currentObject in objectsToMove)
             {
-                currentObject.transform.position = new Vector3(Mathf.Lerp(origin.x, destination.x, t), Mathf.Lerp(origin.y, destination.y, t), currentObject.transform.position.z);
+                if (currentObject != null)
+                {
+                    currentObject.transform.position = new Vector3(Mathf.Lerp(origin.x, destination.x, t), Mathf.Lerp(origin.y, destination.y, t), currentObject.transform.position.z);
+                }
             }
             yield return null;
         }
@@ -206,7 +209,7 @@ public class Animate : MonoBehaviour
         else
         {
             continueButton.transform.position = zone.transform.TransformPoint(0, -50f, 0);
-            Debug.LogError("ERROR! Continue button isn't on screen in either available position.");
+            //Debug.LogError("ERROR! Continue button isn't on screen in either available position.");  // Not true, triggers on the left hand side now because of the camera bounds
         }
         continueButton.GetComponent<Button>().onClick.AddListener(delegate { waitingOnPlayerInput = false; });
         yield return new WaitUntil(() => !waitingOnPlayerInput);
@@ -223,12 +226,12 @@ public class Animate : MonoBehaviour
         GameObject impact = Instantiate(impactPrefab, transform);
         while (showingImpact)
         {
-            DateTime nextBulletPathStartTime = DateTime.Now.AddSeconds(frequency);
+            DateTime nextShowImpactStartTime = DateTime.Now.AddSeconds(frequency);
             impact.transform.position = impactPosition;
             StartCoroutine(ScaleObjectOverTime(new List<GameObject>() { impact }, new Vector3(.5f, .5f, .5f), new Vector3(2f, 2f, 2f)));
             StartCoroutine(FadeObjects(new List<GameObject>() { impact }, 1f, 0, .5f));
 
-            while (showingImpact && DateTime.Now < nextBulletPathStartTime)
+            while (showingImpact && DateTime.Now < nextShowImpactStartTime)
             {
                 yield return null;
             }
@@ -303,20 +306,24 @@ public class Animate : MonoBehaviour
     public IEnumerator ShowBulletPath(Vector3 start, Vector3 end, float frequency)
     {
         firingBullets = true;
+        GameObject bullet = Instantiate(bulletPrefab, transform);
+        bullet.transform.rotation = Quaternion.Euler(new Vector3(0, 0, Mathf.Atan2((end.y - start.y), (end.x - start.x)) * Mathf.Rad2Deg));
         while (firingBullets)
         {
             DateTime nextBulletPathStartTime = DateTime.Now.AddSeconds(frequency);
-            GameObject bullet = Instantiate(bulletPrefab, transform);
-            bullet.transform.rotation = Quaternion.Euler(new Vector3(0, 0, Mathf.Atan2((end.y - start.y), (end.x - start.x)) * Mathf.Rad2Deg));
 
-            // If chaining bulletPaths for consecutive ranged attacks doesn't behave, implement same changes as for ShowImpact (don't yield MoveObjectOverTime and check if object is null)
-            yield return StartCoroutine(MoveObjectOverTime(new List<GameObject>() { bullet }, start, end, .9f));
-            Destroy(bullet);
+            bullet.GetComponent<CanvasGroup>().alpha = 1;
+            StartCoroutine(MoveObjectOverTime(new List<GameObject>() { bullet }, start, end, 1.5f));
             while (firingBullets && DateTime.Now < nextBulletPathStartTime)
             {
+                if (bullet.transform.position.x == end.x && bullet.transform.position.y == end.y)  // If bullet has reached the end of its move
+                {
+                    bullet.GetComponent<CanvasGroup>().alpha = 0;
+                }
                 yield return null;
             }
         }
+        Destroy(bullet);
         yield return 0;
     }
 
