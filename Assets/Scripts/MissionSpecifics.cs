@@ -352,7 +352,7 @@ public static class MissionSpecifics
 
         if (totalSuccesses >= requiredSuccesses)
         {
-            //yield return animate.StartCoroutine(MoveObjectOverTime(new List<GameObject>() { mainCamera }, mainCamera.transform.position, currentZoneInfo.GetBomb().transform.position));  // Moving camera over slightly to bomb being armed is more jarring than anything else
+            yield return animate.StartCoroutine(animate.MoveCameraUntilOnscreen(mainCamera.transform.position, unitZoneInfo.GetBomb().transform.position));  // Move camera to bomb being armed
             unitZoneInfo.PrimeBomb();
             yield return new WaitForSecondsRealtime(2);
             SetActionsWeightTable();
@@ -360,6 +360,7 @@ public static class MissionSpecifics
         Object.Destroy(successContainer);
         yield return 0;
     }
+
     public static IEnumerator PrimeBombRemotely(GameObject unit, GameObject target, int totalSuccesses, int requiredSuccesses)
     {
         ZoneInfo unitZoneInfo = unit.GetComponent<Unit>().GetZone().GetComponent<ZoneInfo>();
@@ -400,7 +401,7 @@ public static class MissionSpecifics
             double leastManipulationChance = 100;
             foreach (ZoneInfo bombZone in bombZones)
             {
-                double bombZoneManipulationChance = bombZone.GetOccupantsManipulationLikelihood(unit);
+                double bombZoneManipulationChance = bombZone.GetOccupantsManipulationLikelihood(3, true);
                 //Debug.Log("!!!" + bombZone.transform.name + " with bombZoneManipulationChance: " + bombZoneManipulationChance.ToString());
                 if (bombZoneManipulationChance < leastManipulationChance)
                 {

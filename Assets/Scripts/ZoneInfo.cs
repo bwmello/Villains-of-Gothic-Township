@@ -186,18 +186,22 @@ public class ZoneInfo : MonoBehaviour
         return supportRerolls;
     }
 
-    public double GetOccupantsManipulationLikelihood(GameObject unitToDiscount)
+    public double GetOccupantsManipulationLikelihood(int requiredSuccesses, bool munitionSpecialistApplies = false)
     {
         double chanceOfFailure = 1;
 
-        int requiredSuccesses = 5 + GetCurrentHindrance(unitToDiscount);  // TODO Once GetChanceOfSuccess is fixed to never return >= 1, replace 5 with actual requiredSuccesses (include munitionSpecialist)
         foreach (Unit unit in GetUnitsInfo())
         {
             foreach (Unit.ActionProficiency proficiency in unit.actionProficiencies)
             {
                 if (proficiency.actionType == "MANIPULATION")
                 {
-                    chanceOfFailure *= unit.GetChanceOfSuccess(requiredSuccesses, proficiency.proficiencyDice, GetSupportRerolls(unitToDiscount));
+                    int totalRequiredSuccesses = requiredSuccesses + GetCurrentHindrance(unit.gameObject);
+                    if (munitionSpecialistApplies)
+                    {
+                        totalRequiredSuccesses -= unit.munitionSpecialist;
+                    }
+                    chanceOfFailure *= 1 - unit.GetChanceOfSuccess(totalRequiredSuccesses, proficiency.proficiencyDice, GetSupportRerolls(unit.gameObject));
                 }
             }
         }
