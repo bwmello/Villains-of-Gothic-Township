@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;  // For button
 using TMPro;  // for TMP_Text to edit SuccessVsFailure's successContainer blanks
 
+
 public static class MissionSpecifics
 {
     public static string missionName;
@@ -66,11 +67,11 @@ public static class MissionSpecifics
                 actionsWeightTable["GUARD"] = new List<ActionWeight>();
                 if (totalPrimedBombs > 0)
                 {
-                    actionsWeightTable["GUARD"].Add(new ActionWeight("PrimedBomb", 0, 15, null));  // Flat weight bonus for hindering heroes attempting to disable objectives
+                    actionsWeightTable["GUARD"].Add(new ActionWeight("PrimedBomb", 0, 20, null));  // Flat weight bonus for hindering heroes attempting to disable objectives
                 }
                 if (totalBombs > 0)
                 {
-                    actionsWeightTable["GUARD"].Add(new ActionWeight("Bomb", 0, 10, null));
+                    actionsWeightTable["GUARD"].Add(new ActionWeight("Bomb", 0, 15, null));
                     //if (totalComputers > 0)  // Heroes should always be going after bombs, not computers
                     //{
                     //    actionsWeightTable["GUARD"].Add(new ActionWeight("Computer", 0, 5, null));
@@ -92,10 +93,34 @@ public static class MissionSpecifics
                 actionsWeightTable["GUARD"] = new List<ActionWeight>();
                 if (totalBombs > 0)
                 {
-                    actionsWeightTable["GUARD"].Add(new ActionWeight("Bomb", 0, 15, null));
+                    actionsWeightTable["GUARD"].Add(new ActionWeight("Bomb", 0, 20, null));
                 }
                 break;
         }
+    }
+
+    public static double GetHeroProximityToObjectiveWeightMultiplier(GameObject zone, bool isPartialMove = false)
+    {
+        double weightMultiplier = .1;  // Default if no heroes within 4 moves
+        double[] weightBasedOnHeroProximity;
+        if (!isPartialMove)
+        {
+            weightBasedOnHeroProximity = new double[] { 1, .9, .75, .5, .25 };
+        }
+        else
+        {
+            weightBasedOnHeroProximity = new double[] { .25, .5, .75, .9, 1 };
+        }
+
+        if (UnitIntel.heroMovesRequiredToReachZone.ContainsKey(zone))  // If heroes within 4 moves
+        {
+            if (UnitIntel.heroMovesRequiredToReachZone[zone].Count > 0)
+            {
+                weightMultiplier = weightBasedOnHeroProximity[UnitIntel.heroMovesRequiredToReachZone[zone][0]];  // Disregards any heroes beyond or equal to closest hero
+            }
+        }
+
+        return weightMultiplier;
     }
 
     public static void ObjectiveTokenClicked(Button button)

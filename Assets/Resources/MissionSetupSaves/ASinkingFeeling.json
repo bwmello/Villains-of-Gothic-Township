@@ -1,1 +1,462 @@
-{"missionName":"ASinkingFeeling","currentRound":1,"reinforcementPoints":5,"totalHeroes":3,"villainRiver":["UZI","CHAINS","PISTOLS","REINFORCEMENT","CROWBAR","SHOTGUN","BARN"],"unitTagsMasterList":["CHAINS","CROWBAR","SHOTGUN","UZI","PISTOLS","BARN","SUPERBARN"],"unitsPool":[{"tag":"UZI","total":4},{"tag":"CHAINS","total":4},{"tag":"PISTOLS","total":4},{"tag":"CROWBAR","total":4},{"tag":"SHOTGUN","total":4}],"brokenWalls":[],"zones":[{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":false,"tokensAndHeroesTags":["Computer"],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":true,"tokensAndHeroesTags":["3rdHero"],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":false,"tokensAndHeroesTags":["Bomb"],"fadedTokensTags":[],"environTokens":[],"units":[{"tag":"PISTOLS","lifePoints":1},{"tag":"UZI","lifePoints":1},{"tag":"SHOTGUN","lifePoints":1}]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[{"tag":"SHOTGUN","lifePoints":1}]},{"isSpawnZone":false,"tokensAndHeroesTags":["Bomb"],"fadedTokensTags":[],"environTokens":[],"units":[{"tag":"PISTOLS","lifePoints":1},{"tag":"UZI","lifePoints":1},{"tag":"CHAINS","lifePoints":1}]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[{"tag":"CROWBAR","lifePoints":1}]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[{"tag":"CROWBAR","lifePoints":1}]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":false,"tokensAndHeroesTags":["1stHero"],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":false,"tokensAndHeroesTags":["Computer"],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[{"tag":"CHAINS","lifePoints":1}]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":true,"tokensAndHeroesTags":["2ndHero"],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":false,"tokensAndHeroesTags":["Bomb"],"fadedTokensTags":[],"environTokens":[],"units":[{"tag":"CHAINS","lifePoints":1}]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[{"tag":"BARN","lifePoints":6},{"tag":"PISTOLS","lifePoints":1}]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[{"tag":"CROWBAR","lifePoints":1}]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[{"tag":"SHOTGUN","lifePoints":1}]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":true,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":true,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":false,"tokensAndHeroesTags":[],"fadedTokensTags":[],"environTokens":[],"units":[]},{"isSpawnZone":false,"tokensAndHeroesTags":["Computer"],"fadedTokensTags":[],"environTokens":[],"units":[{"tag":"UZI","lifePoints":1},{"tag":"SHOTGUN","lifePoints":1}]},{"isSpawnZone":false,"tokensAndHeroesTags":["Bomb"],"fadedTokensTags":[],"environTokens":[],"units":[{"tag":"CHAINS","lifePoints":1}]},{"isSpawnZone":false,"tokensAndHeroesTags":["Computer"],"fadedTokensTags":[],"environTokens":[],"units":[{"tag":"UZI","lifePoints":1}]},{"isSpawnZone":false,"tokensAndHeroesTags":["Bomb"],"fadedTokensTags":[],"environTokens":[],"units":[{"tag":"PISTOLS","lifePoints":1},{"tag":"CROWBAR","lifePoints":1}]}]}
+{
+    "missionName": "ASinkingFeeling",
+    "currentRound": 1,
+    "reinforcementPoints": 5,
+    "totalHeroes": 3,
+    "unitIntel": {
+        "heroesIntel": [
+            {
+                "tag": "1stHero",
+                "moveSpeed": 4,
+                "ignoreTerrainDifficulty": 1,
+                "ignoreElevation": 1,
+                "ignoreSize": 1,
+                "wallBreaker": 0,
+                "woundsReceived": 0,
+                "canCounterAttack": false,
+                "canRetaliate": false
+            },
+            {
+                "tag": "2ndHero",
+                "moveSpeed": 4,
+                "ignoreTerrainDifficulty": 1,
+                "ignoreElevation": 1,
+                "ignoreSize": 1,
+                "wallBreaker": 0,
+                "woundsReceived": 0,
+                "canCounterAttack": false,
+                "canRetaliate": false
+            },
+            {
+                "tag": "3rdHero",
+                "moveSpeed": 4,
+                "ignoreTerrainDifficulty": 1,
+                "ignoreElevation": 1,
+                "ignoreSize": 1,
+                "wallBreaker": 0,
+                "woundsReceived": 0,
+                "canCounterAttack": false,
+                "canRetaliate": false
+            }
+        ]
+    },
+    "villainRiver": [ "UZI", "CHAINS", "PISTOLS", "REINFORCEMENT", "CROWBAR", "SHOTGUN", "BARN" ],
+    "unitTagsMasterList": [ "CHAINS", "CROWBAR", "SHOTGUN", "UZI", "PISTOLS", "BARN", "SUPERBARN" ],
+    "unitsPool": [
+        {
+            "tag": "UZI",
+            "total": 4
+        },
+        {
+            "tag": "CHAINS",
+            "total": 4
+        },
+        {
+            "tag": "PISTOLS",
+            "total": 4
+        },
+        {
+            "tag": "CROWBAR",
+            "total": 4
+        },
+        {
+            "tag": "SHOTGUN",
+            "total": 4
+        }
+    ],
+    "brokenWalls": [],
+    "zones": [
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [ "Computer" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": true,
+            "tokensAndHeroesTags": [ "3rdHero" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [ "Bomb" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "PISTOLS",
+                    "lifePoints": 1
+                },
+                {
+                    "tag": "UZI",
+                    "lifePoints": 1
+                },
+                {
+                    "tag": "SHOTGUN",
+                    "lifePoints": 1
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "SHOTGUN",
+                    "lifePoints": 1
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [ "Bomb" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "PISTOLS",
+                    "lifePoints": 1
+                },
+                {
+                    "tag": "UZI",
+                    "lifePoints": 1
+                },
+                {
+                    "tag": "CHAINS",
+                    "lifePoints": 1
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "CROWBAR",
+                    "lifePoints": 1
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "CROWBAR",
+                    "lifePoints": 1
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [ "1stHero" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [ "Computer" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "CHAINS",
+                    "lifePoints": 1
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": true,
+            "tokensAndHeroesTags": [ "2ndHero" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [ "Bomb" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "CHAINS",
+                    "lifePoints": 1
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "BARN",
+                    "lifePoints": 6
+                },
+                {
+                    "tag": "PISTOLS",
+                    "lifePoints": 1
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "CROWBAR",
+                    "lifePoints": 1
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "SHOTGUN",
+                    "lifePoints": 1
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": true,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": true,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [ "Computer" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "UZI",
+                    "lifePoints": 1
+                },
+                {
+                    "tag": "SHOTGUN",
+                    "lifePoints": 1
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [ "Bomb" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "CHAINS",
+                    "lifePoints": 1
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [ "Computer" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "UZI",
+                    "lifePoints": 1
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [ "Bomb" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "PISTOLS",
+                    "lifePoints": 1
+                },
+                {
+                    "tag": "CROWBAR",
+                    "lifePoints": 1
+                }
+            ]
+        }
+    ]
+}

@@ -109,7 +109,7 @@ public class ZoneInfo : MonoBehaviour
     public int GetCurrentOccupancy()
     {
         int currentOccupancy = 0;
-        currentOccupancy += GetHeroesCount();  // TODO stop assuming size and menace of 1 for each hero
+        currentOccupancy += GetHeroesCount();  // Assumes size and menace of 1 for each hero
         foreach (Unit unit in GetUnitsInfo())
         {
             currentOccupancy += unit.size;
@@ -120,13 +120,37 @@ public class ZoneInfo : MonoBehaviour
     public int GetCurrentHindrance(GameObject unitToDiscount, bool isMoving = false)
     {
         int currentHindrance = 0;
-        currentHindrance += GetHeroesCount();  // TODO stop assuming size and menace of 1 for each hero
+        currentHindrance += GetHeroesCount();  // Assumes size and menace of 1 for each hero
 
         foreach (Unit unit in GetUnitsInfo())
         {
-            if (unit.gameObject != unitToDiscount)  // Unit doesn't count itself for hindrance.
+            if (unit.gameObject != unitToDiscount)  // Unit doesn't count itself for hindrance
             {
                 currentHindrance -= isMoving ? unit.size : unit.menace;
+            }
+        }
+
+        if (currentHindrance < 0)
+        {
+            currentHindrance = 0;
+        }
+        return currentHindrance;
+    }
+
+    public int GetCurrentHindranceForHero(string heroTag, bool isMoving = false)
+    {
+        int currentHindrance = 0;
+
+        foreach (Unit unit in GetUnitsInfo())
+        {
+            currentHindrance += isMoving ? unit.size : unit.menace;
+        }
+
+        foreach (GameObject heroOccupant in GetHeroes())
+        {
+            if (!heroOccupant.CompareTag(heroTag))  // Hero doesn't count itself for hindrance.
+            {
+                currentHindrance -= 1;
             }
         }
 
@@ -189,6 +213,17 @@ public class ZoneInfo : MonoBehaviour
             return token.GetComponent<Token>().IsActive();
         }
         return false;
+    }
+
+    public GameObject GetObjectiveToken(string tokenName)
+    {
+        Transform tokensRow = transform.Find("TokensRow");
+        Transform token = tokensRow.Find(tokenName);
+        if (token && token.GetComponent<Token>().IsActive())
+        {
+            return token.gameObject;
+        }
+        return null;
     }
 
     public void DestroyFadedTokens()
@@ -331,10 +366,10 @@ public class ZoneInfo : MonoBehaviour
         }
     }
 
-    public int GetTerrainDangerTotal(Unit unit)
+    public int GetTerrainDangerTotal(Unit unit = null)
     {
         int terrainDangerTotal = terrainDanger;
-        if (!unit.fiery)
+        if (unit == null || !unit.fiery)
         {
             List<GameObject> flameTokens = GetAllTokensWithTag("Flame");
             foreach (GameObject flameToken in flameTokens)
@@ -342,7 +377,7 @@ public class ZoneInfo : MonoBehaviour
                 terrainDangerTotal += flameToken.GetComponent<EnvironToken>().quantity;
             }
         }
-        if (!unit.frosty)
+        if (unit == null || !unit.frosty)
         {
             List<GameObject> cryogenicTokens = GetAllTokensWithTag("Cryogenic");
             foreach (GameObject cryogenicToken in cryogenicTokens)
@@ -350,7 +385,7 @@ public class ZoneInfo : MonoBehaviour
                 terrainDangerTotal += cryogenicToken.GetComponent<EnvironToken>().quantity;
             }
         }
-        if (!unit.gasImmunity)
+        if (unit == null || !unit.gasImmunity)
         {
             List<GameObject> gasTokens = GetAllTokensWithTag("Gas");
             foreach (GameObject gasToken in gasTokens)

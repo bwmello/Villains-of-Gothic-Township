@@ -407,7 +407,7 @@ public class Unit : MonoBehaviour
         }
     }
 
-    private List<UnitPossibleAction> GetPossibleActions(Dictionary<GameObject, MovementPath> possibleDestinationsAndPaths)
+    private List<UnitPossibleAction> GetPossibleActions(Dictionary<GameObject, MovementPath> possibleDestinationsAndPaths, bool isPartialMove = false)
     {
         List<UnitPossibleAction> allPossibleActions = new List<UnitPossibleAction>();
 
@@ -447,7 +447,8 @@ public class Unit : MonoBehaviour
                         {
                             if (possibleFinalDestinationZoneInfo.HasObjectiveToken(guardable.targetType))
                             {
-                                possibleGuardZoneWeight += guardable.weightFactor;
+                                GameObject objectiveToken = possibleFinalDestinationZoneInfo.GetObjectiveToken(guardable.targetType);
+                                possibleGuardZoneWeight += guardable.weightFactor * MissionSpecifics.GetHeroProximityToObjectiveWeightMultiplier(possibleFinalDestinationZone, isPartialMove);
                                 possibleGuardAction = guardable;
                             }
                         }
@@ -478,7 +479,8 @@ public class Unit : MonoBehaviour
                     {
                         if (possibleZoneInfo.HasObjectiveToken(guardable.targetType))
                         {
-                            guardZoneWeight += guardable.weightFactor;
+                            GameObject objectiveToken = possibleZoneInfo.GetObjectiveToken(guardable.targetType);
+                            guardZoneWeight += guardable.weightFactor * MissionSpecifics.GetHeroProximityToObjectiveWeightMultiplier(possibleZone, isPartialMove);
                         }
                     }
                 }
@@ -694,7 +696,7 @@ public class Unit : MonoBehaviour
         foreach (GameObject reachableZone in reachableDestinationsWithoutBonusMovePoints.Keys)
         {
             Dictionary<GameObject, MovementPath> nextPossibleDestinations = GetPossibleDestinations(reachableZone, new Dictionary<GameObject, MovementPath>(reachableDestinationsWithoutBonusMovePoints), new HashSet<GameObject>(reachableDestinationsWithoutBonusMovePoints.Keys));
-            List<UnitPossibleAction> futurePossibleActions = GetPossibleActions(nextPossibleDestinations);
+            List<UnitPossibleAction> futurePossibleActions = GetPossibleActions(nextPossibleDestinations, true);  // isPartialMove = true
 
             if (futurePossibleActions != null && futurePossibleActions.Count > 0)
             {
