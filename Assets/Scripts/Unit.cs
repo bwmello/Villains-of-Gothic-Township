@@ -527,9 +527,8 @@ public class Unit : MonoBehaviour
                             }
                             else
                             {
-                                averageWounds += actionProficiency.actionMultiplier / 10;
+                                averageWounds += actionProficiency.actionMultiplier / 2;  // Can't inflict negative wounds, so just try to get this to a low positive number
                             }
-                            averageWounds *= actionProficiency.actionMultiplier;
                             actionWeight += averageWounds * MissionSpecifics.actionsWeightTable["RANGED"][0].weightFactor;
                             if (actionWeight > inactiveWeight)
                             {
@@ -599,7 +598,7 @@ public class Unit : MonoBehaviour
                                     int requiredSuccesses = thoughtable.requiredSuccesses + actionZoneHindrance;
                                     double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
                                     actionWeight += chanceOfSuccess * thoughtable.weightFactor;
-                                    //Debug.Log("Possible THOUGHT action for " + gameObject.name + " in " + possibleZone.name + "  with chanceOfSuccess: " + chanceOfSuccess.ToString() + "  onlyMovingWeight: " + onlyMovingWeight.ToString() + "  actionWeight: " + actionWeight.ToString() + " which should be greater than inactiveWeight: " + inactiveWeight.ToString());
+                                    Debug.Log("Possible THOUGHT action for " + gameObject.name + " in " + possibleZone.name + "  with chanceOfSuccess: " + chanceOfSuccess.ToString() + "  onlyMovingWeight: " + onlyMovingWeight.ToString() + "  actionWeight: " + actionWeight.ToString() + " which should be greater than inactiveWeight: " + inactiveWeight.ToString());
                                     if (actionWeight > inactiveWeight)
                                     {
                                         allPossibleActions.Add(new UnitPossibleAction(this, thoughtable, actionProficiency, actionWeight, possibleZone, finalDestinationZone, null, possibleDestinationsAndPaths[finalDestinationZone]));
@@ -879,7 +878,11 @@ public class Unit : MonoBehaviour
                         {
                             actionSuccesses += marksmanSuccesses;
                         }
-                        actionSuccesses -= currentZoneInfo.GetCurrentHindrance(gameObject);
+                        actionSuccesses -= currentZoneHindrance;
+                        if (actionSuccesses < 0)
+                        {
+                            actionSuccesses = 0;
+                        }
 
                         yield return StartCoroutine(animate.RangedAttack(gameObject, targetedHero, actionSuccesses));
                     }
@@ -904,7 +907,7 @@ public class Unit : MonoBehaviour
                     {
                         List<GameObject> lineOfSight = new List<GameObject>() { GetZone() };
                         lineOfSight.AddRange(currentZoneInfo.GetLineOfSightWithZone(unitTurn.targetedZone));
-                        requiredSuccesses = lineOfSight.IndexOf(unitTurn.targetedZone);
+                        requiredSuccesses = lineOfSight.IndexOf(unitTurn.targetedZone) + currentZoneHindrance;
                         actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls, requiredSuccesses);
                         GameObject targetedZone;
                         if (actionSuccesses >= requiredSuccesses)
@@ -929,7 +932,7 @@ public class Unit : MonoBehaviour
                 }
                 break;
             case "THOUGHT":
-                requiredSuccesses = unitTurn.missionSpecificAction.requiredSuccesses;
+                requiredSuccesses = unitTurn.missionSpecificAction.requiredSuccesses + currentZoneHindrance;
                 actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls, requiredSuccesses);
                 yield return StartCoroutine(unitTurn.missionSpecificAction.actionCallback(gameObject, null, actionSuccesses, requiredSuccesses));
                 break;
