@@ -61,7 +61,8 @@ namespace Tests
             Assert.AreEqual(.2222, uziUnit.GetChanceOfSuccess(3, uziUnit.actionProficiencies[1].proficiencyDice), .001);  // Manipulate bomb
             Assert.AreEqual(.8395, uziUnit.GetChanceOfSuccess(3, uziUnit.actionProficiencies[1].proficiencyDice, 1), .001);
             Assert.AreEqual(0, uziUnit.GetChanceOfSuccess(5, uziUnit.actionProficiencies[1].proficiencyDice), .001);
-            Assert.AreEqual(.8148, uziUnit.GetChanceOfSuccess(5, uziUnit.actionProficiencies[1].proficiencyDice, 1), .001);  // TODO This isn't right, requiredSuccesses > 4 should be 0 no matter how many rerolls
+            //Assert.AreEqual(.8148, uziUnit.GetChanceOfSuccess(5, uziUnit.actionProficiencies[1].proficiencyDice, 1), .001);  // requiredSuccesses > 4 should be 0 no matter how many rerolls
+            Assert.AreEqual(0, uziUnit.GetChanceOfSuccess(5, uziUnit.actionProficiencies[1].proficiencyDice, 1), .001);
         }
 
         [Test]
@@ -70,7 +71,8 @@ namespace Tests
             Unit crowbarUnit = Resources.Load<GameObject>("Prefabs/Units/CROWBAR").GetComponent<Unit>();
             Assert.AreEqual(.4999, crowbarUnit.GetChanceOfSuccess(3, crowbarUnit.actionProficiencies[1].proficiencyDice), .001);  // Thought computer
             Assert.AreEqual(.8755, crowbarUnit.GetChanceOfSuccess(3, crowbarUnit.actionProficiencies[1].proficiencyDice, 1), .001);
-            Assert.AreEqual(.4444, crowbarUnit.GetChanceOfSuccess(5, crowbarUnit.actionProficiencies[1].proficiencyDice), .001);  // Thought computer with 2 hindrance, TODO this can't be right
+            //Assert.AreEqual(.4444, crowbarUnit.GetChanceOfSuccess(5, crowbarUnit.actionProficiencies[1].proficiencyDice), .001);  // Thought computer with 2 hindrance, just like with uzi without max check in GetChanceOfSuccess
+            Assert.AreEqual(0, crowbarUnit.GetChanceOfSuccess(5, crowbarUnit.actionProficiencies[1].proficiencyDice), .001);
         }
 
         [Test]

@@ -311,6 +311,16 @@ public class Unit : MonoBehaviour
 
     public double GetChanceOfSuccess(int requiredSuccesses, List<GameObject> dice, int rerolls = 0)
     {
+        int maxSuccesses = 0;  // TODO Remove this maxSuccess check once the dice math regarding rerolls is fixed (so GetChanceOfSuccess returns 0 without this check)
+        foreach (GameObject die in dice)
+        {
+            maxSuccesses += die.GetComponent<Dice>().GetLargestPossibleResult();
+        }
+        if (requiredSuccesses > maxSuccesses)
+        {
+            return 0;
+        }
+
         List<(int, GameObject)> firstFailureResult = new List<(int, GameObject)>();
         foreach (GameObject die in dice)
         {

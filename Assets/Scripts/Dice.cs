@@ -17,6 +17,11 @@ public class Dice : MonoBehaviour
         return faces[random.Next(faces.Length)];
     }
 
+    public int GetLargestPossibleResult()
+    {
+        return faces[faces.Length - 1];  // faces[] is organized from smallest to largest, so get last result
+    }
+
     public double GetProbabilityOfResult(int result, int totalRerolls, bool ignoreRerollable = false)
     {
         if (!ignoreRerollable && rerollable)
