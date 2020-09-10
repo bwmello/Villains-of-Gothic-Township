@@ -69,7 +69,7 @@ public static class UnitIntel
                     {
                         heroMovesRequiredToReachZone[zone] = new List<int>();
                     }
-                    int movesRequired = (int)Math.Ceiling((double)heroPossibleDestinations[zone].movementSpent / (double)4);
+                    int movesRequired = (int)Math.Ceiling((double)heroPossibleDestinations[zone].movementSpent / (double)heroIntel.moveSpeed);
                     heroMovesRequiredToReachZone[zone].Add(movesRequired);
                 }
             }

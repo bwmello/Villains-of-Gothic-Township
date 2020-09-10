@@ -99,6 +99,18 @@ public static class MissionSpecifics
         }
     }
 
+    public static int GetFinalRound()
+    {
+        switch (missionName)  // Each nonconstant key (ex: "THOUGHT") should be wiped each time and only added back in if conditions are still met
+        {
+            case "ASinkingFeeling":
+                return 7;
+            case "IceToSeeYou":
+                return 8;
+        }
+        return -1;
+    }
+
     public static double GetHeroProximityToObjectiveWeightMultiplier(GameObject zone, bool isPartialMove = false)
     {
         double weightMultiplier = .1;  // Default if no heroes within 4 moves
@@ -193,14 +205,14 @@ public static class MissionSpecifics
         {
             case "ASinkingFeeling":
                 int totalBombsRemaining = GetTotalActiveTokens(new List<string>() { "Bomb", "PrimedBomb" });
-                if (currentRound >= 7 || totalBombsRemaining < 2)  // end of hero turn 7 or 4 of 5 bombs are neutralized
+                if (currentRound >= GetFinalRound() || totalBombsRemaining < 2)  // end of hero turn 7 or 4 of 5 bombs are neutralized
                 {
                     return true;
                 }
                 break;
             case "IceToSeeYou":
                 int totalPrimedBombs = GetTotalActiveTokens(new List<string>() { "PrimedBomb" });
-                if (currentRound >= 8 || totalPrimedBombs >= 3)  // end of hero turn 8 or 3 bombs are primed
+                if (currentRound >= GetFinalRound() || totalPrimedBombs >= 3)  // end of hero turn 8 or 3 bombs are primed
                 {
                     return true;
                 }
@@ -421,7 +433,7 @@ public static class MissionSpecifics
             {
                 Debug.LogError("ERROR! Tried to use a computer from " + unitZoneInfo.name + " to prime a bomb, but no zones with bombs available. Why was computer able to be used if there are no zones with bombs?");
             }
-            SetActionsWeightTable();  // TODO test that the last bomb to be primed doesn't leave "Bomb" as a THOUGHT action for next unit due to mistiming
+            SetActionsWeightTable();
         }
         Object.Destroy(successContainer);
         yield return 0;

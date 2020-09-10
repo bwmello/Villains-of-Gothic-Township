@@ -275,19 +275,28 @@ public class ScenarioMap : MonoBehaviour
                 {
                     List<Tuple<UnitPool, double, GameObject>> reinforcementsAvailable = GetAvailableReinforcements();
                     int reinforcementPointsRemaining = reinforcementPoints;
+                    Dictionary<string, int> unitsEarliestPossibleActivationRound = new Dictionary<string, int>();
                     foreach (Tuple<UnitPool, double, GameObject> unitPool in reinforcementsAvailable)
                     {
-                        Unit unitInfo = unitPool.Item1.unit.GetComponent<Unit>();
-                        int numToReinforce = (int)Math.Floor((double)reinforcementPointsRemaining / (double)unitInfo.reinforcementCost);
-                        if (numToReinforce > unitPool.Item1.total)
+                        if (!unitsEarliestPossibleActivationRound.ContainsKey(unitPool.Item1.unit.tag))
                         {
-                            numToReinforce = unitPool.Item1.total;
+                            unitsEarliestPossibleActivationRound.Add(unitPool.Item1.unit.tag, GetEarliestPossibleActivationRound(unitPool.Item1.unit.tag));
                         }
-                        reinforcementPointsRemaining -= numToReinforce * unitInfo.reinforcementCost;
-                        currentWeightOfUnitTurn += unitPool.Item2 * numToReinforce;
-                        if (reinforcementPointsRemaining == 0)
+
+                        if (unitsEarliestPossibleActivationRound[unitPool.Item1.unit.tag] >= 0)  // If the unit has the opportunity to activate before the game ends
                         {
-                            break;
+                            Unit unitInfo = unitPool.Item1.unit.GetComponent<Unit>();
+                            int numToReinforce = (int)Math.Floor((double)reinforcementPointsRemaining / (double)unitInfo.reinforcementCost);
+                            if (numToReinforce > unitPool.Item1.total)
+                            {
+                                numToReinforce = unitPool.Item1.total;
+                            }
+                            reinforcementPointsRemaining -= numToReinforce * unitInfo.reinforcementCost;
+                            currentWeightOfUnitTurn += unitPool.Item2 * numToReinforce;
+                            if (reinforcementPointsRemaining == 0)
+                            {
+                                break;
+                            }
                         }
                     }
                     currentWeightOfUnitTurn += MissionSpecifics.GetReinforcementWeight();
@@ -332,6 +341,24 @@ public class ScenarioMap : MonoBehaviour
         {
             return (mostValuableUnitType, null);  // Should always be "REINFORCEMENT"
         }
+    }
+
+    public int GetEarliestPossibleActivationRound(string unitTag, int activationsThisRound = 0)
+    {
+        int roundsRemaining = MissionSpecifics.GetFinalRound() - currentRound;
+        int activationsRemaining = roundsRemaining * 2 - activationsThisRound;
+        int unitRiverIndex = villainRiver.IndexOf(unitTag);
+        if (activationsRemaining > 0)
+        {
+            for (int i = 0; i < roundsRemaining; i++)
+            {
+                if (unitRiverIndex < 4 + (i * 2 - activationsThisRound))
+                {
+                    return i;
+                }
+            }
+        }
+        return -1;
     }
 
     IEnumerator CallReinforcements()
