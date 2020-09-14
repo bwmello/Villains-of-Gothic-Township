@@ -6,7 +6,7 @@ using UnityEngine;
 public static class UnitIntel
 {
     // Additional unit resources
-    public static int universalRerollBonus = 1;  // For adjusting diffficulty of the game. Not taken into account for GetAverageSuccesses/GetChanceOfSuccess
+    public static int universalRerollBonus = 1;  // For adjusting diffficulty of the game. Applied to Melee, Ranged, and Manipulation:Grenade attacks. Not taken into account for GetAverageSuccesses/GetChanceOfSuccess
     public static int bonusMovePointsPerRound = 3;
     //public static int bonusMovePointsPerRiverTile = 2;  // Alternative
     public static int bonusMovePointsRemaining = bonusMovePointsPerRound;
@@ -26,6 +26,7 @@ public static class UnitIntel
     public static Queue<GameObject> unitsToActivateLast = new Queue<GameObject>();  // Needed for when a unit's turn negatively impacts other units activating the same turn. Ex: Crowbars in IceToSeeYou activating computers blocking not yet activated Crowbars
 
     public static Dictionary<GameObject, List<int>> heroMovesRequiredToReachZone;
+    public static Dictionary<GameObject, List<int>> heroMovePointsRequiredToReachZone;  // TODO not used yet, but would be more useful than wildly guessing heroMovesRequiredToReachZone
     public static List<HeroIntel> heroesIntel = new List<HeroIntel>();
     [Serializable]
     public class HeroIntel
@@ -55,6 +56,7 @@ public static class UnitIntel
     public static void SetHeroMovesRequiredToReachZone()
     {
         heroMovesRequiredToReachZone = new Dictionary<GameObject, List<int>>();
+        heroMovePointsRequiredToReachZone = new Dictionary<GameObject, List<int>>();  // TODO set this below
 
         foreach (HeroIntel heroIntel in heroesIntel)
         {

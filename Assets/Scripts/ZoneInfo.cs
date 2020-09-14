@@ -43,23 +43,16 @@ public class ZoneInfo : MonoBehaviour
     public int terrainDifficulty = 0;
     public int terrainDanger = 0;  // Shouldn't change from initial, use GetTerrainDangerTotal to get current
 
-    public int frostTokens = 0;  // Increases terrainDifficulty when incremented, ignored by unit.frostwalker
-    public int cryogenicTokens = 0;  // Increases terrainDifficulty/Danger when incremented, ignored by unit.frostwalker
-
-    private void Awake()
-    {
-        animate = GameObject.FindGameObjectWithTag("AnimationContainer").GetComponent<Animate>();
-    }
-
-    private void Start()
-    {
-        List<string> unitTags = transform.GetComponentInParent<ScenarioMap>().villainRiver;  // Fetch this list every time you need it as ScenarioMap removes unit tiles by dredging river
-    }
 
     [Serializable]
     public struct LineOfSight
     {
         public List<GameObject> sightLine;
+    }
+
+    private void Awake()
+    {
+        animate = GameObject.FindGameObjectWithTag("AnimationContainer").GetComponent<Animate>();
     }
 
     public int GetZoneID()

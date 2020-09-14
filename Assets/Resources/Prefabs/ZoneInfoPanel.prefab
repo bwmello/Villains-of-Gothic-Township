@@ -134,8 +134,6 @@ MonoBehaviour:
   maxOccupancy: 0
   terrainDifficulty: 0
   terrainDanger: 0
-  frostTokens: 0
-  cryogenicTokens: 0
 --- !u!1 &5084421897810169031
 GameObject:
   m_ObjectHideFlags: 0

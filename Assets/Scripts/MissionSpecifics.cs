@@ -479,30 +479,38 @@ public static class MissionSpecifics
             foreach (GameObject bomb in GameObject.FindGameObjectsWithTag("Bomb"))
             {
                 GameObject bombZone = bomb.transform.parent.parent.gameObject;
-                cryoZoneTargets.Add((15, bombZone));
+                double zoneWeightMultiplier = GetHeroProximityToObjectiveWeightMultiplier(bombZone);
                 ZoneInfo bombZoneInfo = bombZone.GetComponent<ZoneInfo>();
-                if ((bombZoneInfo.adjacentZones.Count + bombZoneInfo.steeplyAdjacentZones.Count) == 1)  // If only one way in or out (ignoring walls)
+                double existingCryoTokenDecrement = (double)bombZoneInfo.GetAllTokensWithTag("Cryogenic").Count * 5d;
+                cryoZoneTargets.Add(((18 - existingCryoTokenDecrement) * zoneWeightMultiplier, bombZone));
+                if (UnitIntel.heroesIntel[0].wallBreaker < 1 && (bombZoneInfo.adjacentZones.Count + bombZoneInfo.steeplyAdjacentZones.Count) == 1)  // If only one way in or out (ignoring walls)
                 {
                     if (bombZoneInfo.adjacentZones.Count == 1)
                     {
-                        cryoZoneTargets.Add((20, bombZoneInfo.adjacentZones[0]));  // TODO Once hero has broken through any wall, adjust this
+                        existingCryoTokenDecrement = (double)bombZoneInfo.adjacentZones[0].GetComponent<ZoneInfo>().GetAllTokensWithTag("Cryogenic").Count * 5d;
+                        cryoZoneTargets.Add(((20 - existingCryoTokenDecrement) * zoneWeightMultiplier, bombZoneInfo.adjacentZones[0]));
                     }
                     else
                     {
-                        cryoZoneTargets.Add((20, bombZoneInfo.steeplyAdjacentZones[0]));
+                        existingCryoTokenDecrement = (double)bombZoneInfo.steeplyAdjacentZones[0].GetComponent<ZoneInfo>().GetAllTokensWithTag("Cryogenic").Count * 5d;
+                        cryoZoneTargets.Add(((20 - existingCryoTokenDecrement) * zoneWeightMultiplier, bombZoneInfo.steeplyAdjacentZones[0]));
                     }
                 }
             }
-            for (int i = 0; i < cryoZoneTargets.Count - 1; i++)  // Subtract friendly fire from each target zone's weight
+            for (int i = 0; i < cryoZoneTargets.Count; i++)  // Subtract friendly fire from each target zone's weight
             {
+                //string cryoZoneTargetsDebugString = "For zone " + cryoZoneTargets[i].Item2.name;
                 foreach (Unit inAreaUnit in cryoZoneTargets[i].Item2.GetComponent<ZoneInfo>().GetUnitsInfo())
                 {
+                    //cryoZoneTargetsDebugString += " unit " + inAreaUnit.name;
                     if (!inAreaUnit.frosty)
                     {
                         //cryoZoneTargets[i].Item1 -= 5;  // Doesn't work because I think .Item1 is a clone of the value ("return value is not a variable")
                         cryoZoneTargets[i] = (cryoZoneTargets[i].Item1 - 9, cryoZoneTargets[i].Item2);
+                        //cryoZoneTargetsDebugString += " sets the weight to " + cryoZoneTargets[i].Item1.ToString();
                     }
                 }
+                //Debug.Log(cryoZoneTargetsDebugString);
             }
             cryoZoneTargets.Sort((x, y) => y.Item1.CompareTo(x.Item1));  // Sorts by doubles in descending order
 
@@ -513,7 +521,7 @@ public static class MissionSpecifics
             //}
             //Debug.Log("!!!ActivateCryogenicDevice of ScenarioMap, cryoDebugString: " + cryoDebugString);
 
-            for (int i = 0; i < cryoZoneTargets.Count - 1 && i < 2; i++)
+            for (int i = 0; i < cryoZoneTargets.Count && i < 2; i++)
             {
                 GameObject zoneToCryo = cryoZoneTargets[i].Item2;
                 yield return animate.StartCoroutine(animate.MoveCameraUntilOnscreen(mainCamera.transform.position, zoneToCryo.transform.position));

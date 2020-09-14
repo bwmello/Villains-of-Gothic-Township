@@ -38,7 +38,7 @@ public class Animate : MonoBehaviour
         {
             if (objectsToFade[i] != null)
             {
-                if (i < objectsToFade.Count - 1)
+                if (i < objectsToFade.Count)
                 {
                     StartCoroutine(FadeCanvasGroup(objectsToFade[i].GetComponent<CanvasGroup>(), alphaStart, alphaEnd, fadeTimeCoefficient));
                     yield return new WaitForSecondsRealtime(timeBetweenObjectsFading);
@@ -316,7 +316,9 @@ public class Animate : MonoBehaviour
             StartCoroutine(MoveObjectOverTime(new List<GameObject>() { bullet }, start, end, 1.5f));
             while (firingBullets && DateTime.Now < nextBulletPathStartTime)
             {
-                if (bullet.transform.position.x == end.x && bullet.transform.position.y == end.y)  // If bullet has reached the end of its move
+                //Debug.Log("ShowBulletPath, bullet.transform.position.x " + bullet.transform.position.x.ToString() + " == end.x " + end.x.ToString() + " && bullet.transform.position.y " + bullet.transform.position.y.ToString() + " == end.y " + end.y.ToString());
+                // Even when bullet.transform.position seems to == end, the boolean doesn't return true. Hence the margin of error used below.
+                if (.00001 > Math.Abs(bullet.transform.position.x - end.x) && .00001 > Math.Abs(bullet.transform.position.y - end.y))  // If bullet has reached the end of its move
                 {
                     bullet.GetComponent<CanvasGroup>().alpha = 0;
                 }

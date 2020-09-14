@@ -417,7 +417,7 @@ public class Unit : MonoBehaviour
         }
     }
 
-    private List<UnitPossibleAction> GetPossibleActions(Dictionary<GameObject, MovementPath> possibleDestinationsAndPaths, bool isPartialMove = false)
+    private List<UnitPossibleAction> GetPossibleActions(Dictionary<GameObject, MovementPath> possibleDestinationsAndPaths, bool isPartialMove = false)  // TODO isPartialMove doesn't seem to change anything
     {
         List<UnitPossibleAction> allPossibleActions = new List<UnitPossibleAction>();
 
@@ -531,6 +531,7 @@ public class Unit : MonoBehaviour
                                 availableRerolls += pointBlankRerolls;
                             }
                             double averageWounds = GetAverageSuccesses(dicePool, availableRerolls) + marksmanSuccesses - actionZoneHindrance;
+                            //Debug.Log("!!!GetPossibleActions for zone " + possibleZone.name + ",  averageWounds " + averageWounds.ToString() + "  GetAverageSuccesses(dicePool, rerolls=" + availableRerolls.ToString() + ") " + GetAverageSuccesses(dicePool, availableRerolls).ToString() + "  + marksmanSuccesses - actionZoneHindrance " + actionZoneHindrance.ToString());
                             if (averageWounds > 0)
                             {
                                 averageWounds *= actionProficiency.actionMultiplier;
@@ -608,7 +609,7 @@ public class Unit : MonoBehaviour
                                     int requiredSuccesses = thoughtable.requiredSuccesses + actionZoneHindrance;
                                     double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
                                     actionWeight += chanceOfSuccess * thoughtable.weightFactor;
-                                    Debug.Log("Possible THOUGHT action for " + gameObject.name + " in " + possibleZone.name + "  with chanceOfSuccess: " + chanceOfSuccess.ToString() + "  onlyMovingWeight: " + onlyMovingWeight.ToString() + "  actionWeight: " + actionWeight.ToString() + " which should be greater than inactiveWeight: " + inactiveWeight.ToString());
+                                    //Debug.Log("Possible THOUGHT action for " + gameObject.name + " in " + possibleZone.name + "  with chanceOfSuccess: " + chanceOfSuccess.ToString() + "  onlyMovingWeight: " + onlyMovingWeight.ToString() + "  actionWeight: " + actionWeight.ToString() + " which should be greater than inactiveWeight: " + inactiveWeight.ToString());
                                     if (actionWeight > inactiveWeight)
                                     {
                                         allPossibleActions.Add(new UnitPossibleAction(this, thoughtable, actionProficiency, actionWeight, possibleZone, finalDestinationZone, null, possibleDestinationsAndPaths[finalDestinationZone]));
@@ -687,7 +688,7 @@ public class Unit : MonoBehaviour
         return standingStillWeight;
     }
 
-    private Tuple<GameObject, double> GetPartialMoveAndWeight(Dictionary<GameObject, MovementPath> reachableDestinations)
+    private Tuple<GameObject, double> GetPartialMoveAndWeight(Dictionary<GameObject, MovementPath> reachableDestinations, int iterations = 1)
     {
         double mostValuableActionWeight = GetInactiveWeight();
         GameObject chosenDestination = null;
@@ -702,6 +703,7 @@ public class Unit : MonoBehaviour
             }
         }
 
+        Dictionary<GameObject, MovementPath> reachableAndFutureDestinations = new Dictionary<GameObject, MovementPath>(reachableDestinationsWithoutBonusMovePoints);
         foreach (GameObject reachableZone in reachableDestinationsWithoutBonusMovePoints.Keys)
         {
             Dictionary<GameObject, MovementPath> nextPossibleDestinations = GetPossibleDestinations(reachableZone, new Dictionary<GameObject, MovementPath>(reachableDestinationsWithoutBonusMovePoints), new HashSet<GameObject>(reachableDestinationsWithoutBonusMovePoints.Keys));
@@ -711,16 +713,29 @@ public class Unit : MonoBehaviour
             {
                 foreach (UnitPossibleAction unitAction in futurePossibleActions)
                 {
-                    // If an action with a static target (not a hero who is going to be moving)
-                    if (unitAction.actionProficiency.actionType != "MELEE" && unitAction.actionProficiency.actionType != "RANGED" && (unitAction.actionProficiency.actionType != "MANIPULATE" && unitAction.missionSpecificAction.targetType != "Grenade"))
+                    // If an action with a moving target (the target being a hero)
+                    if (unitAction.actionProficiency.actionType == "MELEE" || unitAction.actionProficiency.actionType == "RANGED" || (unitAction.actionProficiency.actionType == "MANIPULATE" && unitAction.missionSpecificAction.targetType == "Grenade"))
                     {
-                        unitAction.actionWeight *= UnitIntel.partialMoveWeight[0];  // Reduce weight for the fact these actions can't be completed until a second activation. TODO add another lookahead (for next next turn) with a .0625 multiplier for a third activation: actionWeight *= UnitIntel.partialMoveWeight[1]
-                        if (unitAction.actionWeight > mostValuableActionWeight)
-                        {
-                            mostValuableActionWeight = unitAction.actionWeight;
-                            chosenDestination = reachableZone;
-                            //Debug.Log("chosenDestination: " + chosenDestination.name + "  unitAction.actionProficiency.actionType: " + unitAction.actionProficiency.actionType + "   unitAction.actionWeight (after being reduced to 25%): " + unitAction.actionWeight.ToString());
-                        }
+                        unitAction.actionWeight *= UnitIntel.partialMoveWeight[0];
+                    }
+
+                    unitAction.actionWeight *= UnitIntel.partialMoveWeight[0];  // Reduce weight for the fact these actions can't be completed until a second activation.
+                    if (unitAction.actionWeight > mostValuableActionWeight)
+                    {
+                        mostValuableActionWeight = unitAction.actionWeight;
+                        chosenDestination = reachableZone;
+                        //Debug.Log("chosenDestination: " + chosenDestination.name + "  unitAction.actionProficiency.actionType: " + unitAction.actionProficiency.actionType + "   unitAction.actionWeight (after being reduced to 25%): " + unitAction.actionWeight.ToString());
+                    }
+                }
+            }
+
+            if (chosenDestination == null)
+            {
+                foreach (KeyValuePair<GameObject, MovementPath> aPossibleDestination in nextPossibleDestinations)
+                {
+                    if (!reachableAndFutureDestinations.ContainsKey(aPossibleDestination.Key))
+                    {
+                        reachableAndFutureDestinations.Add(aPossibleDestination.Key, aPossibleDestination.Value);
                     }
                 }
             }
@@ -729,9 +744,10 @@ public class Unit : MonoBehaviour
         {
             return new Tuple<GameObject, double>(chosenDestination, mostValuableActionWeight);
         }
-        //else
-        //{  // This Error isn't correct as, in trying out each of the spawn zones, units frequently have nothing reachable within 2 or 3 moves.
-        //    Debug.LogError("ERROR! In Unit.GetPartialMoveAndWeight, " + transform.tag + " in " + transform.parent.name + " has nowhere valuable to move even with three moves. Something must be wrong; No one is this useless.");
+        //else if (iterations < 5)
+        //{
+        //    Tuple<GameObject, double> nextPartialMoveAndWeight = GetPartialMoveAndWeight(reachableAndFutureDestinations, iterations + 1);  // TODO Fix so it's not thinking a futureDestination is a reachable one, else you get "The given key was not present in the dictionary"
+        //    return new Tuple<GameObject, double>(nextPartialMoveAndWeight.Item1, nextPartialMoveAndWeight.Item2 * .25);
         //}
         return new Tuple<GameObject, double>(null, 0);
     }
@@ -918,7 +934,7 @@ public class Unit : MonoBehaviour
                         List<GameObject> lineOfSight = new List<GameObject>() { GetZone() };
                         lineOfSight.AddRange(currentZoneInfo.GetLineOfSightWithZone(unitTurn.targetedZone));
                         requiredSuccesses = lineOfSight.IndexOf(unitTurn.targetedZone) + currentZoneHindrance;
-                        actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls, requiredSuccesses);
+                        actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls + UnitIntel.universalRerollBonus, requiredSuccesses);
                         GameObject targetedZone;
                         if (actionSuccesses >= requiredSuccesses)
                         {
@@ -973,7 +989,6 @@ public class Unit : MonoBehaviour
     private int RollAndReroll(List<GameObject> dicePool, int rerolls, int requiredSuccesses)
     {
         int rolledSuccesses = 0;
-        rerolls += UnitIntel.universalRerollBonus;
         List<ActionResult> currentActionResults = new List<ActionResult>();
         string debugString = "RollAndReroll for unit " + gameObject.name + " with " + requiredSuccesses.ToString() + " requiredSuccesses. ";
 
@@ -1045,7 +1060,7 @@ public class Unit : MonoBehaviour
             }
             debugString += "  On my " + (i + 1).ToString() + " reroll: ";
             int totalDiceRerolled = 0;
-            for (int j = 0; j < currentActionResults.Count - 1; j++)  // Reroll each die still below its average
+            for (int j = 0; j < currentActionResults.Count; j++)  // Reroll each die still below its average
             {
                 if (currentActionResults[i].successes < currentActionResults[i].die.averageSuccesses)
                 {
@@ -1140,13 +1155,13 @@ public class Unit : MonoBehaviour
         for (int i = 0; i < rerolls; i++)
         {
             debugString += "  On my " + (i + 1).ToString() + " reroll: ";
-            for (int j = 0; j < currentActionResults.Count-1; j++)  // Reroll each die still below its average
+            for (int j = 0; j < currentActionResults.Count; j++)  // Reroll each die still below its average
             {
-                if (currentActionResults[i].successes < currentActionResults[i].die.averageSuccesses)
+                if (currentActionResults[j].successes < currentActionResults[j].die.averageSuccesses)
                 {
-                    debugString += " Changing " + currentActionResults[i].successes.ToString() + " to ";
-                    currentActionResults[i] = new ActionResult(currentActionResults[i].die, currentActionResults[i].die.Roll());
-                    debugString += currentActionResults[i].successes.ToString();
+                    debugString += " Changing " + currentActionResults[j].successes.ToString() + " to ";
+                    currentActionResults[j] = new ActionResult(currentActionResults[j].die, currentActionResults[j].die.Roll());
+                    debugString += currentActionResults[j].successes.ToString();
                 }
             }
         }
