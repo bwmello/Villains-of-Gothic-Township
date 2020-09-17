@@ -770,9 +770,9 @@ public class Unit : MonoBehaviour
         if (movementPath.zones.Count > 1)
         {
             Vector3 finalCoordinates = movementPath.zones[movementPath.zones.Count - 1].GetComponent<ZoneInfo>().GetAvailableUnitSlot().transform.position;
-            animate.PostionCameraBeforeCameraMove(transform.position, finalCoordinates);
+            float secondsToDelayBeforeCameraMove = animate.PostionCameraBeforeCameraMove(transform.position, finalCoordinates);
             yield return new WaitForSecondsRealtime(1);  // Pause with camera on unit before move
-            StartCoroutine(animate.MoveCameraUntilOnscreen(transform.position, finalCoordinates));
+            StartCoroutine(animate.MoveCameraUntilOnscreen(transform.position, finalCoordinates, secondsToDelay: secondsToDelayBeforeCameraMove));
         }
         for (int i = 1; i < movementPath.zones.Count; i++)
         {

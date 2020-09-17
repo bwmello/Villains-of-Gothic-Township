@@ -147,16 +147,24 @@ public class Animate : MonoBehaviour
         }
     }
 
-    public void PostionCameraBeforeCameraMove(Vector3 origin, Vector3 destination)
+    public float PostionCameraBeforeCameraMove(Vector3 origin, Vector3 destination)  // Only used for Unit.AnimateMovementPath()
     {
+        float secondsToDelayBeforeCameraMove = 0;
+        Vector3 coordsBetweenFocusAndTarget = GetCameraCoordsBetweenFocusAndTarget(origin, destination);
         if (!IsPointOnScreen(origin))
         {
-            mainCamera.transform.position = GetCameraCoordsBetweenFocusAndTarget(origin, destination);
+            mainCamera.transform.position = coordsBetweenFocusAndTarget;
         }
+        if (IsPointOnScreen(coordsBetweenFocusAndTarget))  // If camera already has a head start on moving unit, add a 1.5 second delay
+        {
+            secondsToDelayBeforeCameraMove = 1.5f;
+        }
+        return secondsToDelayBeforeCameraMove;
     }
 
-    public IEnumerator MoveCameraUntilOnscreen(Vector3 origin, Vector3 destination, float timeCoefficient = .3f)  // Pass camera's position as origin if you don't want camera to jump
+    public IEnumerator MoveCameraUntilOnscreen(Vector3 origin, Vector3 destination, float timeCoefficient = .3f, float secondsToDelay = 0)  // Pass camera's position as origin if you don't want camera to jump
     {
+        yield return new WaitForSecondsRealtime(secondsToDelay);
         float t = 0;
         Vector3 camStartCoords;
         if (IsPointOnScreen(origin))

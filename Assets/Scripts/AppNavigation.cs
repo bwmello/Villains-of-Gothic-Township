@@ -43,7 +43,7 @@ public class AppNavigation : MonoBehaviour
         ReportBugCancelButtonClicked();
     }
 
-    public void SendSmtpEmail(string msgBody)  // Email and password visible to network sniffers. May need OAuth 2.0 credentials
+    public void SendSmtpEmail(string msgBody)  // Email and password visible to network sniffers. May need OAuth 2.0 credentials.
     {
         SmtpClient smtpServer = new SmtpClient("smtp.gmail.com");
         smtpServer.Port = 587;
@@ -69,7 +69,7 @@ public class AppNavigation : MonoBehaviour
             mail.Attachments.Add(attachement);
         }
 
-        smtpServer.Send(mail);
+        smtpServer.Send(mail);  // For non-Development Builds on Android, "Internet Access" in Player Settings must be set to "Require" or email never sent
     }
 
     //public void SendEmail()

@@ -41,7 +41,6 @@ public class ScenarioMap : MonoBehaviour
     public int reinforcementPoints = 5;
     public int totalHeroes;
     
-    private GameObject mainCamera;
     private GameObject animationContainer;
     private Animate animate;
     public GameObject reportBugButton;
@@ -51,11 +50,10 @@ public class ScenarioMap : MonoBehaviour
 
     void Awake()
     {
-        mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
         animationContainer = GameObject.FindGameObjectWithTag("AnimationContainer");
         animate = animationContainer.GetComponent<Animate>();
         MissionSpecifics.scenarioMap = this;
-        MissionSpecifics.mainCamera = mainCamera;
+        MissionSpecifics.mainCamera = GameObject.FindGameObjectWithTag("MainCamera");  // Might be able to be replaced with animate.mainCamera, but as both happen in Awake() maybe not;
         MissionSpecifics.animationContainer = animationContainer;
         MissionSpecifics.animate = animate;
         MissionSpecifics.bombPrefab = bombPrefab;
@@ -161,7 +159,7 @@ public class ScenarioMap : MonoBehaviour
         else
         {
             // Disable camera controls
-            PanAndZoom panAndZoom = mainCamera.GetComponent<PanAndZoom>();
+            PanAndZoom panAndZoom = animate.mainCamera.GetComponent<PanAndZoom>();
             panAndZoom.controlCamera = false;
 
             UnitIntel.ResetPerRoundResources();
@@ -227,8 +225,10 @@ public class ScenarioMap : MonoBehaviour
     {
         DissipateEnvironTokens(true);
         CleanupZones();
-        GameObject mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
-        mainCamera.transform.position = new Vector3(clockHand.transform.position.x, clockHand.transform.position.y, mainCamera.transform.position.z);
+        if (!animate.IsPointOnScreen(roundClock.transform.position, .15f))  // If the entire roundClock isn't on screen, center camera on it
+        {
+            animate.mainCamera.transform.position = new Vector3(roundClock.transform.position.x, roundClock.transform.position.y, animate.mainCamera.transform.position.z);
+        }
         float currentClockHandAngle = -(currentRound * 30) + 2;
         currentRound += 1;
         float newClockHandAngle = -(currentRound * 30) + 2;
@@ -363,7 +363,6 @@ public class ScenarioMap : MonoBehaviour
 
     IEnumerator CallReinforcements()
     {
-        GameObject mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
         List<Tuple<UnitPool, double, GameObject>> reinforcementsAvailable = GetAvailableReinforcements();
         int reinforcementPointsRemaining = reinforcementPoints;
         int i = 0;
@@ -378,9 +377,9 @@ public class ScenarioMap : MonoBehaviour
             for (int j = 0; j < numToReinforce; j++)
             {
                 GameObject availableUnitSlot = reinforcementsAvailable[i].Item3.GetComponent<ZoneInfo>().GetAvailableUnitSlot();
-                if (!animate.IsPointOnScreen(availableUnitSlot.transform.position))
+                if (!animate.IsPointOnScreen(availableUnitSlot.transform.position, .01f))  // Reinforcements typically spawned on edges/corners of map, so greatly reduce buffer to prevent slight camera jumps
                 {
-                    mainCamera.transform.position = new Vector3(availableUnitSlot.transform.position.x, availableUnitSlot.transform.position.y, mainCamera.transform.position.z);
+                    animate.mainCamera.transform.position = new Vector3(availableUnitSlot.transform.position.x, availableUnitSlot.transform.position.y, animate.mainCamera.transform.position.z);
                 }
                 yield return new WaitForSecondsRealtime(1);
                 Instantiate(reinforcementsAvailable[i].Item1.unit, availableUnitSlot.transform);  // spawn Unit
