@@ -7,6 +7,7 @@ using System.Net.Mail;  // For MailMessage of SendSmtpEmail()
 using System.Net;  // For ICredentialsByHost of SendSmtpEmail()
 using System.Net.Security;  // For SslPolicyErrors of SendSmtpEmail()
 using System.Security.Cryptography.X509Certificates;  // For X509Certificate of SendSmtpEmail()
+using System.IO;  // For File.ReadAllText for loading json save files
 using TMPro;  // for TMP_Text to fetch the input text
 
 
@@ -39,15 +40,16 @@ public class AppNavigation : MonoBehaviour
 
     public void ReportBugSendButtonClicked(GameObject inputTextField)
     {
-        SendSmtpEmail(inputTextField.GetComponent<TMP_InputField>().text);
+        //SendSmtpEmail(inputTextField.GetComponent<TMP_InputField>().text);
+        SendEmail(inputTextField.GetComponent<TMP_InputField>().text);
         ReportBugCancelButtonClicked();
     }
 
-    public void SendSmtpEmail(string msgBody)  // Email and password visible to network sniffers. May need OAuth 2.0 credentials.
+    public void SendSmtpEmail(string msgBody)  // Email and password visible to network sniffers. May need OAuth 2.0 credentials to get around password security risk.
     {
         SmtpClient smtpServer = new SmtpClient("smtp.gmail.com");
         smtpServer.Port = 587;
-        smtpServer.Credentials = new System.Net.NetworkCredential("blaineenterprisesofgothiccity@gmail.com", "SuperBarnWantsChickenParm") as ICredentialsByHost;
+        smtpServer.Credentials = new System.Net.NetworkCredential("blaineenterprisesofgothiccity@gmail.com", "PASSWORD") as ICredentialsByHost;
         smtpServer.EnableSsl = true;
         ServicePointManager.ServerCertificateValidationCallback =
         delegate (object s, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
@@ -58,7 +60,6 @@ public class AppNavigation : MonoBehaviour
         mail.To.Add("blaineenterprisesofgothiccity@gmail.com");
         mail.Subject = "Bug report";
         mail.Body = msgBody;
-
 
         int roundOfCurrentGame = PlayerPrefs.GetInt(MissionSpecifics.missionName);
         for (int i = 1; i <= roundOfCurrentGame; i++)
@@ -72,27 +73,27 @@ public class AppNavigation : MonoBehaviour
         smtpServer.Send(mail);  // For non-Development Builds on Android, "Internet Access" in Player Settings must be set to "Require" or email never sent
     }
 
-    //public void SendEmail()
-    //{
-    //    string email = "blaineenterprisesofgothiccity@gmail.com";
-    //    string subject = MyEscapeURL("My Subject");
-    //    string body = MyEscapeURL("My Body\r\nFull of non-escaped chars");
+    public void SendEmail(string msgBody)
+    {
+        string email = "blaineenterprisesofgothiccity@gmail.com";
+        string subject = MyEscapeURL("Bug Report");
 
-    //    int roundOfCurrentGame = PlayerPrefs.GetInt(MissionSpecifics.missionName);
+        int roundOfCurrentGame = PlayerPrefs.GetInt(MissionSpecifics.missionName);
+        msgBody += "\n\n\nBelow are the boardstates so your issue can be reproduced. Please don't mess with them.\n";
+        for (int i = 1; i <= roundOfCurrentGame; i++)
+        {
+            string saveName = i.ToString() + MissionSpecifics.missionName + ".json";
+            msgBody += "\n" + i.ToString() + MissionSpecifics.missionName + "\n" + File.ReadAllText(Application.persistentDataPath + "/" + saveName);
+        }
+        //Debug.Log("mailto:" + email + "?subject=" + subject + "&body=" + MyEscapeURL(msgBody));
+        Application.OpenURL("mailto:" + email + "?subject=" + subject + "&body=" + MyEscapeURL(msgBody));
 
-    //    //for (int i = 1; i <= roundOfCurrentGame; i++)
-    //    //{
+        //Debug.Log("mailto:" + email + "?subject=" + subject + "&body=" + body + "&Attachment=" + filePath);
+        //Application.OpenURL("mailto:" + email + "?subject=" + subject + "&body=" + body + "&Attachment=" + filePath);
+    }
 
-    //    //}
-    //    string saveName = roundOfCurrentGame.ToString() + MissionSpecifics.missionName + ".json";
-    //    string filePath = MyEscapeURL(Application.persistentDataPath + "\\" + saveName);
-
-    //    Debug.Log("mailto:" + email + "?subject=" + subject + "&body=" + body + "&Attachment=" + filePath);
-    //    Application.OpenURL("mailto:" + email + "?subject=" + subject + "&body=" + body + "&Attachment=" + filePath);
-    //}
-
-    //string MyEscapeURL(string URL)
-    //{
-    //    return UnityWebRequest.EscapeURL(URL).Replace("+", "%20");
-    //}
+    string MyEscapeURL(string URL)
+    {
+        return UnityWebRequest.EscapeURL(URL).Replace("+", "%20");
+    }
 }
