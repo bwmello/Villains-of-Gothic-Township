@@ -27,6 +27,27 @@ public class Animate : MonoBehaviour
         cameraStuff = mainCamera.GetComponent<Camera>();  // Not initialized quickly enough if in Start()
     }
 
+    //private bool isPortraitOrientation;  // Would also need to reposition camera after zoom
+    //private void Update()  // https://answers.unity.com/questions/1589034/how-can-i-detect-device-orientation-change-in-a-fa.html
+    //{
+    //    if (Input.deviceOrientation == DeviceOrientation.Portrait || Input.deviceOrientation == DeviceOrientation.PortraitUpsideDown)
+    //    {
+    //        if (!isPortraitOrientation)
+    //        {
+    //            // max zoom changed
+    //        }
+    //        isPortraitOrientation = true;
+    //    }
+    //    else
+    //    {
+    //        if (isPortraitOrientation)
+    //        {
+    //            // max zoom changed
+    //        }
+    //        isPortraitOrientation = false;
+    //    }
+    //}
+
     private readonly float woundFadeTimeCoefficient = 2f;
     public IEnumerator FadeObjects(List<GameObject> objectsToFade, float alphaStart, float alphaEnd, float fadeTimeCoefficient = .5f, float timeBetweenObjectsFading = .3f)
     {
