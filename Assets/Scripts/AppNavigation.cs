@@ -35,7 +35,7 @@ public class AppNavigation : MonoBehaviour
     public void ReportBugCancelButtonClicked()
     {
         transform.GetComponentInParent<ScenarioMap>().EnablePlayerUI();
-        Destroy(gameObject);
+        Destroy(gameObject);  // Destroys report bug panel
     }
 
     public void ReportBugSendButtonClicked(GameObject inputTextField)
@@ -78,8 +78,9 @@ public class AppNavigation : MonoBehaviour
         string email = "blaineenterprisesofgothiccity@gmail.com";
         string subject = MyEscapeURL("Bug Report");
 
-        int roundOfCurrentGame = PlayerPrefs.GetInt(MissionSpecifics.missionName);
-        msgBody += "\n\n\nBelow are the boardstates so your issue can be reproduced. Please don't mess with them.\n";
+        //int roundOfCurrentGame = PlayerPrefs.GetInt(MissionSpecifics.missionName);  // Gets incorrect round if player just started new game or rewinds clock
+        int roundOfCurrentGame = transform.parent.GetComponentInParent<ScenarioMap>().currentRound;  // Only works if gameObject in animationContainer
+        msgBody += "\n\n\nBelow are the boardstates so your issue can be reproduced.\n";
         for (int i = 1; i <= roundOfCurrentGame; i++)
         {
             string saveName = i.ToString() + MissionSpecifics.missionName + ".json";

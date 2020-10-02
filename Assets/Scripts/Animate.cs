@@ -138,6 +138,11 @@ public class Animate : MonoBehaviour
         cameraStuff.orthographicSize = 2.2f;
     }
 
+    public void CameraToFixedZoomForMenu()
+    {
+        cameraStuff.orthographicSize = 1.2f;
+    }
+
     public bool IsPointOnScreen(Vector3 point, float buffer = .1f)
     {
         Vector3 screenPoint = cameraStuff.WorldToViewportPoint(point);
