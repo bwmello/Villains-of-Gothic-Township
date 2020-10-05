@@ -7,7 +7,6 @@ using UnityEngine.UI;  // For button
 public class WallRubble : MonoBehaviour
 {
     public GameObject zone1, zone2;
-    public Boolean isClickable = true;
 
     public Boolean WallIsBroken()
     {
@@ -15,15 +14,7 @@ public class WallRubble : MonoBehaviour
         return (transparencyCanvas.alpha == 1);
     }
 
-    void OnMouseUpAsButton()  // Necessary to determine when polygon collider is clicked and not the image itself.
-    {
-        if (isClickable)
-        {
-            WallRubbleClicked();
-        }
-    }
-
-    public void WallRubbleClicked()
+    public void WallRubblePlaced()
     {
         if (WallIsBroken())  // Mistake was made in breaking wall, so deactivate WallRubble
         {
@@ -33,6 +24,24 @@ public class WallRubble : MonoBehaviour
         {
             BreakWall();
         }
+    }
+
+    public void EnableDropZone()
+    {
+        if (!WallIsBroken())
+        {
+            this.GetComponent<CanvasGroup>().alpha = (float).2;
+        }
+        transform.Find("DropZone").gameObject.SetActive(true);
+    }
+
+    public void DisableDropZone()
+    {
+        if (!WallIsBroken())
+        {
+            this.GetComponent<CanvasGroup>().alpha = 0;
+        }
+        transform.Find("DropZone").gameObject.SetActive(false);
     }
 
     public void BreakWall()
@@ -58,6 +67,6 @@ public class WallRubble : MonoBehaviour
         zone2Info.lineOfSightZones.Remove(zone1);
 
         CanvasGroup transparencyCanvas = this.GetComponent<CanvasGroup>();
-        transparencyCanvas.alpha = (float).2;
+        transparencyCanvas.alpha = 0;
     }
 }

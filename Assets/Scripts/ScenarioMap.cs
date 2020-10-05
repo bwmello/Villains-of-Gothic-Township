@@ -14,6 +14,7 @@ public class ScenarioMap : MonoBehaviour
     [SerializeField]
     GameObject roundClock;
     GameObject clockHand;
+    public GameObject utilityBelt;
     public GameObject menuPanel;
     //GameObject clockTurnBack;  // Turn back button to be replaced by menu option
     [SerializeField]
@@ -93,13 +94,10 @@ public class ScenarioMap : MonoBehaviour
     public bool isPlayerUIEnabled = true;
     public void DisablePlayerUI()
     {
+        utilityBelt.SetActive(false);
         foreach (Button button in transform.GetComponentsInChildren<Button>())
         {
             button.enabled = false;
-        }
-        foreach (GameObject wallRubble in GameObject.FindGameObjectsWithTag("WallRubble"))
-        {
-            wallRubble.GetComponent<WallRubble>().isClickable = false;
         }
         isPlayerUIEnabled = false;
     }
@@ -107,13 +105,10 @@ public class ScenarioMap : MonoBehaviour
     public void EnablePlayerUI()
     {
         // Re-Enable all the UI buttons which were disabled at EndHeroTurn()
+        utilityBelt.SetActive(true);
         foreach (Button button in transform.GetComponentsInChildren<Button>())
         {
             button.enabled = true;
-        }
-        foreach (GameObject wallRubble in GameObject.FindGameObjectsWithTag("WallRubble"))
-        {
-            wallRubble.GetComponent<WallRubble>().isClickable = true;
         }
         isPlayerUIEnabled = true;
     }

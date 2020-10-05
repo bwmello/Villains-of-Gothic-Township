@@ -439,6 +439,16 @@ public class ZoneInfo : MonoBehaviour
         yield return null;
     }
 
+    public void EnableDropZone()
+    {
+        transform.Find("DropZone").gameObject.SetActive(true);
+    }
+
+    public void DisableDropZone()
+    {
+        transform.Find("DropZone").gameObject.SetActive(false);
+    }
+
     public IEnumerator AddEnvironTokens(EnvironTokenSave newEnvironToken)
     {
         Transform tokensRow = transform.Find("TokensRow");

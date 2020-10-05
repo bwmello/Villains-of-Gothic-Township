@@ -49,7 +49,7 @@ public class Animate : MonoBehaviour
     //}
 
     private readonly float woundFadeTimeCoefficient = 2f;
-    public IEnumerator FadeObjects(List<GameObject> objectsToFade, float alphaStart, float alphaEnd, float fadeTimeCoefficient = .5f, float timeBetweenObjectsFading = .3f)
+    public IEnumerator FadeObjects(List<GameObject> objectsToFade, float alphaStart, float alphaEnd, float fadeTimeCoefficient = .5f, float timeBetweenObjectsFading = .15f)
     {
         foreach (GameObject objectToFade in objectsToFade)
         {
