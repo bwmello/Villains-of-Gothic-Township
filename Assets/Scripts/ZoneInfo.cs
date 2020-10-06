@@ -45,9 +45,14 @@ public class ZoneInfo : MonoBehaviour
 
 
     [Serializable]
-    public struct LineOfSight
+    public class LineOfSight
     {
         public List<GameObject> sightLine;
+
+        public LineOfSight(List<GameObject> newSightLine)  // Used by WallRubble.cs when breaking a wall
+        {
+            sightLine = newSightLine;
+        }
     }
 
     private void Awake()
@@ -154,16 +159,57 @@ public class ZoneInfo : MonoBehaviour
         return currentHindrance;
     }
 
-    public List<GameObject> GetLineOfSightWithZone(GameObject targetZone)
+    public LineOfSight GetLineOfSightWithZone(GameObject targetZone)
     {
         foreach (LineOfSight los in linesOfSight)
         {
             if (los.sightLine.Contains(targetZone))
             {
-                return los.sightLine;
+                return los;
             }
         }
+
         return null;
+    }
+
+    public List<GameObject> GetSightLineWithZone(GameObject targetZone)
+    {
+        LineOfSight losWithZone = GetLineOfSightWithZone(targetZone);
+        if (losWithZone != null)
+        {
+            return losWithZone.sightLine;
+        }
+
+        return null;
+    }
+
+    public int GetSmokeBetweenZones(GameObject farZone)
+    {
+        int smokeTokens = GetQuantityOfEnvironTokensWithTag("Smoke");
+        if (gameObject == farZone)
+        {
+            return smokeTokens;
+        }
+
+        List<GameObject> lineOfSight = new List<GameObject>();
+        //Debug.Log("this zone: " + gameObject.name + "     GetLineOfSightWithZone(" + farZone.name + "): ");// + GetLineOfSightWithZone(farZone).ToString());
+        lineOfSight.AddRange(GetSightLineWithZone(farZone));
+        foreach (GameObject losZone in lineOfSight)
+        {
+            smokeTokens += losZone.GetComponent<ZoneInfo>().GetQuantityOfEnvironTokensWithTag("Smoke");
+        }
+        return smokeTokens;
+    }
+
+    public int GetQuantityOfEnvironTokensWithTag(string tokensTag)
+    {
+        int quantity = 0;
+        List<GameObject> environTokens = GetAllTokensWithTag(tokensTag);
+        foreach (GameObject environToken in environTokens)
+        {
+            quantity += environToken.GetComponent<EnvironToken>().quantity;
+        }
+        return quantity;
     }
 
     public int GetSupportRerolls(GameObject unitToDiscount = null)
@@ -368,27 +414,15 @@ public class ZoneInfo : MonoBehaviour
         int terrainDangerTotal = terrainDanger;
         if (unit == null || !unit.fiery)
         {
-            List<GameObject> flameTokens = GetAllTokensWithTag("Flame");
-            foreach (GameObject flameToken in flameTokens)
-            {
-                terrainDangerTotal += flameToken.GetComponent<EnvironToken>().quantity;
-            }
+            terrainDangerTotal += GetQuantityOfEnvironTokensWithTag("Flame");
         }
         if (unit == null || !unit.frosty)
         {
-            List<GameObject> cryogenicTokens = GetAllTokensWithTag("Cryogenic");
-            foreach (GameObject cryogenicToken in cryogenicTokens)
-            {
-                terrainDangerTotal += cryogenicToken.GetComponent<EnvironToken>().quantity;
-            }
+            terrainDangerTotal += GetQuantityOfEnvironTokensWithTag("Cryogenic");
         }
         if (unit == null || !unit.gasImmunity)
         {
-            List<GameObject> gasTokens = GetAllTokensWithTag("Gas");
-            foreach (GameObject gasToken in gasTokens)
-            {
-                terrainDangerTotal += gasToken.GetComponent<EnvironToken>().quantity;
-            }
+            terrainDangerTotal += GetQuantityOfEnvironTokensWithTag("Gas");
         }
         return terrainDangerTotal;
     }

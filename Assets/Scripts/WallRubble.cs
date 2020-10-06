@@ -49,9 +49,12 @@ public class WallRubble : MonoBehaviour
         ZoneInfo zone1Info = zone1.GetComponent<ZoneInfo>();
         ZoneInfo zone2Info = zone2.GetComponent<ZoneInfo>();
         zone1Info.adjacentZones.Add(zone2);
-        zone2Info.adjacentZones.Add(zone1);
         zone1Info.lineOfSightZones.Add(zone2);
+        zone1Info.linesOfSight.Add(new ZoneInfo.LineOfSight(new List<GameObject>(){ zone2 }));
+
+        zone2Info.adjacentZones.Add(zone1);
         zone2Info.lineOfSightZones.Add(zone1);
+        zone2Info.linesOfSight.Add(new ZoneInfo.LineOfSight(new List<GameObject>() { zone1 }));
 
         CanvasGroup transparencyCanvas = this.GetComponent<CanvasGroup>();
         transparencyCanvas.alpha = (float)1;
@@ -62,9 +65,12 @@ public class WallRubble : MonoBehaviour
         ZoneInfo zone1Info = zone1.GetComponent<ZoneInfo>();
         ZoneInfo zone2Info = zone2.GetComponent<ZoneInfo>();
         zone1Info.adjacentZones.Remove(zone2);
-        zone2Info.adjacentZones.Remove(zone1);
         zone1Info.lineOfSightZones.Remove(zone2);
+        zone1Info.linesOfSight.Remove(zone1Info.GetLineOfSightWithZone(zone2));
+
+        zone2Info.adjacentZones.Remove(zone1);
         zone2Info.lineOfSightZones.Remove(zone1);
+        zone2Info.linesOfSight.Remove(zone2Info.GetLineOfSightWithZone(zone1));
 
         CanvasGroup transparencyCanvas = this.GetComponent<CanvasGroup>();
         transparencyCanvas.alpha = 0;

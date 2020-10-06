@@ -608,13 +608,10 @@ public class ScenarioMap : MonoBehaviour
         foreach (GameObject brokenWall in allWallRubbleList)
         {
             WallRubble wallRubble = brokenWall.GetComponent<WallRubble>();
+            wallRubble.RebuildWall();  // Needed for walls that are no longer broken, or to prevent double breaking of a wall when going back a turn
             if (scenarioSave.brokenWalls.Contains(brokenWall.name))
             {
                 wallRubble.BreakWall();
-            }
-            else
-            {
-                wallRubble.RebuildWall();  // Restores zone adjacency mapping and Destroy(brokenWall)
             }
         }
 

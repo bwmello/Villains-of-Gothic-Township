@@ -238,16 +238,7 @@ public class Unit : MonoBehaviour
             int terrainDifficultyCost = currentZoneInfo.terrainDifficulty >= ignoreTerrainDifficulty ? currentZoneInfo.terrainDifficulty - ignoreTerrainDifficulty : 0;
             if (!frosty)
             {
-                List<GameObject> frostTokens = potentialZoneInfo.GetAllTokensWithTag("Frost");
-                foreach (GameObject frostToken in frostTokens)
-                {
-                    terrainDifficultyCost += frostToken.GetComponent<EnvironToken>().quantity;
-                }
-                List<GameObject> cryogenicTokens = potentialZoneInfo.GetAllTokensWithTag("Cryogenic");
-                foreach (GameObject cryogenicToken in cryogenicTokens)
-                {
-                    terrainDifficultyCost += cryogenicToken.GetComponent<EnvironToken>().quantity;
-                }
+                terrainDifficultyCost += potentialZoneInfo.GetQuantityOfEnvironTokensWithTag("Frost") + potentialZoneInfo.GetQuantityOfEnvironTokensWithTag("Cryogenic");
             }
             int sizeCost = currentZoneInfo.GetCurrentHindrance(transform.gameObject, true);
             sizeCost = sizeCost >= ignoreSize ? sizeCost - ignoreSize : 0;
@@ -530,7 +521,9 @@ public class Unit : MonoBehaviour
                             {
                                 availableRerolls += pointBlankRerolls;
                             }
-                            double averageWounds = GetAverageSuccesses(dicePool, availableRerolls) + marksmanSuccesses - actionZoneHindrance;
+                            int smokeHindrance = possibleZoneInfo.GetSmokeBetweenZones(targetedZone);
+
+                            double averageWounds = GetAverageSuccesses(dicePool, availableRerolls) + marksmanSuccesses - actionZoneHindrance - smokeHindrance;
                             //Debug.Log("!!!GetPossibleActions for zone " + possibleZone.name + ",  averageWounds " + averageWounds.ToString() + "  GetAverageSuccesses(dicePool, rerolls=" + availableRerolls.ToString() + ") " + GetAverageSuccesses(dicePool, availableRerolls).ToString() + "  + marksmanSuccesses - actionZoneHindrance " + actionZoneHindrance.ToString());
                             if (averageWounds > 0)
                             {
@@ -567,10 +560,10 @@ public class Unit : MonoBehaviour
                                             }
                                             double averageAutoWounds = GetAverageSuccesses(dicePool, availableRerolls);
                                             List<GameObject> lineOfSight = new List<GameObject>() { GetZone() };
-                                            lineOfSight.AddRange(possibleZoneInfo.GetLineOfSightWithZone(grenadeTargetZone));
+                                            lineOfSight.AddRange(possibleZoneInfo.GetSightLineWithZone(grenadeTargetZone));
                                             if (lineOfSight == null)
                                             {
-                                                Debug.LogError("ERROR! Unit " + gameObject.name + " in " + possibleZoneInfo.gameObject.name + " isn't able to GetLineOfSightWithZone with " + grenadeTargetZone.name);
+                                                Debug.LogError("ERROR! Unit " + gameObject.name + " in " + possibleZoneInfo.gameObject.name + " isn't able to GetSightLineWithZone with " + grenadeTargetZone.name);
                                             }
                                             int requiredSuccesses = lineOfSight.IndexOf(grenadeTargetZone) + actionZoneHindrance;
                                             double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
@@ -891,6 +884,8 @@ public class Unit : MonoBehaviour
                         availableRerolls += pointBlankRerolls;
                     }
 
+                    int smokeHindrance = currentZoneInfo.GetSmokeBetweenZones(unitTurn.targetedZone);
+
                     for (int i = 0; i < unitTurn.actionProficiency.actionMultiplier; i++)
                     {
                         if (!IsActive())  // If Retaliated and killed, stop attacking
@@ -904,7 +899,7 @@ public class Unit : MonoBehaviour
                         {
                             actionSuccesses += marksmanSuccesses;
                         }
-                        actionSuccesses -= currentZoneHindrance;
+                        actionSuccesses -= currentZoneHindrance + smokeHindrance;
                         if (actionSuccesses < 0)
                         {
                             actionSuccesses = 0;
@@ -932,7 +927,7 @@ public class Unit : MonoBehaviour
                     if (grenade > 0)
                     {
                         List<GameObject> lineOfSight = new List<GameObject>() { GetZone() };
-                        lineOfSight.AddRange(currentZoneInfo.GetLineOfSightWithZone(unitTurn.targetedZone));
+                        lineOfSight.AddRange(currentZoneInfo.GetSightLineWithZone(unitTurn.targetedZone));
                         requiredSuccesses = lineOfSight.IndexOf(unitTurn.targetedZone) + currentZoneHindrance;
                         actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls + UnitIntel.universalRerollBonus, requiredSuccesses);
                         GameObject targetedZone;
