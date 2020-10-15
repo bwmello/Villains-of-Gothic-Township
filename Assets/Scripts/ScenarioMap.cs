@@ -534,7 +534,7 @@ public class ScenarioMap : MonoBehaviour
         }
         menuPanel.SetActive(true);
         animate.CameraToFixedZoomForMenu();
-        animate.mainCamera.transform.position = new Vector3(menuPanel.transform.position.x - 70, menuPanel.transform.position.y, animate.mainCamera.transform.position.z);
+        animate.mainCamera.transform.position = new Vector3(menuPanel.transform.position.x, menuPanel.transform.position.y, animate.mainCamera.transform.position.z);
     }
 
     public void CloseMenu()
