@@ -11,12 +11,8 @@ public class ScenarioMap : MonoBehaviour
 {
     readonly System.Random random = new System.Random();
 
-    [SerializeField]
-    GameObject roundClock;
-    GameObject clockHand;
-    public GameObject utilityBelt;
-    public GameObject menuPanel;
-    //GameObject clockTurnBack;  // Turn back button to be replaced by menu option
+    public GameObject UIOverlay;
+
     [SerializeField]
     List<GameObject> unitPrefabsMasterList;
     private List<GameObject> spawnZones = new List<GameObject>();
@@ -45,7 +41,6 @@ public class ScenarioMap : MonoBehaviour
 
     private GameObject animationContainer;
     private Animate animate;
-    //public GameObject reportBugButton;  // ReportBugButton replaced by menu option
     public GameObject bombPrefab;  // These prefabs are here just to pass off to static MissionSpecifics
     public GameObject primedBombPrefab;
 
@@ -60,8 +55,6 @@ public class ScenarioMap : MonoBehaviour
         MissionSpecifics.animate = animate;
         MissionSpecifics.bombPrefab = bombPrefab;
         MissionSpecifics.primedBombPrefab = primedBombPrefab;
-        clockHand = roundClock.transform.Find("ClockHand").gameObject;
-        //clockTurnBack = roundClock.transform.Find("TurnBackButton").gameObject;
         unitPrefabsMasterDict = new Dictionary<string, GameObject>();
         foreach (GameObject unitPrefab in unitPrefabsMasterList)
         {
@@ -94,7 +87,7 @@ public class ScenarioMap : MonoBehaviour
     public bool isPlayerUIEnabled = true;
     public void DisablePlayerUI()
     {
-        utilityBelt.SetActive(false);
+        UIOverlay.GetComponent<UIOverlay>().HideUIOverlay();
         foreach (Button button in transform.GetComponentsInChildren<Button>())
         {
             button.enabled = false;
@@ -105,7 +98,7 @@ public class ScenarioMap : MonoBehaviour
     public void EnablePlayerUI()
     {
         // Re-Enable all the UI buttons which were disabled at EndHeroTurn()
-        utilityBelt.SetActive(true);
+        UIOverlay.GetComponent<UIOverlay>().ShowUIOverlay();
         foreach (Button button in transform.GetComponentsInChildren<Button>())
         {
             button.enabled = true;
@@ -221,29 +214,16 @@ public class ScenarioMap : MonoBehaviour
     {
         DissipateEnvironTokens(true);
         CleanupZones();
-        if (!animate.IsPointOnScreen(roundClock.transform.position, .15f))  // If the entire roundClock isn't on screen, center camera on it
-        {
-            animate.mainCamera.transform.position = new Vector3(roundClock.transform.position.x, roundClock.transform.position.y, animate.mainCamera.transform.position.z);
-        }
-        float currentClockHandAngle = -(currentRound * 30) + 2;
+
         currentRound += 1;
-        float newClockHandAngle = -(currentRound * 30) + 2;
-        yield return StartCoroutine(TurnClockHand(currentClockHandAngle, newClockHandAngle));
         if (currentRound > 1)
         {
             SaveIntoJson();
-            //if (!clockTurnBack.activeSelf)
-            //{
-            //    clockTurnBack.SetActive(true);
-            //}
-            //if (!reportBugButton.activeSelf)
-            //{
-            //    reportBugButton.SetActive(true);
-            //}
         }
 
         // Re-Enable all the UI buttons which were disabled at EndHeroTurn()
         EnablePlayerUI();
+        yield return UIOverlay.GetComponent<UIOverlay>().AdvanceClock(currentRound);  // Once clock is visible, advance it
         yield return 0;
     }
 
@@ -453,24 +433,6 @@ public class ScenarioMap : MonoBehaviour
         return reinforcementsAvailable;
     }
 
-    IEnumerator TurnClockHand(float currentAngle, float newAngle)
-    {
-        float t = 0;
-        float uncoverTime = 2.0f;
-
-        while (t < 1f)
-        {
-            t += Time.deltaTime * uncoverTime;
-
-            float angle = Mathf.LerpAngle(currentAngle, newAngle, t);
-            clockHand.transform.eulerAngles = new Vector3(0, 0, angle);
-
-            yield return null;
-        }
-
-        yield return 0;
-    }
-
     void DissipateEnvironTokens(bool isHeroTurn)
     {
         string[] dissipatingEnvironTokensTags = new string[] { "Gas", "Flame", "Smoke", "Frost" };
@@ -517,41 +479,7 @@ public class ScenarioMap : MonoBehaviour
     {
         ScenarioSave scenarioSave = JsonUtility.FromJson<ScenarioSave>(File.ReadAllText(Application.persistentDataPath + "/" +  (currentRound-1).ToString() + missionName +   ".json"));
         LoadScenarioSave(scenarioSave);
-        CloseMenu();
-    }
-
-    public void OpenMenu()
-    {
-        DisablePlayerUI();
-        animate.mainCamera.GetComponent<PanAndZoom>().controlCamera = false;
-        if (currentRound > 1)
-        {
-            menuPanel.transform.Find("TurnBackClockButton").gameObject.SetActive(true);
-        }
-        else
-        {
-            menuPanel.transform.Find("TurnBackClockButton").gameObject.SetActive(false);
-        }
-        menuPanel.SetActive(true);
-        animate.CameraToFixedZoomForMenu();
-        animate.mainCamera.transform.position = new Vector3(menuPanel.transform.position.x, menuPanel.transform.position.y, animate.mainCamera.transform.position.z);
-    }
-
-    public void CloseMenu()
-    {
-        EnablePlayerUI();
-        animate.mainCamera.GetComponent<PanAndZoom>().controlCamera = true;
-        menuPanel.SetActive(false);
-    }
-
-    public void ReportBugButtonClicked()
-    {
-        //DisablePlayerUI();  // Should still be disabled from OpenMenu()
-        //Vector3 bugReportScreenPosition = reportBugButton.transform.TransformPoint(0, -90f, 0);
-        animate.mainCamera.GetComponent<PanAndZoom>().controlCamera = true;
-        Vector3 bugReportScreenPosition = new Vector3(menuPanel.transform.position.x + .3f, menuPanel.transform.position.y, menuPanel.transform.position.z);
-        animate.ShowBugReportScreen(bugReportScreenPosition);
-        menuPanel.SetActive(false);  // Don't call CloseMenu(), let bugReportScreen's AppNavigation call EnablePlayerUI()
+        UIOverlay.GetComponent<UIOverlay>().CloseMenu();
     }
 
     public void SaveIntoJson()
@@ -574,18 +502,7 @@ public class ScenarioMap : MonoBehaviour
         reinforcementPoints = scenarioSave.reinforcementPoints;
         totalHeroes = scenarioSave.totalHeroes;
         UnitIntel.LoadUnitIntelSave(scenarioSave.unitIntel);
-        float startingClockHandAngle = -(currentRound * 30) + 2;
-        clockHand.transform.eulerAngles = new Vector3(0, 0, startingClockHandAngle);
-        //if (!clockTurnBack.activeSelf && currentRound > 1)
-        //{
-        //    clockTurnBack.SetActive(true);
-        //    reportBugButton.SetActive(true);
-        //}
-        //else if (clockTurnBack.activeSelf && currentRound <= 1)
-        //{
-        //    clockTurnBack.SetActive(false);
-        //    reportBugButton.SetActive(false);
-        //}
+        UIOverlay.GetComponent<UIOverlay>().SetClock(currentRound);
 
         villainRiver = new List<string>(scenarioSave.villainRiver);
         unitTagsMasterList = new List<string>(scenarioSave.unitTagsMasterList);
