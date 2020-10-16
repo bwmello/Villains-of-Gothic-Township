@@ -82,6 +82,11 @@ public class ScenarioMap : MonoBehaviour
             MissionSpecifics.SetActionsWeightTable();
             StartCoroutine(StartVillainTurn());
         }
+        else
+        {
+            animate.CameraToMaxZoom();
+            EnablePlayerUI();  // UIOverlay starts disabled so it doesn't flash on the screen when villains go first
+        }
     }
 
     public bool isPlayerUIEnabled = true;
@@ -109,12 +114,12 @@ public class ScenarioMap : MonoBehaviour
     // The flow: Player uses UI to end turn -> EndHeroTurn() -> StartVillainTurn() -> StartHeroTurn() -> Player takes their next turn
     public void EndHeroTurn()
     {
-        DisablePlayerUI();  // Disable all UI so Villain turn isn't interrupted, and so GameOver screen doesn't have to worry about round clock advancing/rewinding
+        DisablePlayerUI();  // Disable all UI so Villain turn isn't interrupted
 
         if (MissionSpecifics.IsGameOver(currentRound))
         {
             MissionSpecifics.EndGameAnimation();
-            animate.ShowGameOver();
+            UIOverlay.GetComponent<UIOverlay>().ShowGameOverPanel();
         }
         else
         {
@@ -143,7 +148,7 @@ public class ScenarioMap : MonoBehaviour
         if (MissionSpecifics.IsGameOver(currentRound))
         {
             MissionSpecifics.EndGameAnimation();
-            animate.ShowGameOver();
+            UIOverlay.GetComponent<UIOverlay>().ShowGameOverPanel();
         }
         else
         {

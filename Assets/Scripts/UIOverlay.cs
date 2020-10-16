@@ -20,6 +20,7 @@ public class UIOverlay : MonoBehaviour
     public GameObject openMenuButton;
     public GameObject menuPanel;
     public GameObject reportBugPanel;
+    public GameObject gameOverPanel;
 
     public GameObject scenarioMap;  // Needed to get currentRound for OpenMenu()
 
@@ -169,5 +170,22 @@ public class UIOverlay : MonoBehaviour
     string MyEscapeURL(string URL)
     {
         return UnityWebRequest.EscapeURL(URL).Replace("+", "%20");
+    }
+
+    public void ShowGameOverPanel()
+    {
+        Camera.main.GetComponent<PanAndZoom>().controlCamera = false;
+        Camera.main.orthographicSize = 100;  // Just like animate.CameraToMaxZoom()
+        Camera.main.transform.position = new Vector3(0, 0, Camera.main.transform.position.z);
+        if (MissionSpecifics.IsHeroVictory())
+        {
+            gameOverPanel.transform.Find("MissionStatusText").GetComponent<TMP_Text>().text = "<color=\"green\">Mission Success";
+        }
+        else
+        {
+            gameOverPanel.transform.Find("MissionStatusText").GetComponent<TMP_Text>().text = "<color=\"red\">Mission Failure";
+        }
+        HideUIOverlay();
+        gameOverPanel.SetActive(true);
     }
 }

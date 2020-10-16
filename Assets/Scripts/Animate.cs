@@ -17,7 +17,6 @@ public class Animate : MonoBehaviour
     public GameObject explosionPrefab;
     public GameObject explosionLoopingPrefab;
     public GameObject continueButtonPrefab;
-    public GameObject gameOverPrefab;
 
 
     private void Awake()
@@ -134,12 +133,12 @@ public class Animate : MonoBehaviour
 
     public void CameraToFixedZoom()
     {
-        cameraStuff.orthographicSize = 2.2f;
+        cameraStuff.orthographicSize = 2.2f;  // This will look different for different devices/resolution
     }
 
-    public void CameraToFixedZoomForMenu()
+    public void CameraToMaxZoom()
     {
-        cameraStuff.orthographicSize = 1.2f;
+        cameraStuff.orthographicSize = 20f;  // PanAndZoom's LateUpdate will bring this down to max zoom with CameraInBounds()
     }
 
     public bool IsPointOnScreen(Vector3 point, float buffer = .1f)
@@ -435,19 +434,5 @@ public class Animate : MonoBehaviour
     {
         GameObject explosionObject = Instantiate(explosionLoopingPrefab, transform);
         explosionObject.transform.position = targetCoords;
-    }
-
-    public void ShowGameOver()
-    {
-        GameObject gameOverPanel = Instantiate(gameOverPrefab, transform);
-        if (MissionSpecifics.IsHeroVictory())
-        {
-            gameOverPanel.transform.Find("MissionStatusText").GetComponent<TMP_Text>().text = "<color=\"green\">Mission Success";
-        }
-        else
-        {
-            gameOverPanel.transform.Find("MissionStatusText").GetComponent<TMP_Text>().text = "<color=\"red\">Mission Failure";
-        }
-        StartCoroutine(MoveObjectOverTime(new List<GameObject>() { mainCamera }, mainCamera.transform.position, new Vector3(0, 0, 0)));  // Move camera to center
     }
 }
