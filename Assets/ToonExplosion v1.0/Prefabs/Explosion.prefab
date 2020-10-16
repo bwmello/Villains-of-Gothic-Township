@@ -262,6 +262,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 570f28da5368842fa8a80e5b4b57ce63, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isLooping: 0
 --- !u!1 &162364
 GameObject:
   m_ObjectHideFlags: 0

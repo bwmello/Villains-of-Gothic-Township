@@ -75,16 +75,13 @@ public class ScenarioMap : MonoBehaviour
 
     void Start()
     {
+        animate.CameraToMaxZoom();
         if (currentRound < 1)  // Start with villain's turn
         {
-            DisablePlayerUI();
-            animate.CameraToFixedZoom();
-            MissionSpecifics.SetActionsWeightTable();
             StartCoroutine(StartVillainTurn());
         }
         else
         {
-            animate.CameraToMaxZoom();
             EnablePlayerUI();  // UIOverlay starts disabled so it doesn't flash on the screen when villains go first
         }
     }
@@ -112,10 +109,9 @@ public class ScenarioMap : MonoBehaviour
     }
 
     // The flow: Player uses UI to end turn -> EndHeroTurn() -> StartVillainTurn() -> StartHeroTurn() -> Player takes their next turn
+    // Villain first flow: StartVillainTurn() -> StartHeroTurn() -> Player takes their next turn -> Player uses UI to end turn -> EndHeroTurn()
     public void EndHeroTurn()
     {
-        DisablePlayerUI();  // Disable all UI so Villain turn isn't interrupted
-
         if (MissionSpecifics.IsGameOver(currentRound))
         {
             MissionSpecifics.EndGameAnimation();
@@ -136,14 +132,17 @@ public class ScenarioMap : MonoBehaviour
 
             SaveIntoJson();  // Do this before CleanupZones() in case player wants to go back to just before they ended their turn.
             CleanupZones();
-            MissionSpecifics.SetActionsWeightTable();
             StartCoroutine(StartVillainTurn());
         }
     }
 
     IEnumerator StartVillainTurn()
     {
-        DissipateEnvironTokens(false);
+        DisablePlayerUI();  // Disable all UI so Villain turn isn't interrupted
+        if (currentRound < 1)
+        {
+            yield return new WaitForSecondsRealtime(2);  // If starting with villain turn, add delay so screen doesn't flash/jump
+        }
 
         if (MissionSpecifics.IsGameOver(currentRound))
         {
@@ -152,17 +151,16 @@ public class ScenarioMap : MonoBehaviour
         }
         else
         {
+            DissipateEnvironTokens(false);
+            MissionSpecifics.SetActionsWeightTable();
             // Disable camera controls
-            PanAndZoom panAndZoom = animate.mainCamera.GetComponent<PanAndZoom>();
-            panAndZoom.controlCamera = false;
+            Camera.main.GetComponent<PanAndZoom>().controlCamera = false;
+            animate.CameraToFixedZoom();
 
             UnitIntel.ResetPerRoundResources();
 
             yield return StartCoroutine(ActivateRiverTiles());
             yield return StartCoroutine(StartHeroTurn());
-
-            // Reactivate camera controls
-            panAndZoom.controlCamera = true;
         }
         yield return 0;
     }
@@ -228,6 +226,8 @@ public class ScenarioMap : MonoBehaviour
 
         // Re-Enable all the UI buttons which were disabled at EndHeroTurn()
         EnablePlayerUI();
+        // Reactivate camera controls
+        Camera.main.GetComponent<PanAndZoom>().controlCamera = true;
         yield return UIOverlay.GetComponent<UIOverlay>().AdvanceClock(currentRound);  // Once clock is visible, advance it
         yield return 0;
     }
