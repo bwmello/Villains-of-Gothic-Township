@@ -6,14 +6,12 @@ using UnityEngine;
 public static class UnitIntel
 {
     // Additional unit resources
-    public static int universalRerollBonus = 1;  // For adjusting diffficulty of the game. Applied to Melee, Ranged, and Manipulation:Grenade attacks. Not taken into account for GetAverageSuccesses/GetChanceOfSuccess
-    public static int bonusMovePointsPerRound = 3;
-    //public static int bonusMovePointsPerRiverTile = 2;  // Alternative
-    public static int bonusMovePointsRemaining = bonusMovePointsPerRound;
+    public static int bonusMovePointsRemaining;
 
     // Non-action behavior weight (actions accounted for in MissionSpecifics.cs)
     public static double terrainDangerWeight = -50;  // * terrainDanger
     public static double terrainDangeringFriendlies = -10;  // * terrainDanger * quantity of friendly units.  Chance of unit dying is 2/3 per terrainDanger
+    public static double increaseTerrainDifficultyWeight = 10;
     public static double[] bonusMovePointWeight = new double[] { 0, -15, -30, -45 };  // Accessed by UnitIntel.bonusMovePointWeight[movePointsUsed - unit.movePoints], so bonusMovePointWeight[0] = 0
     public static double[] partialMoveWeight = new double[] { .25, .0625 };  // * actionWeight. Accessed by UnitIntel.partialMoveWeight[additional moves required - 1]
     //public static Dictionary<string, double> partialMoveWeight = new Dictionary<string, double>()
@@ -49,8 +47,21 @@ public static class UnitIntel
 
     public static void ResetPerRoundResources()
     {
-        bonusMovePointsRemaining = bonusMovePointsPerRound;
+        bonusMovePointsRemaining = MissionSpecifics.GetBonusMovePointsPerRound();
         SetHeroMovesRequiredToReachZone();
+    }
+
+    public static void AssessHeroesBeforeTurn()
+    {
+        foreach (GameObject wallRubble in GameObject.FindGameObjectsWithTag("WallRubble"))
+        {
+            if (wallRubble.GetComponent<WallRubble>().WallIsBroken())
+            {
+                heroesIntel[0].wallBreaker = 1;
+                return;
+            }
+        }
+        heroesIntel[0].wallBreaker = 0;  // If they later remove the brokenWall
     }
 
     public static void SetHeroMovesRequiredToReachZone()

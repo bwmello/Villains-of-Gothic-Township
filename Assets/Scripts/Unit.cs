@@ -115,6 +115,7 @@ public class Unit : MonoBehaviour
                 yield break;
             }
 
+            animate.CameraToFixedZoom();   // Placed here because otherwise the camera "jumps" from zoomed in to first unit's move
             if (currentZone != chosenAction.actionZone)
             {
                 chosenAction.pathTaken.zones.Add(chosenAction.actionZone);  // Otherwise token is never animated moving the last zone to the destination
@@ -501,6 +502,10 @@ public class Unit : MonoBehaviour
                             double averageWounds = GetAverageSuccesses(actionProficiency.proficiencyDice, availableRerolls) + martialArtsSuccesses;
                             averageWounds *= actionProficiency.actionMultiplier;
                             actionWeight += averageWounds * MissionSpecifics.actionsWeightTable["MELEE"][0].weightFactor;
+                            if (frosty)  // Account for increasing difficult terrain of hero's zone
+                            {
+                                actionWeight += UnitIntel.increaseTerrainDifficultyWeight;
+                            }
                             if (actionWeight > inactiveWeight)
                             {
                                 allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["MELEE"][0], actionProficiency, actionWeight, possibleZone, finalDestinationZone, null, possibleDestinationsAndPaths[finalDestinationZone]));
@@ -569,6 +574,10 @@ public class Unit : MonoBehaviour
                                             double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
                                             actionWeight += averageAutoWounds * manipulatable.weightFactor * chanceOfSuccess;
                                             //Debug.Log("!!!Weighing grenade throw, actionWeight " + actionWeight.ToString() + " += " + averageAutoWounds.ToString() + " * " + manipulatable.Item3.ToString() + " * " + chanceOfSuccess.ToString());
+                                            if (frosty)  // Account for increasing difficult terrain of hero's zone
+                                            {
+                                                actionWeight += UnitIntel.increaseTerrainDifficultyWeight;
+                                            }
                                             actionWeight += grenadeTargetZone.GetComponent<ZoneInfo>().GetUnitsInfo().Count * grenade * UnitIntel.terrainDangeringFriendlies;
                                             if (actionWeight > inactiveWeight)
                                             {
@@ -929,7 +938,7 @@ public class Unit : MonoBehaviour
                         List<GameObject> lineOfSight = new List<GameObject>() { GetZone() };
                         lineOfSight.AddRange(currentZoneInfo.GetSightLineWithZone(unitTurn.targetedZone));
                         requiredSuccesses = lineOfSight.IndexOf(unitTurn.targetedZone) + currentZoneHindrance;
-                        actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls + UnitIntel.universalRerollBonus, requiredSuccesses);
+                        actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls + MissionSpecifics.GetAttackRollBonus(), requiredSuccesses);
                         GameObject targetedZone;
                         if (actionSuccesses >= requiredSuccesses)
                         {
@@ -1088,10 +1097,10 @@ public class Unit : MonoBehaviour
         return rolledSuccesses;
     }
 
-    private int RollAndReroll(List<GameObject> dicePool, int rerolls)
+    private int RollAndReroll(List<GameObject> dicePool, int rerolls)  // Only Melee and Ranged attacks use this method version without requiredSuccesses
     {
         int rolledSuccesses = 0;
-        rerolls += UnitIntel.universalRerollBonus;
+        rerolls += MissionSpecifics.GetAttackRollBonus();
         List<ActionResult> currentActionResults = new List<ActionResult>();
         string debugString = "RollAndReroll for unit " + gameObject.name + ". ";
 

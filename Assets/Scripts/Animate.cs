@@ -398,7 +398,6 @@ public class Animate : MonoBehaviour
             unitButton.enabled = false;
         }
         panAndZoom.controlCamera = false;
-        CameraToFixedZoom();
 
         EndBulletPaths();
         attacker.GetComponent<ObjectShake>().StopShaking();

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;  // For button
 using TMPro;  // for TMP_Text to edit SuccessVsFailure's successContainer blanks
+using System.Text.RegularExpressions;  // for comparing Zones (by their numbers) in ActivateCryogenicDevice
 
 
 public static class MissionSpecifics
@@ -109,6 +110,30 @@ public static class MissionSpecifics
                 return 8;
         }
         return -1;
+    }
+
+    public static int GetBonusMovePointsPerRound()  // For adjusting difficulty of the game.
+    {
+        switch (missionName)
+        {
+            case "ASinkingFeeling":
+                return 3;
+            case "IceToSeeYou":
+                return 2;
+        }
+        return 0;
+    }
+
+    public static int GetAttackRollBonus()  // For adjusting diffficulty of the game. Applied to Melee, Ranged, and Manipulation:Grenade attacks. Not taken into account for GetAverageSuccesses/GetChanceOfSuccess
+    {
+        switch (missionName)
+        {
+            case "ASinkingFeeling":
+                return 1;
+            case "IceToSeeYou":
+                return 0;
+        }
+        return 0;
     }
 
     public static double GetHeroProximityToObjectiveWeightMultiplier(GameObject zone, bool isPartialMove = false)
@@ -483,6 +508,7 @@ public static class MissionSpecifics
                 ZoneInfo bombZoneInfo = bombZone.GetComponent<ZoneInfo>();
                 double existingCryoTokenDecrement = (double)bombZoneInfo.GetAllTokensWithTag("Cryogenic").Count * 5d;
                 cryoZoneTargets.Add(((18 - existingCryoTokenDecrement) * zoneWeightMultiplier, bombZone));
+
                 if (UnitIntel.heroesIntel[0].wallBreaker < 1 && (bombZoneInfo.adjacentZones.Count + bombZoneInfo.steeplyAdjacentZones.Count) == 1)  // If only one way in or out (ignoring walls)
                 {
                     if (bombZoneInfo.adjacentZones.Count == 1)
@@ -494,6 +520,20 @@ public static class MissionSpecifics
                     {
                         existingCryoTokenDecrement = (double)bombZoneInfo.steeplyAdjacentZones[0].GetComponent<ZoneInfo>().GetAllTokensWithTag("Cryogenic").Count * 5d;
                         cryoZoneTargets.Add(((20 - existingCryoTokenDecrement) * zoneWeightMultiplier, bombZoneInfo.steeplyAdjacentZones[0]));
+                    }
+                }
+                else if (UnitIntel.heroesIntel[0].wallBreaker < 1 && bombZone.name == "ZoneInfoPanel 38")   // Hardcoded, TODO should be with above (if each adjacentZone has adjacentZones.Count == 1)
+                {
+                    cryoZoneTargets.Add(((20 - existingCryoTokenDecrement) * zoneWeightMultiplier, bombZoneInfo.adjacentZones[0]));
+                }
+                else if (bombZone.name == "ZoneInfoPanel 26")  // Hardcoded, TODO should look at difference between moveCost for hero (before and after cryo token)
+                {
+                    //Debug.Log("!!!!Evaluating CryogenicZone for ZoneInfoPanel 22");
+                    if  (int.Parse(Regex.Match(heroZone.name, @"\d+").Value) < 17)
+                    {
+                        GameObject zone22 = bombZoneInfo.adjacentZones[0].GetComponent<ZoneInfo>().adjacentZones[0];
+                        //Debug.Log("!!!Hero's zone < 17, so adding " + zone22.name + " to cryoZoneTargets.");
+                        cryoZoneTargets.Add(((19 - existingCryoTokenDecrement) * zoneWeightMultiplier, zone22));
                     }
                 }
             }
@@ -524,6 +564,17 @@ public static class MissionSpecifics
             for (int i = 0; i < cryoZoneTargets.Count && i < 2; i++)
             {
                 GameObject zoneToCryo = cryoZoneTargets[i].Item2;
+                if (i > 0 && zoneToCryo == cryoZoneTargets[0].Item2)  // Can't cryo the same spot twice
+                {
+                    if (cryoZoneTargets.Count > 2 && cryoZoneTargets[0].Item2 != cryoZoneTargets[2].Item2)
+                    {
+                        zoneToCryo = cryoZoneTargets[2].Item2;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
                 yield return animate.StartCoroutine(animate.MoveCameraUntilOnscreen(mainCamera.transform.position, zoneToCryo.transform.position));
                 yield return new WaitForSecondsRealtime(1);
                 yield return animate.StartCoroutine(zoneToCryo.GetComponent<ZoneInfo>().AddEnvironTokens(new EnvironTokenSave("Cryogenic", 1, false, true)));

@@ -152,10 +152,11 @@ public class ScenarioMap : MonoBehaviour
         else
         {
             DissipateEnvironTokens(false);
+            UnitIntel.AssessHeroesBeforeTurn();
             MissionSpecifics.SetActionsWeightTable();
             // Disable camera controls
             Camera.main.GetComponent<PanAndZoom>().controlCamera = false;
-            animate.CameraToFixedZoom();
+            //animate.CameraToFixedZoom();  // Moved to Unit.ActivateUnit() to prevent camera jump from zoomed in to first unit's turn
 
             UnitIntel.ResetPerRoundResources();
 
