@@ -32,6 +32,7 @@ public class Draggable : MonoBehaviour
         EnableDropZones();
         panAndZoom.controlCamera = false;
         positionOnDragStart = transform.position;
+        transform.localScale = new Vector3(1.5f, 1.5f, 1);
     }
 
     public void EndDrag()
@@ -66,6 +67,7 @@ public class Draggable : MonoBehaviour
         DisableDropZones();
         isDragging = false;
         panAndZoom.controlCamera = true;
+        transform.localScale = new Vector3(1, 1, 1);
         transform.position = positionOnDragStart;
     }
 
