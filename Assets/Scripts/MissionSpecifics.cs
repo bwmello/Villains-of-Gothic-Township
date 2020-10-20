@@ -15,6 +15,7 @@ public static class MissionSpecifics
     public static GameObject animationContainer;
     public static Animate animate;
     public static ScenarioMap scenarioMap;
+    public static int currentRound;
 
     public static Dictionary<string, List<ActionWeight>> actionsWeightTable = new Dictionary<string, List<ActionWeight>>() {
         { "MELEE", new List<ActionWeight>() { new ActionWeight(null, 0, 10, null) } },  // 10 * averageTotalWounds
@@ -465,6 +466,7 @@ public static class MissionSpecifics
     }
 
     /* ActionCallbacks specific to "IceToSeeYou" mission */
+    // Must stack the left side, as the hero gets screwed coming down the right hand side (Otterpop and reinforcements)
     public static IEnumerator ActivateCryogenicDevice(GameObject unit, GameObject target, int totalSuccesses, int requiredSuccesses)
     {
         ZoneInfo unitZoneInfo = unit.GetComponent<Unit>().GetZone().GetComponent<ZoneInfo>();
@@ -500,43 +502,64 @@ public static class MissionSpecifics
 
             GameObject hero = GameObject.FindGameObjectWithTag("1stHero");
             GameObject heroZone = hero.GetComponent<Hero>().GetZone();
+            int heroZoneID = heroZone.GetComponent<ZoneInfo>().GetZoneID();
+            double existingCryoTokenDecrement;
             cryoZoneTargets.Add((30, heroZone));
+
             foreach (GameObject bomb in GameObject.FindGameObjectsWithTag("Bomb"))
             {
                 GameObject bombZone = bomb.transform.parent.parent.gameObject;
                 double zoneWeightMultiplier = GetHeroProximityToObjectiveWeightMultiplier(bombZone);
                 ZoneInfo bombZoneInfo = bombZone.GetComponent<ZoneInfo>();
-                double existingCryoTokenDecrement = (double)bombZoneInfo.GetAllTokensWithTag("Cryogenic").Count * 5d;
+                existingCryoTokenDecrement = (double)bombZoneInfo.GetQuantityOfEnvironTokensWithTag("Cryogenic") * 5d;
                 cryoZoneTargets.Add(((18 - existingCryoTokenDecrement) * zoneWeightMultiplier, bombZone));
 
                 if (UnitIntel.heroesIntel[0].wallBreaker < 1 && (bombZoneInfo.adjacentZones.Count + bombZoneInfo.steeplyAdjacentZones.Count) == 1)  // If only one way in or out (ignoring walls)
                 {
                     if (bombZoneInfo.adjacentZones.Count == 1)
                     {
-                        existingCryoTokenDecrement = (double)bombZoneInfo.adjacentZones[0].GetComponent<ZoneInfo>().GetAllTokensWithTag("Cryogenic").Count * 5d;
+                        existingCryoTokenDecrement = (double)bombZoneInfo.adjacentZones[0].GetComponent<ZoneInfo>().GetQuantityOfEnvironTokensWithTag("Cryogenic") * 5d;
                         cryoZoneTargets.Add(((20 - existingCryoTokenDecrement) * zoneWeightMultiplier, bombZoneInfo.adjacentZones[0]));
                     }
                     else
                     {
-                        existingCryoTokenDecrement = (double)bombZoneInfo.steeplyAdjacentZones[0].GetComponent<ZoneInfo>().GetAllTokensWithTag("Cryogenic").Count * 5d;
+                        existingCryoTokenDecrement = (double)bombZoneInfo.steeplyAdjacentZones[0].GetComponent<ZoneInfo>().GetQuantityOfEnvironTokensWithTag("Cryogenic") * 5d;
                         cryoZoneTargets.Add(((20 - existingCryoTokenDecrement) * zoneWeightMultiplier, bombZoneInfo.steeplyAdjacentZones[0]));
                     }
                 }
                 else if (UnitIntel.heroesIntel[0].wallBreaker < 1 && bombZone.name == "ZoneInfoPanel 38")   // Hardcoded, TODO should be with above (if each adjacentZone has adjacentZones.Count == 1)
                 {
+                    existingCryoTokenDecrement = (double)bombZoneInfo.adjacentZones[0].GetComponent<ZoneInfo>().GetQuantityOfEnvironTokensWithTag("Cryogenic") * 5d;
                     cryoZoneTargets.Add(((20 - existingCryoTokenDecrement) * zoneWeightMultiplier, bombZoneInfo.adjacentZones[0]));
                 }
                 else if (bombZone.name == "ZoneInfoPanel 26")  // Hardcoded, TODO should look at difference between moveCost for hero (before and after cryo token)
                 {
-                    //Debug.Log("!!!!Evaluating CryogenicZone for ZoneInfoPanel 22");
-                    if  (int.Parse(Regex.Match(heroZone.name, @"\d+").Value) < 17)
+                    if (heroZoneID < 17)
                     {
                         GameObject zone22 = bombZoneInfo.adjacentZones[0].GetComponent<ZoneInfo>().adjacentZones[0];
-                        //Debug.Log("!!!Hero's zone < 17, so adding " + zone22.name + " to cryoZoneTargets.");
+                        existingCryoTokenDecrement = (double)zone22.GetComponent<ZoneInfo>().GetQuantityOfEnvironTokensWithTag("Cryogenic") * 5d;
                         cryoZoneTargets.Add(((19 - existingCryoTokenDecrement) * zoneWeightMultiplier, zone22));
                     }
                 }
             }
+
+            if (currentRound < 1)
+            {
+                //cryoZoneTargets.Add() Zone 2
+                GameObject zone2 = scenarioMap.gameObject.transform.Find("ZoneInfoPanel 2").gameObject;
+                existingCryoTokenDecrement = (double)zone2.GetComponent<ZoneInfo>().GetQuantityOfEnvironTokensWithTag("Cryogenic") * 20d;
+                cryoZoneTargets.Add(((50 - existingCryoTokenDecrement), zone2));
+            }
+            else if (currentRound < 3)
+            {
+                if (new List<int>() { 10, 11, 15, 16 }.Contains(heroZoneID))
+                {
+                    GameObject zone14 = scenarioMap.gameObject.transform.Find("ZoneInfoPanel 14").gameObject;
+                    existingCryoTokenDecrement = (double)zone14.GetComponent<ZoneInfo>().GetQuantityOfEnvironTokensWithTag("Cryogenic") * 20d;
+                    cryoZoneTargets.Add(((50 - existingCryoTokenDecrement), zone14));
+                }
+            }
+
             for (int i = 0; i < cryoZoneTargets.Count; i++)  // Subtract friendly fire from each target zone's weight
             {
                 //string cryoZoneTargetsDebugString = "For zone " + cryoZoneTargets[i].Item2.name;

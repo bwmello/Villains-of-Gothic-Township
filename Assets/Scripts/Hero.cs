@@ -31,20 +31,20 @@ public class Hero : MonoBehaviour
             button.tag = heroTag;
             button.GetComponent<CanvasGroup>().alpha = (float)1;
         }
-        else
-        {
-            CanvasGroup buttonCanvas = button.GetComponent<CanvasGroup>();
-            if (buttonCanvas.alpha == 1)  // Hero was defeated, so remove from board
-            {
-                button.tag = "Untagged";
-                buttonCanvas.alpha = (float).2;
-            }
-            else  // Mistake was made in removing hero, so add hero back to the board
-            {
-                button.tag = heroTag;
-                buttonCanvas.alpha = (float)1;
-            }
-        }
+        //else  // Heroes are never removed from the board. If neutralized, they enter rest stance, moving fatigue cubes to their rest zone and wound cubes to their fatigue zone
+        //{
+        //    CanvasGroup buttonCanvas = button.GetComponent<CanvasGroup>();
+        //    if (buttonCanvas.alpha == 1)  // Hero was defeated, so remove from board
+        //    {
+        //        button.tag = "Untagged";
+        //        buttonCanvas.alpha = (float).2;
+        //    }
+        //    else  // Mistake was made in removing hero, so add hero back to the board
+        //    {
+        //        button.tag = heroTag;
+        //        buttonCanvas.alpha = (float)1;
+        //    }
+        //}
     }
 
     public GameObject GetZone()

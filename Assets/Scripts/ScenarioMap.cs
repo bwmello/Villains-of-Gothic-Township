@@ -152,7 +152,6 @@ public class ScenarioMap : MonoBehaviour
         else
         {
             DissipateEnvironTokens(false);
-            UnitIntel.AssessHeroesBeforeTurn();
             MissionSpecifics.SetActionsWeightTable();
             // Disable camera controls
             Camera.main.GetComponent<PanAndZoom>().controlCamera = false;
@@ -220,6 +219,7 @@ public class ScenarioMap : MonoBehaviour
         CleanupZones();
 
         currentRound += 1;
+        MissionSpecifics.currentRound = currentRound;
         if (currentRound > 1)
         {
             SaveIntoJson();
@@ -505,6 +505,7 @@ public class ScenarioMap : MonoBehaviour
     {
         missionName = scenarioSave.missionName;
         currentRound = scenarioSave.currentRound;
+        MissionSpecifics.currentRound = currentRound;
         reinforcementPoints = scenarioSave.reinforcementPoints;
         totalHeroes = scenarioSave.totalHeroes;
         UnitIntel.LoadUnitIntelSave(scenarioSave.unitIntel);

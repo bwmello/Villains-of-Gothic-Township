@@ -51,17 +51,17 @@ public static class UnitIntel
         SetHeroMovesRequiredToReachZone();
     }
 
-    public static void AssessHeroesBeforeTurn()
+    public static void AssessHeroesBeforeTurn()  // Not called anywhere as isn't useful. Explosive Gel is a one use item, which means once a wall is broken, that hero is no longer a wallBreaker
     {
-        foreach (GameObject wallRubble in GameObject.FindGameObjectsWithTag("WallRubble"))
-        {
-            if (wallRubble.GetComponent<WallRubble>().WallIsBroken())
-            {
-                heroesIntel[0].wallBreaker = 1;
-                return;
-            }
-        }
-        heroesIntel[0].wallBreaker = 0;  // If they later remove the brokenWall
+        //foreach (GameObject wallRubble in GameObject.FindGameObjectsWithTag("WallRubble"))
+        //{
+        //    if (wallRubble.GetComponent<WallRubble>().WallIsBroken())
+        //    {
+        //        heroesIntel[0].wallBreaker = 1;
+        //        return;
+        //    }
+        //}
+        //heroesIntel[0].wallBreaker = 0;  // If they later remove the brokenWall
     }
 
     public static void SetHeroMovesRequiredToReachZone()

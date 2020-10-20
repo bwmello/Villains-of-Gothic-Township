@@ -65,6 +65,7 @@ public class ZoneInfo : MonoBehaviour
         try
         {
             return Int32.Parse(transform.name.Remove(0, 14));
+            // int.Parse(Regex.Match(heroZone.name, @"\d+").Value);
         }
         catch (FormatException err)
         {
