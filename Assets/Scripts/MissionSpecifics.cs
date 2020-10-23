@@ -465,6 +465,55 @@ public static class MissionSpecifics
         yield return 0;
     }
 
+    //public static Dictionary<GameObject, Unit.UnitPossibleAction> GetPredeterminedActivations()
+    public static List<Unit.UnitPossibleAction> GetPredeterminedActivations()
+    {
+        switch (missionName)
+        {
+            //case "ASinkingFeeling":
+            //    return null;
+            case "IceToSeeYou":
+                switch (currentRound)
+                {
+                    case 1:
+                        GameObject otterPop = GameObject.FindGameObjectWithTag("OTTERPOP");
+                        GameObject zone26 = scenarioMap.gameObject.transform.Find("ZoneInfoPanel 26").gameObject;
+                        GameObject zone25 = scenarioMap.gameObject.transform.Find("ZoneInfoPanel 25").gameObject;
+                        GameObject zone22 = scenarioMap.gameObject.transform.Find("ZoneInfoPanel 22").gameObject;
+                        GameObject zone15 = scenarioMap.gameObject.transform.Find("ZoneInfoPanel 15").gameObject;
+                        GameObject zone16 = scenarioMap.gameObject.transform.Find("ZoneInfoPanel 16").gameObject;
+                        Unit.MovementPath zone22MovePath = new Unit.MovementPath(2, 0, new List<GameObject>() { zone26, zone25 });
+                        Dictionary<GameObject, Unit.MovementPath> possibleDestinations = new Dictionary<GameObject, Unit.MovementPath>
+                        {
+                            { zone22, zone22MovePath },
+                            { zone15, new Unit.MovementPath(4, 0, new List<GameObject>() { zone25, zone22 }) },
+                            { zone16, new Unit.MovementPath(4, 0, new List<GameObject>() { zone25, zone22 }) },
+                        };
+
+                        List<Unit.UnitPossibleAction> allPossibleUnitActions = otterPop.GetComponent<Unit>().GetPossibleActions(possibleDestinations);
+                        Unit.UnitPossibleAction chosenAction = new Unit.UnitPossibleAction(otterPop.GetComponent<Unit>(), new ActionWeight(null, 0, 0, null), new Unit.ActionProficiency(null, 0, null), 0, zone22, zone22, null, zone22MovePath);
+                        foreach (Unit.UnitPossibleAction unitAction in allPossibleUnitActions)
+                        {
+                            if (chosenAction == null || unitAction.actionWeight > chosenAction.actionWeight)
+                            {
+                                chosenAction = unitAction;
+                            }
+                        }
+
+                        //return new Dictionary<GameObject, Unit.UnitPossibleAction> { { otterPop, chosenAction } };
+                        return new List<Unit.UnitPossibleAction> { chosenAction };
+
+                    default:
+                        break;
+                }
+                break;
+
+            default:
+                break;
+        }
+        return null;
+    }
+
     /* ActionCallbacks specific to "IceToSeeYou" mission */
     // Must stack the left side, as the hero gets screwed coming down the right hand side (Otterpop and reinforcements)
     public static IEnumerator ActivateCryogenicDevice(GameObject unit, GameObject target, int totalSuccesses, int requiredSuccesses)
@@ -543,14 +592,14 @@ public static class MissionSpecifics
                 }
             }
 
-            if (currentRound < 1)
-            {
-                //cryoZoneTargets.Add() Zone 2
-                GameObject zone2 = scenarioMap.gameObject.transform.Find("ZoneInfoPanel 2").gameObject;
-                existingCryoTokenDecrement = (double)zone2.GetComponent<ZoneInfo>().GetQuantityOfEnvironTokensWithTag("Cryogenic") * 20d;
-                cryoZoneTargets.Add(((50 - existingCryoTokenDecrement), zone2));
-            }
-            else if (currentRound < 3)
+            //if (currentRound < 1)
+            //{
+            //    //cryoZoneTargets.Add() Zone 2
+            //    GameObject zone2 = scenarioMap.gameObject.transform.Find("ZoneInfoPanel 2").gameObject;
+            //    existingCryoTokenDecrement = (double)zone2.GetComponent<ZoneInfo>().GetQuantityOfEnvironTokensWithTag("Cryogenic") * 20d;
+            //    cryoZoneTargets.Add(((50 - existingCryoTokenDecrement), zone2));
+            //}
+            if (currentRound < 3)
             {
                 if (new List<int>() { 10, 11, 15, 16 }.Contains(heroZoneID))
                 {

@@ -90,6 +90,73 @@ public class Unit : MonoBehaviour
         return transform.parent.parent.parent.gameObject;  // Grabs ZoneInfoPanel instead of UnitsContainer. If changes in future, only need to change this function.
     }
 
+    public IEnumerator ActivateUnitWithPredeterminedAction(UnitPossibleAction chosenAction)
+    {
+        GameObject currentZone = GetZone();
+
+        animate.CameraToFixedZoom();   // Placed here because otherwise the camera "jumps" from zoomed in to first unit's move
+        if (currentZone != chosenAction.actionZone)
+        {
+            chosenAction.pathTaken.zones.Add(chosenAction.actionZone);  // Otherwise token is never animated moving the last zone to the destination
+            yield return StartCoroutine(MoveToken(chosenAction.pathTaken));
+        }
+
+        if (!IsActive())  // If killed by first move
+        {
+            yield break;
+        }
+        if (chosenAction.actionProficiency.actionType != moveActionProficiency.actionType)  // If performing action other than moving
+        {
+            yield return StartCoroutine(PerformAction(chosenAction));
+        }
+
+        if (!IsActive())  // If killed by own action
+        {
+            yield break;
+        }
+        if (chosenAction.finalDestinationZone != chosenAction.actionZone)
+        {
+            Dictionary<GameObject, MovementPath> possibleFinalDestinations = GetPossibleDestinations(currentZone);
+            if (!possibleFinalDestinations.ContainsKey(chosenAction.finalDestinationZone))  // If moving to chosenAction.finalDestinationZone is no longer possible (due to performed action)
+            {
+                if (MissionSpecifics.actionsWeightTable.ContainsKey("GUARD"))
+                {
+                    double mostValuableFinalDestinationWeight = 0;
+                    foreach (GameObject possibleFinalDestinationZone in possibleFinalDestinations.Keys)
+                    {
+                        double currentFinalDestinationWeight = 0;
+                        ZoneInfo possibleFinalDestinationZoneInfo = possibleFinalDestinationZone.GetComponent<ZoneInfo>();
+                        foreach (MissionSpecifics.ActionWeight guardable in MissionSpecifics.actionsWeightTable["GUARD"])
+                        {
+                            if (possibleFinalDestinationZoneInfo.HasObjectiveToken(guardable.targetType))
+                            {
+                                currentFinalDestinationWeight += guardable.weightFactor;
+                            }
+                        }
+                        if (currentFinalDestinationWeight > mostValuableFinalDestinationWeight)
+                        {
+                            chosenAction.finalDestinationZone = possibleFinalDestinationZone;
+                            chosenAction.pathTaken = possibleFinalDestinations[possibleFinalDestinationZone];
+                            mostValuableFinalDestinationWeight = currentFinalDestinationWeight;
+                        }
+                    }
+                }
+            }
+            chosenAction.pathTaken.zones.Add(chosenAction.finalDestinationZone);
+            yield return StartCoroutine(MoveToken(chosenAction.pathTaken));
+        }
+        //else
+        //{
+        //    GameObject destinationZone = GetPartialMoveAndWeight(possibleDestinations).Item1;
+        //    if (destinationZone != null && currentZone != destinationZone)
+        //    {
+        //        possibleDestinations[destinationZone].zones.Add(destinationZone);  // Otherwise token is never animated moving the last zone to the destination
+        //        yield return StartCoroutine(MoveToken(possibleDestinations[destinationZone]));
+        //    }
+        //}
+        yield return 0;
+    }
+
     public IEnumerator ActivateUnit(bool activatingLast = false)
     {
         GameObject currentZone = GetZone();
@@ -182,9 +249,21 @@ public class Unit : MonoBehaviour
 
     public class MovementPath
     {
-        public List<GameObject> zones = new List<GameObject>();
+        public List<GameObject> zones;
         public int movementSpent = 0;
         public int terrainDanger = 0;
+
+        public MovementPath()
+        {
+            zones = new List<GameObject>();
+        }
+
+        public MovementPath(int newMovementSpent, int newTerrainDanger, List<GameObject> newZones)
+        {
+            movementSpent = newMovementSpent;
+            terrainDanger = newTerrainDanger;
+            zones = new List<GameObject>(newZones);
+        }
     }
 
     private Dictionary<GameObject, MovementPath> GetPossibleDestinations(GameObject currentZone, Dictionary<GameObject, MovementPath> possibleDestinations = null, HashSet<GameObject> alreadyPossibleZones = null)
@@ -409,7 +488,7 @@ public class Unit : MonoBehaviour
         }
     }
 
-    private List<UnitPossibleAction> GetPossibleActions(Dictionary<GameObject, MovementPath> possibleDestinationsAndPaths, bool isPartialMove = false)  // TODO isPartialMove doesn't seem to change anything
+    public List<UnitPossibleAction> GetPossibleActions(Dictionary<GameObject, MovementPath> possibleDestinationsAndPaths, bool isPartialMove = false)  // TODO isPartialMove doesn't seem to change anything
     {
         List<UnitPossibleAction> allPossibleActions = new List<UnitPossibleAction>();
 

@@ -36,7 +36,8 @@ public static class UnitIntel
         public int ignoreSize = 1;
         public int wallBreaker = 0;
         public int woundsReceived = 0;
-        public bool canCounterAttack = false;
+        public bool canCounterMeleeAttacks = false;
+        public bool canCounterRangedAttacks = false;
         public bool canRetaliate = false;
 
         public HeroIntel(string newTag)

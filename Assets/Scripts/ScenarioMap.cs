@@ -167,7 +167,19 @@ public class ScenarioMap : MonoBehaviour
 
     IEnumerator ActivateRiverTiles()
     {
-        for (int i = 0; i < 2; i++)
+        int totalActivations = 2;
+        List<Unit.UnitPossibleAction> predeterminedActivations = MissionSpecifics.GetPredeterminedActivations();
+        if (predeterminedActivations != null)
+        {
+            foreach (Unit.UnitPossibleAction unitAction in predeterminedActivations)
+            {
+                yield return unitAction.myUnit.ActivateUnitWithPredeterminedAction(unitAction);
+                villainRiver.Remove(unitAction.myUnit.tag);
+                villainRiver.Add(unitAction.myUnit.tag);
+                totalActivations -= 1;
+            }
+        }
+        for (int i = 0; i < totalActivations; i++)
         {
             (string unitTypeToActivate, GameObject[] unitsToActivate) = GetVillainTileToActivate(i);
             if (unitTypeToActivate == "REINFORCEMENT")
