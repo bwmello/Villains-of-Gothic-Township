@@ -27,6 +27,10 @@ TagManager:
   - Gas
   - Smoke
   - Flame
+  - BYSTANDER
+  - RIFLE
+  - MUDMAN
+  - SKULLFACE
   layers:
   - Default
   - TransparentFX

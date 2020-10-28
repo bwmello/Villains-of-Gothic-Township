@@ -1,0 +1,463 @@
+{
+    "missionName": "AFewBadApples",
+    "currentRound": 0,
+    "reinforcementPoints": 4,
+    "totalHeroes": 3,
+    "unitIntel": {
+        "heroesIntel": [
+            {
+                "tag": "1stHero",
+                "moveSpeed": 4,
+                "ignoreTerrainDifficulty": 1,
+                "ignoreElevation": 1,
+                "ignoreSize": 1,
+                "wallBreaker": 0,
+                "woundsReceived": 0,
+                "canCounterAttack": false,
+                "canRetaliate": false
+            },
+            {
+                "tag": "2ndHero",
+                "moveSpeed": 4,
+                "ignoreTerrainDifficulty": 1,
+                "ignoreElevation": 1,
+                "ignoreSize": 1,
+                "wallBreaker": 0,
+                "woundsReceived": 0,
+                "canCounterAttack": false,
+                "canRetaliate": false
+            },
+            {
+                "tag": "3rdHero",
+                "moveSpeed": 4,
+                "ignoreTerrainDifficulty": 1,
+                "ignoreElevation": 1,
+                "ignoreSize": 1,
+                "wallBreaker": 0,
+                "woundsReceived": 0,
+                "canCounterAttack": false,
+                "canRetaliate": false
+            }
+        ]
+    },
+    "villainRiver": [ "RIFLE", "CHAINS", "MUDMAN", "REINFORCEMENT", "CROWBAR", "SHOTGUN", "SKULLFACE" ],
+    "unitTagsMasterList": [ "RIFLE", "CHAINS", "MUDMAN", "CROWBAR", "SHOTGUN", "SKULLFACE", "BYSTANDER" ],
+    "unitsPool": [
+        {
+            "tag": "RIFLE",
+            "total": 4
+        },
+        {
+            "tag": "CHAINS",
+            "total": 4
+        },
+        {
+            "tag": "CROWBAR",
+            "total": 4
+        },
+        {
+            "tag": "SHOTGUN",
+            "total": 4
+        }
+    ],
+    "brokenWalls": [],
+    "zones": [
+        {
+            "isSpawnZone": true,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "CROWBAR",
+                    "lifePoints": 1
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": true,
+            "tokensAndHeroesTags": [ "1stHero" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [ "Computer" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "CROWBAR",
+                    "lifePoints": 1
+                },
+                {
+                    "tag": "CHAINS",
+                    "lifePoints": 1
+                },
+                {
+                    "tag": "SKULLFACE",
+                    "lifePoints": 4
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [ "Computer" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "CHAINS",
+                    "lifePoints": 1
+                },
+                {
+                    "tag": "RIFLE",
+                    "lifePoints": 1
+                },
+                {
+                    "tag": "BYSTANDER",
+                    "lifePoints": 1
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [ "3rdHero" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "BYSTANDER",
+                    "lifePoints": 1
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "RIFLE",
+                    "lifePoints": 1
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "SHOTGUN",
+                    "lifePoints": 1
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [ "2ndHero" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "BYSTANDER",
+                    "lifePoints": 1
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [ "Computer" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "CHAINS",
+                    "lifePoints": 1
+                },
+                {
+                    "tag": "MUDMAN",
+                    "lifePoints": 7
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "SHOTGUN",
+                    "lifePoints": 1
+                },
+                {
+                    "tag": "RIFLE",
+                    "lifePoints": 1
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "SHOTGUN",
+                    "lifePoints": 1
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": true,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": true,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "CROWBAR",
+                    "lifePoints": 1
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "CHAINS",
+                    "lifePoints": 1
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [ "Computer" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "CROWBAR",
+                    "lifePoints": 1
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "BYSTANDER",
+                    "lifePoints": 1
+                }
+            ]
+        },
+        {
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [ "Computer" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "SHOTGUN",
+                    "lifePoints": 1
+                },
+                {
+                    "tag": "RIFLE",
+                    "lifePoints": 1
+                }
+            ]
+        }
+    ]
+}

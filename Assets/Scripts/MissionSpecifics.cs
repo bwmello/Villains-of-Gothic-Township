@@ -121,6 +121,8 @@ public static class MissionSpecifics
                 return 3;
             case "IceToSeeYou":
                 return 2;
+            case "AFewBadApples":
+                return 3;
         }
         return 0;
     }
@@ -133,6 +135,8 @@ public static class MissionSpecifics
                 return 1;
             case "IceToSeeYou":
                 return 0;
+            case "AFewBadApples":
+                return 1;
         }
         return 0;
     }

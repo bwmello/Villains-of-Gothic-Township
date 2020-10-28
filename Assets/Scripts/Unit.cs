@@ -25,31 +25,33 @@ public class Unit : MonoBehaviour
     public int ignoreTerrainDifficulty = 0;
     public int ignoreElevation = 0;  // TODO Also ignores this many wounds caused by a fall
     public int ignoreSize = 0;
-    // TODO public int ignoreMenace = 0;  // NervesOfSteel (The Joker and Riddler's Gang w/ Handgun)
+    // public int ignoreMenace = 0;  // NervesOfSteel (COMEDIAN and QUIZMAN's Gang w/ Handgun)
     public int wallBreaker = 0;
 
     public int martialArtsSuccesses = 0;
-    // TODO public int reach = 0;  // Reach (Clayface and Penguin's Gang) Melee attacks can target heroes/miniatures this far away with LoS
-    // TODO public int berserk = 0;  // Berserk (Killer Croc) If lifePoints <= lifePointsMax/2, add this many white dice to each attack
+    public int reach = 0;  // TODO Reach (MUDMAN and BIRDMAN's Gang) Melee attacks can target heroes/miniatures this far away with LoS
+    // public int berserk = 0;  // Berserk (OLLYGATOR) If lifePoints <= lifePointsMax/2, add this many white dice to each attack
+    public int shackle = 0;  // TODO (MUDMAN) Instead of melee damage (still show wounds (or proxy) for overcoming defense) inflict this many shackle, reducing all target's successes by [shackle] until they perform complex MANIPULATION vs [shackle] to remove it
     public int circularStrike = 0;  // TODO for CHAINS, if hero removed after MELEE with another hero in that zone, popup prompt saying up to this many additional successes carry over
-    public int counterAttack = 0;  // TODO for SHOTGUN, if hero moves into space with SHOTGUN, reminder that after melee attack against SHOTGUN is resolved, SHOTGUN gets free melee attack vs hero with number of yellow dice = counterattack
+    public int counterAttack = 0;  // (Ignore, player resolved) if hero moves into space with SHOTGUN, reminder that after melee attack against SHOTGUN is resolved, SHOTGUN gets free melee attack vs hero with number of yellow dice = counterattack
 
     public int marksmanSuccesses = 0;
     public int pointBlankRerolls = 0;
-    // TODO public int counterRangedAttack = 0;  // Retaliation (Riddler's Gang w/ Handgun) if hero not in unit's space, reminder that after ranged attack against unit is resolved, unit gets free ranged attack vs hero with this number of yellow dice
+    public int burstCarryOver = 0;  // After target neutralized, remaining successes can be used against [burstCarryOver] other visible targets
+    // public int counterRangedAttack = 0;  // Retaliation (QUIZMAN's Gang w/ Handgun) if hero not in unit's space, reminder that after ranged attack against unit is resolved, unit gets free ranged attack vs hero with this number of yellow dice
 
     public int munitionSpecialist = 0;
 
     public bool gasImmunity = false;
-    public bool frosty = false;  // OTTERPOP's ability to ignore frost and cryogenic tokens and spawn frost tokens  // Frost (Mr. Freeze) During attack or explosion from unit, place Frost Token in targeted area, which increases difficult terrain by number of Frost Tokens (except Mr. Freeze)
-    public bool fiery = false;  // Firefly's ability to place flame tokens after attack/explosion and be immune to flame tokens
+    public bool frosty = false;  // OTTERPOP's ability to ignore frost and cryogenic tokens and spawn frost tokens  // Frost (OTTERPOP) During attack or explosion from unit, place Frost Token in targeted area, which increases difficult terrain by number of Frost Tokens (except Mr. Freeze)
+    public bool fiery = false;  // FIREGUY's ability to place flame tokens after attack/explosion and be immune to flame tokens
 
     // Actions
-    public int grenade = 0;  // Grenade (Mr. Freeze) Complex manipulation to trigger this level of explosion in targeted area with LoS w/ difficulty = distance, failure has explosion triggered at distance equal to number of successes
-    // TODO public int blast = 0;  // Blast (Mr. Freeze) auto manipulation to trigger this level of explosion in unit's area and adjacent area with LoS
-    // TODO public int moveCommand = 0;  // Tactician (Two-Face) auto thought to immediately grant this many free move points to an ally (unit can only receive this once per turn in case multiple units have moveCommand > 0). If ally is character, they also get their Move Point Bonus for the First Movement (but not again if activated later in the turn, I assume)
+    public int grenade = 0;  // Grenade (OTTERPOP) Complex manipulation to trigger this level of explosion in targeted area with LoS w/ difficulty = distance, failure has explosion triggered at distance equal to number of successes
+    // public int blast = 0;  // Blast (OTTERPOP) auto manipulation to trigger this level of explosion in unit's area and adjacent area with LoS
+    public int moveCommand = 0;  // TODO Tactician (POLIKILLIAN) auto thought to immediately grant this many free move points to an ally (unit can only receive this once per turn in case multiple units have moveCommand > 0). If ally is character, they also get their Move Point Bonus for the First Movement (but not again if activated later in the turn, I assume)
 
-    // Remainder TODO Harmless, Reduced Mobility, Attraction, Shackle, Hacking, Gas Immunity, Misfortune, Horror, Regeneration, Fly, Impenetrable Defense, Untouchable, Burst, Luck, Flame, Toxic Gas, Poison, Body Guard, Investigation, Sneak Attack, Imaginary Friend
+    // Remainder Harmless, Reduced Mobility, Attraction, Shackle, Hacking, Gas Immunity, Misfortune, Horror, Regeneration, Fly, Impenetrable Defense, Untouchable, Burst, Luck, Flame, Toxic Gas, Poison, Body Guard, Investigation, Sneak Attack, Imaginary Friend
 
 
     [Serializable]
