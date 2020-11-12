@@ -32,6 +32,11 @@ PrefabInstance:
       propertyPath: defense
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
+        type: 3}
+      propertyPath: protectedByAllies
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 6549735627474174585, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
         type: 3}
       propertyPath: m_LocalPosition.x

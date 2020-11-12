@@ -2,49 +2,41 @@
     "missionName": "AFewBadApples",
     "currentRound": 0,
     "reinforcementPoints": 4,
-    "totalHeroes": 3,
-    "unitIntel": {
-        "heroesIntel": [
+    "heroes": [
+        {
+            "heroName": "1stHero",
+            "zoneID": 5
+        },
+        {
+            "heroName": "2ndHero",
+            "zoneID": 24
+        },
+        {
+            "heroName": "3rdHero",
+            "zoneID": 12
+        }
+    ],
+    "utilityBelt": {
+        "claimableTokens": [
             {
-                "tag": "1stHero",
-                "moveSpeed": 4,
-                "ignoreTerrainDifficulty": 1,
-                "ignoreElevation": 1,
-                "ignoreSize": 1,
-                "wallBreaker": 0,
-                "woundsReceived": 0,
-                "canCounterAttack": false,
-                "canRetaliate": false
+                "tokenType": "Computer",
+                "isClaimed": false
             },
             {
-                "tag": "2ndHero",
-                "moveSpeed": 4,
-                "ignoreTerrainDifficulty": 1,
-                "ignoreElevation": 1,
-                "ignoreSize": 1,
-                "wallBreaker": 0,
-                "woundsReceived": 0,
-                "canCounterAttack": false,
-                "canRetaliate": false
+                "tokenType": "SwatRifle",
+                "isClaimed": false
             },
             {
-                "tag": "3rdHero",
-                "moveSpeed": 4,
-                "ignoreTerrainDifficulty": 1,
-                "ignoreElevation": 1,
-                "ignoreSize": 1,
-                "wallBreaker": 0,
-                "woundsReceived": 0,
-                "canCounterAttack": false,
-                "canRetaliate": false
+                "tokenType": "Briefcase",
+                "isClaimed": false
             }
         ]
     },
-    "villainRiver": [ "RIFLE", "CHAINS", "MUDMAN", "REINFORCEMENT", "CROWBAR", "SHOTGUN", "SKULLFACE" ],
-    "unitTagsMasterList": [ "RIFLE", "CHAINS", "MUDMAN", "CROWBAR", "SHOTGUN", "SKULLFACE", "BYSTANDER" ],
+    "villainRiver": [ "SWATRIFLE", "CHAINS", "MUDMAN", "REINFORCEMENT", "CROWBAR", "SHOTGUN", "SKULLFACE" ],
+    "unitTagsMasterList": [ "SWATRIFLE", "CHAINS", "MUDMAN", "CROWBAR", "SHOTGUN", "SKULLFACE", "BYSTANDER" ],
     "unitsPool": [
         {
-            "tag": "RIFLE",
+            "tag": "SWATRIFLE",
             "total": 4
         },
         {
@@ -70,6 +62,7 @@
             "units": [
                 {
                     "tag": "CROWBAR",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -104,7 +97,7 @@
         },
         {
             "isSpawnZone": true,
-            "tokensAndHeroesTags": [ "1stHero" ],
+            "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
             "environTokens": [],
             "units": []
@@ -138,14 +131,17 @@
             "units": [
                 {
                     "tag": "CROWBAR",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 },
                 {
                     "tag": "CHAINS",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 },
                 {
                     "tag": "SKULLFACE",
+                    "isHeroAlly": false,
                     "lifePoints": 4
                 }
             ]
@@ -165,26 +161,30 @@
             "units": [
                 {
                     "tag": "CHAINS",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 },
                 {
-                    "tag": "RIFLE",
+                    "tag": "SWATRIFLE",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 },
                 {
                     "tag": "BYSTANDER",
+                    "isHeroAlly": true,
                     "lifePoints": 1
                 }
             ]
         },
         {
             "isSpawnZone": false,
-            "tokensAndHeroesTags": [ "3rdHero" ],
+            "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
             "environTokens": [],
             "units": [
                 {
                     "tag": "BYSTANDER",
+                    "isHeroAlly": true,
                     "lifePoints": 1
                 }
             ]
@@ -210,7 +210,8 @@
             "environTokens": [],
             "units": [
                 {
-                    "tag": "RIFLE",
+                    "tag": "SWATRIFLE",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -223,6 +224,7 @@
             "units": [
                 {
                     "tag": "SHOTGUN",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -278,12 +280,13 @@
         },
         {
             "isSpawnZone": false,
-            "tokensAndHeroesTags": [ "2ndHero" ],
+            "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
             "environTokens": [],
             "units": [
                 {
                     "tag": "BYSTANDER",
+                    "isHeroAlly": true,
                     "lifePoints": 1
                 }
             ]
@@ -296,10 +299,12 @@
             "units": [
                 {
                     "tag": "CHAINS",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 },
                 {
                     "tag": "MUDMAN",
+                    "isHeroAlly": false,
                     "lifePoints": 7
                 }
             ]
@@ -312,10 +317,12 @@
             "units": [
                 {
                     "tag": "SHOTGUN",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 },
                 {
-                    "tag": "RIFLE",
+                    "tag": "SWATRIFLE",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -356,6 +363,7 @@
             "units": [
                 {
                     "tag": "SHOTGUN",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -389,6 +397,7 @@
             "units": [
                 {
                     "tag": "CROWBAR",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -415,6 +424,7 @@
             "units": [
                 {
                     "tag": "CHAINS",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -427,6 +437,7 @@
             "units": [
                 {
                     "tag": "CROWBAR",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -439,6 +450,7 @@
             "units": [
                 {
                     "tag": "BYSTANDER",
+                    "isHeroAlly": true,
                     "lifePoints": 1
                 }
             ]
@@ -451,10 +463,12 @@
             "units": [
                 {
                     "tag": "SHOTGUN",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 },
                 {
-                    "tag": "RIFLE",
+                    "tag": "SWATRIFLE",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]

@@ -1,9 +1,11 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;  // For button
 using UnityEngine.Networking;  // For UnityWebRequest.EscapeURL of MyEscapeURL()
 using TMPro;  // for TMP_Text to fetch the input text of ReportBugScreen
 using System.IO;  // For File.ReadAllText for loading json save files
+//using Shapes2D;  // "The type or namespace name 'Shape2D' could not be found"
 /*   Much of below needed for SendSmtpEmail
 using System.Net.Mail;  // For MailMessage of SendSmtpEmail()
 using System.Net;  // For ICredentialsByHost of SendSmtpEmail()
@@ -20,6 +22,9 @@ public class UIOverlay : MonoBehaviour
     public GameObject openMenuButton;
     public GameObject menuPanel;
     public GameObject reportBugPanel;
+    public GameObject endSetupButton;
+    public GameObject setupPanel;
+    public GameObject x5ScaleContainerPrefab;
     public GameObject gameOverPanel;
 
     public GameObject scenarioMap;  // Needed to get currentRound for OpenMenu()
@@ -27,7 +32,7 @@ public class UIOverlay : MonoBehaviour
 
     public void HideUIOverlay()
     {
-        roundClock.SetActive(false);
+        roundClock.SetActive(false);  // Is this necessarry?
         utilityBelt.SetActive(false);
         openMenuButton.SetActive(false);
     }
@@ -37,6 +42,35 @@ public class UIOverlay : MonoBehaviour
         roundClock.SetActive(true);
         utilityBelt.SetActive(true);
         openMenuButton.SetActive(true);
+    }
+
+    public void ShowSetupUIOverlay()
+    {
+        openMenuButton.SetActive(true);
+        endSetupButton.SetActive(true);
+        Dictionary<string, GameObject> unitPrefabsMasterDict = scenarioMap.GetComponent<ScenarioMap>().unitPrefabsMasterDict;
+        foreach (string allyName in scenarioMap.GetComponent<ScenarioMap>().potentialAlliesList)
+        {
+            GameObject scaleContainer = Instantiate(x5ScaleContainerPrefab, setupPanel.transform);
+            GameObject potentialAlly = Instantiate(unitPrefabsMasterDict[allyName], scaleContainer.transform);
+            //Shapes2D.Shape shape = potentialAlly.GetComponent<Shapes2D.Shape>();  // Not working, see "using Shapes2D" at top of file
+            potentialAlly.GetComponent<Draggable>().draggableType = "AllySetup";
+            potentialAlly.GetComponent<Unit>().SetIsClickable(false);
+            potentialAlly.GetComponent<Unit>().SetIsDraggable(true);
+        }
+        setupPanel.SetActive(true);
+    }
+
+    public void HideSetupUIOverlay()
+    {
+        endSetupButton.SetActive(false);
+        setupPanel.SetActive(false);
+    }
+
+    public void EndSetupButtonClicked()
+    {
+        HideSetupUIOverlay();
+        scenarioMap.GetComponent<ScenarioMap>().StartFirstTurn();
     }
 
     public void SetClock(int currentHour)

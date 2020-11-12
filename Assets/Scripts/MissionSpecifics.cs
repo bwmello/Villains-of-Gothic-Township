@@ -16,10 +16,11 @@ public static class MissionSpecifics
     public static Animate animate;
     public static ScenarioMap scenarioMap;
     public static int currentRound;
+    public static string currentPhase = "Setup";  // "Setup", "Villain", "VillainAttack", "Hero", "GameOver"
 
     public static Dictionary<string, List<ActionWeight>> actionsWeightTable = new Dictionary<string, List<ActionWeight>>() {
-        { "MELEE", new List<ActionWeight>() { new ActionWeight(null, 0, 10, null) } },  // 10 * averageTotalWounds
-        { "RANGED", new List<ActionWeight>() { new ActionWeight(null, 0, 10, null) } }
+        { "MELEE", new List<ActionWeight>() { new ActionWeight("Hero", 0, 10, null), new ActionWeight("HeroAlly", 0, 3, null) } },  // 10 * averageTotalWounds vs heroes, 3 * averageTotalWounds vs heroAllies
+        { "RANGED", new List<ActionWeight>() { new ActionWeight("Hero", 0, 10, null), new ActionWeight("HeroAlly", 0, 3, null) } }
     };
 
     public delegate IEnumerator ActionCallback(GameObject unit, GameObject target, int totalSuccesses, int requiredSuccesses);
@@ -567,7 +568,7 @@ public static class MissionSpecifics
                 existingCryoTokenDecrement = (double)bombZoneInfo.GetQuantityOfEnvironTokensWithTag("Cryogenic") * 5d;
                 cryoZoneTargets.Add(((18 - existingCryoTokenDecrement) * zoneWeightMultiplier, bombZone));
 
-                if (UnitIntel.heroesIntel[0].wallBreaker < 1 && (bombZoneInfo.adjacentZones.Count + bombZoneInfo.steeplyAdjacentZones.Count) == 1)  // If only one way in or out (ignoring walls)
+                if ((bombZoneInfo.adjacentZones.Count + bombZoneInfo.steeplyAdjacentZones.Count) == 1)  // If only one way in or out (ignoring walls)
                 {
                     if (bombZoneInfo.adjacentZones.Count == 1)
                     {
@@ -580,7 +581,7 @@ public static class MissionSpecifics
                         cryoZoneTargets.Add(((20 - existingCryoTokenDecrement) * zoneWeightMultiplier, bombZoneInfo.steeplyAdjacentZones[0]));
                     }
                 }
-                else if (UnitIntel.heroesIntel[0].wallBreaker < 1 && bombZone.name == "ZoneInfoPanel 38")   // Hardcoded, TODO should be with above (if each adjacentZone has adjacentZones.Count == 1)
+                else if (bombZone.name == "ZoneInfoPanel 38")   // Hardcoded, TODO should be with above (if each adjacentZone has adjacentZones.Count == 1)
                 {
                     existingCryoTokenDecrement = (double)bombZoneInfo.adjacentZones[0].GetComponent<ZoneInfo>().GetQuantityOfEnvironTokensWithTag("Cryogenic") * 5d;
                     cryoZoneTargets.Add(((20 - existingCryoTokenDecrement) * zoneWeightMultiplier, bombZoneInfo.adjacentZones[0]));

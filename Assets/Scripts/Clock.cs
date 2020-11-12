@@ -10,9 +10,5 @@ public class Clock : MonoBehaviour
     {
         ScenarioMap scenarioMapInfo = scenarioMap.GetComponent<ScenarioMap>();
         scenarioMapInfo.EndHeroTurn();  // Clock should be hidden whenever it shouldn't be clicked (UIOverlay.HideUIOverlay()) so below unnecessary
-        //if (scenarioMapInfo.isPlayerUIEnabled)
-        //{
-        //    scenarioMapInfo.EndHeroTurn();
-        //}
     }
 }

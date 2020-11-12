@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1001 &795022266404487629
+--- !u!1001 &5316085257391296610
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -10,52 +10,52 @@ PrefabInstance:
     - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
         type: 3}
       propertyPath: actionProficiencies.Array.size
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
-        type: 3}
-      propertyPath: actionProficiencies.Array.data[0].proficiencyDice.Array.size
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
-        type: 3}
-      propertyPath: actionProficiencies.Array.data[1].proficiencyDice.Array.size
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
-        type: 3}
-      propertyPath: defense
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
-        type: 3}
-      propertyPath: movePoints
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
-        type: 3}
-      propertyPath: ignoreElevation
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
         type: 3}
-      propertyPath: burst
+      propertyPath: actionProficiencies.Array.data[0].proficiencyDice.Array.size
       value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
         type: 3}
-      propertyPath: burstCarryOver
-      value: 2
+      propertyPath: flying
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
         type: 3}
-      propertyPath: actionProficiencies.Array.data[0].actionType
-      value: RANGED
+      propertyPath: ignoreMenace
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
+        type: 3}
+      propertyPath: movePoints
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
+        type: 3}
+      propertyPath: size
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
+        type: 3}
+      propertyPath: menace
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
         type: 3}
       propertyPath: actionProficiencies.Array.data[0].actionMultiplier
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
+        type: 3}
+      propertyPath: frosty
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
+        type: 3}
+      propertyPath: actionProficiencies.Array.data[0].actionType
+      value: RANGED
       objectReference: {fileID: 0}
     - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
         type: 3}
@@ -67,41 +67,8 @@ PrefabInstance:
         type: 3}
       propertyPath: actionProficiencies.Array.data[0].proficiencyDice.Array.data[1]
       value: 
-      objectReference: {fileID: 3977603957081343019, guid: d58eb93d5ddbb4ba8a58a52718e7f90a,
-        type: 3}
-    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
-        type: 3}
-      propertyPath: actionProficiencies.Array.data[0].proficiencyDice.Array.data[2]
-      value: 
       objectReference: {fileID: 4378926195687391191, guid: 57078db74302144e8a156c288214f7e9,
         type: 3}
-    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
-        type: 3}
-      propertyPath: actionProficiencies.Array.data[1].actionType
-      value: MANIPULATION
-      objectReference: {fileID: 0}
-    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
-        type: 3}
-      propertyPath: actionProficiencies.Array.data[1].actionMultiplier
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
-        type: 3}
-      propertyPath: actionProficiencies.Array.data[1].proficiencyDice.Array.data[0]
-      value: 
-      objectReference: {fileID: 3977603957081343019, guid: d58eb93d5ddbb4ba8a58a52718e7f90a,
-        type: 3}
-    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
-        type: 3}
-      propertyPath: actionProficiencies.Array.data[1].proficiencyDice.Array.data[1]
-      value: 
-      objectReference: {fileID: 6261325660192181314, guid: 177f89921d19b404894b89719dbcdfe8,
-        type: 3}
-    - target: {fileID: 2811787638521928167, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
-        type: 3}
-      propertyPath: reinforcementCost
-      value: 2
-      objectReference: {fileID: 0}
     - target: {fileID: 6549735627474174585, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -210,18 +177,12 @@ PrefabInstance:
     - target: {fileID: 6549735627474174590, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
         type: 3}
       propertyPath: m_Name
-      value: RIFLE
+      value: DRONEGRABBY
       objectReference: {fileID: 0}
     - target: {fileID: 6549735627474174590, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
         type: 3}
       propertyPath: m_TagString
-      value: RIFLE
+      value: DRONEGRABBER
       objectReference: {fileID: 0}
-    - target: {fileID: 6549735627731685876, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7,
-        type: 3}
-      propertyPath: m_Sprite
-      value: 
-      objectReference: {fileID: 21300000, guid: a6b2658be59e24dfaa6e9585eeb47d7a,
-        type: 3}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4d9d5ee815bf04d53b0ddecd80fe40c7, type: 3}

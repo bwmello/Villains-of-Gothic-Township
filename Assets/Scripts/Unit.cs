@@ -9,13 +9,16 @@ public class Unit : MonoBehaviour
 {
     readonly System.Random random = new System.Random();
     private Animate animate;
-    public float fadedAlpha = .2f;  // Public so can be used by ZoneInfo.cs when terrain danger increases
+    public float fadedAlpha = .3f;  // Public so can be used by ZoneInfo.cs when terrain danger increases
+    public bool isHeroAlly = false;
 
     public int lifePoints = 1;
     public int lifePointsMax = 1;
     public int defense;
     public int reinforcementCost = 1;
+    public int ignoreRangedWounds = 0;  // TODO implement for GCPDNIGHTSTICK
     public int protectedByAllies = 0;  // TODO for PISTOLS, popup prompt if removing protected Unit while they have this many allies in their zone OR auto redirect attack and alert player
+    public int sacrifice = 0;  // TODO implement for GCPDPISTOL
 
     public int size = 1;
     public int menace = 1;
@@ -25,12 +28,13 @@ public class Unit : MonoBehaviour
     public int ignoreTerrainDifficulty = 0;
     public int ignoreElevation = 0;  // TODO Also ignores this many wounds caused by a fall
     public int ignoreSize = 0;
-    // public int ignoreMenace = 0;  // NervesOfSteel (COMEDIAN and QUIZMAN's Gang w/ Handgun)
+    public int ignoreMenace = 0;  // TODO implment for DRONEs
     public int wallBreaker = 0;
 
     public int martialArtsSuccesses = 0;
     public int reach = 0;  // TODO Reach (MUDMAN and BIRDMAN's Gang) Melee attacks can target heroes/miniatures this far away with LoS
     // public int berserk = 0;  // Berserk (OLLYGATOR) If lifePoints <= lifePointsMax/2, add this many white dice to each attack
+    public int electricity = 0;  // TODO implement for GUARD
     public int shackle = 0;  // TODO (MUDMAN) Instead of melee damage (still show wounds (or proxy) for overcoming defense) inflict this many shackle, reducing all target's successes by [shackle] until they perform complex MANIPULATION vs [shackle] to remove it
     public int circularStrike = 0;  // TODO for CHAINS, if hero removed after MELEE with another hero in that zone, popup prompt saying up to this many additional successes carry over
     public int counterAttack = 0;  // (Ignore, player resolved) if hero moves into space with SHOTGUN, reminder that after melee attack against SHOTGUN is resolved, SHOTGUN gets free melee attack vs hero with number of yellow dice = counterattack
@@ -42,6 +46,7 @@ public class Unit : MonoBehaviour
 
     public int munitionSpecialist = 0;
 
+    public bool flying = false;  // TODO implement for DRONEs
     public bool gasImmunity = false;
     public bool frosty = false;  // OTTERPOP's ability to ignore frost and cryogenic tokens and spawn frost tokens  // Frost (OTTERPOP) During attack or explosion from unit, place Frost Token in targeted area, which increases difficult terrain by number of Frost Tokens (except Mr. Freeze)
     public bool fiery = false;  // FIREGUY's ability to place flame tokens after attack/explosion and be immune to flame tokens
@@ -49,7 +54,7 @@ public class Unit : MonoBehaviour
     // Actions
     public int grenade = 0;  // Grenade (OTTERPOP) Complex manipulation to trigger this level of explosion in targeted area with LoS w/ difficulty = distance, failure has explosion triggered at distance equal to number of successes
     // public int blast = 0;  // Blast (OTTERPOP) auto manipulation to trigger this level of explosion in unit's area and adjacent area with LoS
-    public int moveCommand = 0;  // TODO Tactician (POLIKILLIAN) auto thought to immediately grant this many free move points to an ally (unit can only receive this once per turn in case multiple units have moveCommand > 0). If ally is character, they also get their Move Point Bonus for the First Movement (but not again if activated later in the turn, I assume)
+    //public int moveCommand = 0;  // Tactician (SKULLFACE, POLIKILLIAN) auto thought to grant ally free move + [moveCommand]. Takes up action, so seems dumb.
 
     // Remainder Harmless, Reduced Mobility, Attraction, Shackle, Hacking, Gas Immunity, Misfortune, Horror, Regeneration, Fly, Impenetrable Defense, Untouchable, Burst, Luck, Flame, Toxic Gas, Poison, Body Guard, Investigation, Sneak Attack, Imaginary Friend
 
@@ -78,6 +83,12 @@ public class Unit : MonoBehaviour
         animate = GameObject.FindGameObjectWithTag("AnimationContainer").GetComponent<Animate>();  // Not initiated quickly enough in Start()
     }
 
+    public void InitializeUnit(UnitSave unitSave)  // Called from ZoneInfo.LoadZoneSave()
+    {
+        ModifyLifePoints(unitSave.lifePoints - lifePoints);
+        isHeroAlly = unitSave.isHeroAlly;
+    }
+
     public bool IsActive()
     {
         if (lifePoints > 0)
@@ -85,6 +96,127 @@ public class Unit : MonoBehaviour
             return true;
         }
         return false;
+    }
+
+    public bool IsVillain()
+    {
+        if (lifePointsMax > 1)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    public bool isClickable = false;
+    public void SetIsClickable(bool shouldMakeClickable)
+    {
+        if (IsVillain())
+        {
+            foreach (Button button in transform.GetComponentsInChildren<Button>())
+            {
+                button.enabled = shouldMakeClickable;
+            }
+        }
+        else
+        {
+            gameObject.GetComponent<Button>().enabled = shouldMakeClickable;
+        }
+        isClickable = shouldMakeClickable;
+    }
+
+    public bool isDraggable = false;
+    public void SetIsDraggable(bool shouldMakeDraggable)
+    {
+        if (!IsVillain())  // Villains are never draggable
+        {
+            gameObject.GetComponent<Draggable>().isDraggable = shouldMakeDraggable;
+            isDraggable = shouldMakeDraggable;
+        }
+    }
+
+    public void ConfigureClickAndDragability()
+    {
+        switch (MissionSpecifics.currentPhase)
+        {
+            case "Hero":
+                SetIsClickable(true);
+                if (isHeroAlly)
+                {
+                    SetIsDraggable(true);
+                }
+                else
+                {
+                    SetIsDraggable(false);
+                }
+                break;
+            case "Villain":
+                SetIsClickable(false);
+                SetIsDraggable(false);
+                break;
+        }
+    }
+
+    public void TokenClicked()
+    {
+        if (!gameObject.GetComponent<Draggable>().isDragging)
+        {
+            switch (MissionSpecifics.currentPhase)
+            {
+                case "Setup":
+                    if (isHeroAlly)
+                    {
+                        Destroy(gameObject);
+                    }
+                    break;
+                default:
+                    if (lifePoints > 0)
+                    {
+                        ModifyLifePoints(-1);
+                    }
+                    else
+                    {
+                        ModifyLifePoints(1);
+                    }
+                    break;
+            }
+        }
+    }
+
+    public void ModifyLifePoints(int difference)
+    {
+        lifePoints += difference;
+        if (lifePoints > lifePointsMax)
+        {
+            lifePoints = lifePointsMax;
+        }
+        else if (lifePoints < 0)
+        {
+            lifePoints = 0;
+        }
+
+        if (IsVillain())  // Will be a VillainRow with a UnitNumber object instead of just a token button like Unit.
+        {
+            try
+            {
+                transform.Find("UnitNumber").GetComponent<TMP_Text>().text = lifePoints.ToString();
+            }
+            catch (Exception err)
+            {
+                Debug.LogError("Failed to get/adjust UnitNumber representing lifePoints from unit " + transform.name + ".  Error details: " + err.ToString());
+            }
+        }
+
+        if (lifePoints > 0)
+        {
+            this.GetComponent<CanvasGroup>().alpha = 1;
+        }
+        else
+        {
+            this.GetComponent<CanvasGroup>().alpha = fadedAlpha;
+        }
     }
 
     public GameObject GetZone()
@@ -312,7 +444,7 @@ public class Unit : MonoBehaviour
         {
             ZoneInfo potentialZoneInfo = potentialZone.GetComponent<ZoneInfo>();
 
-            if (potentialZoneInfo.GetCurrentOccupancy() >= potentialZoneInfo.maxOccupancy)
+            if (potentialZoneInfo.GetCurrentOccupancy() + size > potentialZoneInfo.maxOccupancy)
             {
                 continue;  // Skip this potentialZone if potentialZone is at maxOccupancy
             }
@@ -578,7 +710,7 @@ public class Unit : MonoBehaviour
                 switch (actionProficiency.actionType)
                 {
                     case "MELEE":
-                        if (possibleZoneInfo.HasHeroes())
+                        if (possibleZoneInfo.HasTargetableHeroes())
                         {
                             double averageWounds = GetAverageSuccesses(actionProficiency.proficiencyDice, availableRerolls) + martialArtsSuccesses;
                             averageWounds *= actionProficiency.actionMultiplier;
@@ -593,6 +725,21 @@ public class Unit : MonoBehaviour
                                 zoneAddedToAllPossibleActions = true;
                             }
                         }
+                        //if (possibleZoneInfo.GetTargetableHeroAllies().Count > 0)
+                        //{
+                        //    double averageWounds = GetAverageSuccesses(actionProficiency.proficiencyDice, availableRerolls) + martialArtsSuccesses;
+                        //    averageWounds *= actionProficiency.actionMultiplier;
+                        //    actionWeight += averageWounds * MissionSpecifics.actionsWeightTable["MELEE"][1].weightFactor;
+                        //    if (frosty)  // Account for increasing difficult terrain of hero's zone
+                        //    {
+                        //        actionWeight += UnitIntel.increaseTerrainDifficultyWeight;
+                        //    }
+                        //    if (actionWeight > inactiveWeight)
+                        //    {
+                        //        allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["MELEE"][1], actionProficiency, actionWeight, possibleZone, finalDestinationZone, null, possibleDestinationsAndPaths[finalDestinationZone]));
+                        //        zoneAddedToAllPossibleActions = true;
+                        //    }
+                        //}
                         break;
                     case "RANGED":
                         GameObject targetedZone = possibleZoneInfo.GetLineOfSightZoneWithHero();
@@ -934,6 +1081,7 @@ public class Unit : MonoBehaviour
         switch (unitTurn.actionProficiency.actionType)
         {
             case "MELEE":
+                MissionSpecifics.currentPhase = "VillainAttack";
                 for (int i = 0; i < unitTurn.actionProficiency.actionMultiplier; i++)
                 {
                     if (!IsActive())  // If Counterattacked and killed, stop attacking
@@ -941,13 +1089,21 @@ public class Unit : MonoBehaviour
                         yield break;
                     }
 
-                    GameObject targetedHero = currentZoneInfo.GetRandomHero();  // TODO mirror unitTurn.targetedZone like RANGED for when Reach trait comes into play
-                    actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls);
-                    if (actionSuccesses > 0)
+                    if (unitTurn.missionSpecificAction.targetType == "Hero")
                     {
-                        actionSuccesses += martialArtsSuccesses;
+                        GameObject targetedHero = currentZoneInfo.GetRandomTargetableHero();  // TODO mirror unitTurn.targetedZone like RANGED for when Reach trait comes into play
+                        if (targetedHero)
+                        {
+                            actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls);
+                            if (actionSuccesses > 0)
+                            {
+                                actionSuccesses += martialArtsSuccesses;
+                            }
+
+                            yield return StartCoroutine(animate.MeleeAttack(gameObject, targetedHero, actionSuccesses));
+                        }
                     }
-                    yield return StartCoroutine(animate.MeleeAttack(gameObject, targetedHero, actionSuccesses));
+
                     if (fiery)
                     {
                         yield return StartCoroutine(currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Flame", 1, false, true)));
@@ -957,6 +1113,7 @@ public class Unit : MonoBehaviour
                         yield return StartCoroutine(currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true)));
                     }
                 }
+                MissionSpecifics.currentPhase = "Villain";
                 break;
             case "RANGED":
                 if (unitTurn.targetedZone != null)
@@ -976,6 +1133,7 @@ public class Unit : MonoBehaviour
 
                     int smokeHindrance = currentZoneInfo.GetSmokeBetweenZones(unitTurn.targetedZone);
 
+                    MissionSpecifics.currentPhase = "VillainAttack";
                     for (int i = 0; i < unitTurn.actionProficiency.actionMultiplier; i++)
                     {
                         if (!IsActive())  // If Retaliated and killed, stop attacking
@@ -983,7 +1141,7 @@ public class Unit : MonoBehaviour
                             yield break;
                         }
 
-                        GameObject targetedHero = targetedLineOfSightZoneInfo.GetRandomHero();
+                        GameObject targetedHero = targetedLineOfSightZoneInfo.GetRandomTargetableHero();
                         actionSuccesses = RollAndReroll(dicePool, availableRerolls);
                         if (actionSuccesses > 0)
                         {
@@ -996,15 +1154,16 @@ public class Unit : MonoBehaviour
                         }
 
                         yield return StartCoroutine(animate.RangedAttack(gameObject, targetedHero, actionSuccesses));
+                        if (fiery)  // Not sure these ever get triggered as the villains with these traits don't have a ranged attack, but the Frost/Fire text: During an attack or after an explosion...
+                        {
+                            yield return StartCoroutine(targetedLineOfSightZoneInfo.AddEnvironTokens(new EnvironTokenSave("Flame", 1, false, true)));
+                        }
+                        if (frosty)
+                        {
+                            yield return StartCoroutine(targetedLineOfSightZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true)));
+                        }
                     }
-                    if (fiery)  // Not sure these ever get triggered as the villains with these traits don't have a ranged attack, but the Frost/Fire text: During an attack or after an explosion...
-                    {
-                        yield return StartCoroutine(targetedLineOfSightZoneInfo.AddEnvironTokens(new EnvironTokenSave("Flame", 1, false, true)));
-                    }
-                    if (frosty)
-                    {
-                        yield return StartCoroutine(targetedLineOfSightZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true)));
-                    }
+                    MissionSpecifics.currentPhase = "Villain";
                 }
                 else
                 {
@@ -1262,52 +1421,6 @@ public class Unit : MonoBehaviour
         return rolledSuccesses;
     }
 
-    public void TokenClicked()
-    {
-        if (lifePoints > 0)
-        {
-            ModifyLifePoints(-1);
-        }
-        else
-        {
-            ModifyLifePoints(1);
-        }
-    }
-
-    public void ModifyLifePoints(int difference)
-    {
-        lifePoints += difference;
-        if (lifePoints > lifePointsMax)
-        {
-            lifePoints = lifePointsMax;
-        }
-        else if (lifePoints < 0)
-        {
-            lifePoints = 0;
-        }
-
-        if (lifePointsMax > 1)  // Will be a VillainRow with a UnitNumber object instead of just a token button like Unit.
-        {
-            try
-            {
-                transform.Find("UnitNumber").GetComponent<TMP_Text>().text = lifePoints.ToString();
-            }
-            catch (Exception err)
-            {
-                Debug.LogError("Failed to get/adjust UnitNumber representing lifePoints from unit " + transform.name + ".  Error details: " + err.ToString());
-            }
-        }
-
-        if (lifePoints > 0)
-        {
-            this.GetComponent<CanvasGroup>().alpha = 1;
-        }
-        else
-        {
-            this.GetComponent<CanvasGroup>().alpha = fadedAlpha;
-        }
-    }
-
     public UnitSave ToJSON()
     {
         return new UnitSave(this);
@@ -1319,11 +1432,13 @@ public class Unit : MonoBehaviour
 public class UnitSave
 {
     public string tag;
+    public bool isHeroAlly;
     public int lifePoints;
 
     public UnitSave(Unit unit)
     {
         tag = unit.tag;
+        isHeroAlly = unit.isHeroAlly;
         lifePoints = unit.lifePoints;
     }
 }

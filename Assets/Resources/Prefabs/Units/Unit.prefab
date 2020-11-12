@@ -16,6 +16,10 @@ GameObject:
   - component: {fileID: 6549735627474174584}
   - component: {fileID: 6549735627474174580}
   - component: {fileID: 5704508268551111341}
+  - component: {fileID: 8971473759597630891}
+  - component: {fileID: 7970990131209925081}
+  - component: {fileID: 6364149792636768086}
+  - component: {fileID: 6184525777783265596}
   m_Layer: 5
   m_Name: Unit
   m_TagString: Untagged
@@ -63,12 +67,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 208ef6e8bb7534f498190648a5fd2080, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fadedAlpha: 0.2
+  fadedAlpha: 0.3
+  isHeroAlly: 0
   lifePoints: 1
   lifePointsMax: 1
   defense: 0
   reinforcementCost: 1
+  ignoreRangedWounds: 0
   protectedByAllies: 0
+  sacrifice: 0
   size: 1
   menace: 1
   supportRerolls: 0
@@ -76,18 +83,26 @@ MonoBehaviour:
   ignoreTerrainDifficulty: 0
   ignoreElevation: 0
   ignoreSize: 0
+  ignoreMenace: 0
   wallBreaker: 0
   martialArtsSuccesses: 0
+  reach: 0
+  electricity: 0
+  shackle: 0
   circularStrike: 0
   counterAttack: 0
   marksmanSuccesses: 0
   pointBlankRerolls: 0
+  burstCarryOver: 0
   munitionSpecialist: 0
+  flying: 0
   gasImmunity: 0
   frosty: 0
   fiery: 0
   grenade: 0
   actionProficiencies: []
+  isClickable: 1
+  isDraggable: 1
 --- !u!114 &6549735627474174586
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -125,7 +140,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6549735627474174590}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
   m_Name: 
@@ -255,7 +270,113 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 188aeeaef3dee434784901a33e3eb0d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shakeDecay: 0.002
+--- !u!114 &8971473759597630891
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6549735627474174590}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0b148fe25e99eb48b9724523833bab1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Delegates:
+  - eventID: 13
+    callback:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 6184525777783265596}
+          m_TargetAssemblyTypeName: Draggable, ScriptsTestAssembly
+          m_MethodName: StartDrag
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
+  - eventID: 14
+    callback:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 6184525777783265596}
+          m_TargetAssemblyTypeName: Draggable, ScriptsTestAssembly
+          m_MethodName: EndDrag
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
+--- !u!61 &7970990131209925081
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6549735627474174590}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0, y: 0}
+    oldSize: {x: 0, y: 0}
+    newSize: {x: 0, y: 0}
+    adaptiveTilingThreshold: 0
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  serializedVersion: 2
+  m_Size: {x: 30, y: 12}
+  m_EdgeRadius: 0
+--- !u!50 &6364149792636768086
+Rigidbody2D:
+  serializedVersion: 4
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6549735627474174590}
+  m_BodyType: 0
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDrag: 0
+  m_AngularDrag: 0
+  m_GravityScale: 0
+  m_Material: {fileID: 0}
+  m_Interpolate: 0
+  m_SleepingMode: 1
+  m_CollisionDetection: 1
+  m_Constraints: 7
+--- !u!114 &6184525777783265596
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6549735627474174590}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 345fee5b5fdae42f6b861ce612e99d94, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  draggableType: Unit
+  isDraggable: 0
+  isDragging: 0
 --- !u!1 &6549735627731685882
 GameObject:
   m_ObjectHideFlags: 0

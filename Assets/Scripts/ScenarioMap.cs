@@ -19,6 +19,7 @@ public class ScenarioMap : MonoBehaviour
     public Dictionary<string, GameObject> unitPrefabsMasterDict;
     public List<string> villainRiver;
     public List<string> unitTagsMasterList;
+    public List<string> potentialAlliesList;
 
     [Serializable]
     public class UnitPool
@@ -37,10 +38,11 @@ public class ScenarioMap : MonoBehaviour
     public string missionName;
     public int currentRound = 1;  // Used by ScenarioMapSave at bottom
     public int reinforcementPoints = 5;
-    public int totalHeroes;
+    public List<GameObject> heroes;
 
     private GameObject animationContainer;
     private Animate animate;
+    public GameObject heroPrefab;
     public GameObject bombPrefab;  // These prefabs are here just to pass off to static MissionSpecifics
     public GameObject primedBombPrefab;
 
@@ -76,36 +78,64 @@ public class ScenarioMap : MonoBehaviour
     void Start()
     {
         animate.CameraToMaxZoom();
+        if (SceneHandler.saveName == null)  // If new game
+        {
+            StartSetup();
+        }
+        else
+        {
+            StartFirstTurn();
+        }
+    }
+
+    void StartSetup()
+    {
+        MissionSpecifics.currentPhase = "Setup";
+        UIOverlay.GetComponent<UIOverlay>().ShowSetupUIOverlay();
+    }
+
+    public void StartFirstTurn()  // called from UIOverlay when Start Game button clicked
+    {
+        //animate.CameraToMaxZoom();  // Does this also center the camera when coming from StartSetup()?
         if (currentRound < 1)  // Start with villain's turn
         {
             StartCoroutine(StartVillainTurn());
         }
         else
         {
+            MissionSpecifics.currentPhase = "Hero";  // StartHeroTurn() actually not called here as it also advances the currentRound and the clock
             EnablePlayerUI();  // UIOverlay starts disabled so it doesn't flash on the screen when villains go first
         }
     }
 
-    public bool isPlayerUIEnabled = true;
     public void DisablePlayerUI()
     {
         UIOverlay.GetComponent<UIOverlay>().HideUIOverlay();
-        foreach (Button button in transform.GetComponentsInChildren<Button>())
-        {
-            button.enabled = false;
-        }
-        isPlayerUIEnabled = false;
+        ConfigureUnitHeroAndTokenInteractivity();
     }
 
     public void EnablePlayerUI()
     {
         // Re-Enable all the UI buttons which were disabled at EndHeroTurn()
         UIOverlay.GetComponent<UIOverlay>().ShowUIOverlay();
-        foreach (Button button in transform.GetComponentsInChildren<Button>())
+        ConfigureUnitHeroAndTokenInteractivity();
+    }
+
+    public void ConfigureUnitHeroAndTokenInteractivity()
+    {
+        //Debug.Log("!!!ConfigureUnitHeroAndTokenInteractivity() with currentPhase: " + MissionSpecifics.currentPhase);
+        foreach (Unit unit in transform.GetComponentsInChildren<Unit>())
         {
-            button.enabled = true;
+            unit.ConfigureClickAndDragability();
         }
-        isPlayerUIEnabled = true;
+        foreach (GameObject hero in heroes)
+        {
+            hero.GetComponent<Hero>().ConfigureClickAndDragability();
+        }
+        foreach (Token token in transform.GetComponentsInChildren<Token>())
+        {
+            token.ConfigureClickability();
+        }
     }
 
     // The flow: Player uses UI to end turn -> EndHeroTurn() -> StartVillainTurn() -> StartHeroTurn() -> Player takes their next turn
@@ -114,6 +144,7 @@ public class ScenarioMap : MonoBehaviour
     {
         if (MissionSpecifics.IsGameOver(currentRound))
         {
+            MissionSpecifics.currentPhase = "GameOver";
             MissionSpecifics.EndGameAnimation();
             UIOverlay.GetComponent<UIOverlay>().ShowGameOverPanel();
         }
@@ -138,6 +169,7 @@ public class ScenarioMap : MonoBehaviour
 
     IEnumerator StartVillainTurn()
     {
+        MissionSpecifics.currentPhase = "Villain";
         DisablePlayerUI();  // Disable all UI so Villain turn isn't interrupted
         if (currentRound < 1)
         {
@@ -227,6 +259,7 @@ public class ScenarioMap : MonoBehaviour
 
     IEnumerator StartHeroTurn()
     {
+        MissionSpecifics.currentPhase = "Hero";
         DissipateEnvironTokens(true);
         CleanupZones();
 
@@ -235,6 +268,11 @@ public class ScenarioMap : MonoBehaviour
         if (currentRound > 1)
         {
             SaveIntoJson();
+        }
+
+        foreach (GameObject heroObject in heroes)
+        {
+            heroObject.GetComponent<Hero>().RestReset();
         }
 
         // Re-Enable all the UI buttons which were disabled at EndHeroTurn()
@@ -498,6 +536,7 @@ public class ScenarioMap : MonoBehaviour
         ScenarioSave scenarioSave = JsonUtility.FromJson<ScenarioSave>(File.ReadAllText(Application.persistentDataPath + "/" +  (currentRound-1).ToString() + missionName +   ".json"));
         LoadScenarioSave(scenarioSave);
         UIOverlay.GetComponent<UIOverlay>().CloseMenu();
+        ConfigureUnitHeroAndTokenInteractivity();
     }
 
     public void SaveIntoJson()
@@ -519,12 +558,19 @@ public class ScenarioMap : MonoBehaviour
         currentRound = scenarioSave.currentRound;
         MissionSpecifics.currentRound = currentRound;
         reinforcementPoints = scenarioSave.reinforcementPoints;
-        totalHeroes = scenarioSave.totalHeroes;
-        UnitIntel.LoadUnitIntelSave(scenarioSave.unitIntel);
+        UIOverlay.GetComponent<UIOverlay>().utilityBelt.GetComponent<UtilityBelt>().LoadUtilityBeltSave(scenarioSave.utilityBelt);
+        //UnitIntel.LoadUnitIntelSave(scenarioSave.unitIntel);
         UIOverlay.GetComponent<UIOverlay>().SetClock(currentRound);
 
         villainRiver = new List<string>(scenarioSave.villainRiver);
-        unitTagsMasterList = new List<string>(scenarioSave.unitTagsMasterList);
+        foreach (string enemyName in villainRiver)
+        {
+            if (potentialAlliesList.Contains(enemyName))
+            {
+                potentialAlliesList.Remove(enemyName);
+            }
+        }
+        unitTagsMasterList = new List<string>(scenarioSave.unitTagsMasterList);  // Is this needed anymore?
 
         unitsPool = new UnitPool[scenarioSave.unitsPool.Count];
         for (int i = 0; i < scenarioSave.unitsPool.Count; i++)
@@ -557,11 +603,21 @@ public class ScenarioMap : MonoBehaviour
         for (int i = 0; i < scenarioSave.zones.Count; i++)
         {
             GameObject currentZone = zones[i];
-            currentZone.GetComponent<ZoneInfo>().LoadZoneSave(scenarioSave.zones[i], totalHeroes);
+            currentZone.GetComponent<ZoneInfo>().LoadZoneSave(scenarioSave.zones[i]);
             if (currentZone.GetComponent<ZoneInfo>().isSpawnZone)
             {
                 spawnZones.Add(currentZone);
             }
+        }
+
+        heroes = new List<GameObject>();  // Reset heroes list
+        foreach (HeroSave heroSave in scenarioSave.heroes)
+        {
+            GameObject hero = Instantiate(heroPrefab, transform);  // If not made child of ScenarioMap, scale goes crazy
+            hero.GetComponent<Hero>().InitializeHero(heroSave.heroName);
+            GameObject heroZone = zones[heroSave.zoneID];
+            heroZone.GetComponent<ZoneInfo>().AddHeroToZone(hero);
+            heroes.Add(hero);
         }
     }
 }
@@ -570,11 +626,13 @@ public class ScenarioMap : MonoBehaviour
 [Serializable]
 public class ScenarioSave
 {
+    public string version;
     public string missionName;
     public int currentRound;
     public int reinforcementPoints;
-    public int totalHeroes;
-    public UnitIntelSave unitIntel;
+    public List<HeroSave> heroes = new List<HeroSave>();
+    public UtilityBeltSave utilityBelt;
+    //public UnitIntelSave unitIntel;
     public List<string> villainRiver = new List<string>();
     public List<string> unitTagsMasterList = new List<string>();
     public List<string> brokenWalls = new List<string>();
@@ -597,11 +655,16 @@ public class ScenarioSave
 
     public ScenarioSave(ScenarioMap scenarioMap)
     {
+        version = SceneHandler.version;
         missionName = scenarioMap.missionName;
         currentRound = scenarioMap.currentRound;
         reinforcementPoints = scenarioMap.reinforcementPoints;
-        totalHeroes = scenarioMap.totalHeroes;
-        unitIntel = UnitIntel.ToJSON();
+        foreach (GameObject hero in scenarioMap.heroes)
+        {
+            heroes.Add(hero.GetComponent<Hero>().ToJSON());
+        }
+        utilityBelt = scenarioMap.UIOverlay.GetComponent<UIOverlay>().utilityBelt.GetComponent<UtilityBelt>().ToJSON();
+        //unitIntel = UnitIntel.ToJSON();
         villainRiver.AddRange(scenarioMap.villainRiver);
         unitTagsMasterList.AddRange(scenarioMap.unitTagsMasterList);
         foreach (ScenarioMap.UnitPool unitPool in scenarioMap.unitsPool)

@@ -287,17 +287,22 @@ public class ZoneInfo : MonoBehaviour
         return GetHeroesCount() > 0;
     }
 
+    public bool HasTargetableHeroes()
+    {
+        return GetTargetableHeroesCount() > 0;
+    }
+
     public GameObject GetLineOfSightZoneWithHero()
     {
         List<ZoneInfo> targetableZones = new List<ZoneInfo>();
-        if (HasHeroes())
+        if (HasTargetableHeroes())
         {
             targetableZones.Add(this);
         }
         foreach (GameObject zone in lineOfSightZones)
         {
             ZoneInfo losZoneInfo = zone.GetComponent<ZoneInfo>();
-            if (losZoneInfo.HasHeroes())
+            if (losZoneInfo.HasTargetableHeroes())
             {
                 if (elevation > losZoneInfo.elevation)
                 {
@@ -316,10 +321,21 @@ public class ZoneInfo : MonoBehaviour
     public int GetHeroesCount()
     {
         int heroesCount = 0;
-        Transform heroesRow = transform.Find("HeroesRow");
-        foreach (Transform hero in heroesRow)
+        Hero[] heroes = GetComponentsInChildren<Hero>();
+        foreach (Hero hero in heroes)
         {
-            if (hero.GetComponent<CanvasGroup>().alpha == 1)  // If button isn't transparent
+            heroesCount += 1;
+        }
+        return heroesCount;
+    }
+
+    public int GetTargetableHeroesCount()
+    {
+        int heroesCount = 0;
+        Hero[] heroes = GetComponentsInChildren<Hero>();
+        foreach (Hero hero in heroes)
+        {
+            if (!hero.IsWoundedOut())
             {
                 heroesCount += 1;
             }
@@ -329,21 +345,51 @@ public class ZoneInfo : MonoBehaviour
 
     public List<GameObject> GetHeroes()
     {
-        Transform heroesRow = transform.Find("HeroesRow");
-        List<GameObject> heroes = new List<GameObject>();
-        foreach (Transform hero in heroesRow)
+        List<GameObject> occupyingHeroes = new List<GameObject>();
+        Hero[] heroes = GetComponentsInChildren<Hero>();
+        foreach (Hero hero in heroes)
         {
-            if (hero.GetComponent<CanvasGroup>().alpha == 1)  // If button isn't transparent
+            occupyingHeroes.Add(hero.gameObject);
+        }
+        return occupyingHeroes;
+    }
+
+    public List<GameObject> GetTargetableHeroes()
+    {
+        List<GameObject> occupyingHeroes = new List<GameObject>();
+        Hero[] heroes = GetComponentsInChildren<Hero>();
+        foreach (Hero hero in heroes)
+        {
+            if (!hero.IsWoundedOut())
             {
-                heroes.Add(hero.gameObject);
+                occupyingHeroes.Add(hero.gameObject);
             }
         }
-        return heroes;
+        return occupyingHeroes;
+    }
+
+    public List<GameObject> GetTargetableHeroAllies()
+    {
+        List<GameObject> occupyingHeroAllies = new List<GameObject>();
+        foreach (Unit unit in GetUnitsInfo())
+        {
+            if (unit.isHeroAlly)
+            {
+                occupyingHeroAllies.Add(unit.gameObject);
+            }
+        }
+        return occupyingHeroAllies;
     }
 
     public GameObject GetRandomHero()
     {
         List<GameObject> heroes = GetHeroes();
+        return heroes.Count > 0 ? heroes[random.Next(heroes.Count)] : null;
+    }
+
+    public GameObject GetRandomTargetableHero()
+    {
+        List<GameObject> heroes = GetTargetableHeroes();
         return heroes.Count > 0 ? heroes[random.Next(heroes.Count)] : null;
     }
 
@@ -645,47 +691,32 @@ public class ZoneInfo : MonoBehaviour
         return availableUnitSlot;
     }
 
-    public void AddHeroToZone(string heroTag)
+    public GameObject AddUnitToZone(string unitTag, int unitSize)  // Used by UIOverlay.cs when dragging allies onto board during Setup
     {
-        Transform heroesRow = transform.Find("HeroesRow");
-        string matchingHeroButtonNumber = null;
-        switch (heroTag)
+        GameObject unitSlot = GetAvailableUnitSlot();
+        if (unitSlot && GetCurrentOccupancy() + unitSize <= maxOccupancy)
         {
-            case "1stHero":
-                matchingHeroButtonNumber = "1";
-                break;
-            case "2ndHero":
-                matchingHeroButtonNumber = "2";
-                break;
-            case "3rdHero":
-                matchingHeroButtonNumber = "3";
-                break;
+            return Instantiate(transform.GetComponentInParent<ScenarioMap>().unitPrefabsMasterDict[unitTag], unitSlot.transform);
         }
-        foreach (Transform hero in heroesRow)
-        {
-            if (matchingHeroButtonNumber == hero.Find("NumButtonText").GetComponent<TMP_Text>().text)
-            {
-                hero.GetComponent<CanvasGroup>().alpha = 1;
-                hero.tag = heroTag;
-                break;
-            }
-        }
+        return null;
     }
 
-    public void RemoveHeroesToMatchTotal(int totalHeroes)  // Used by LoadZoneSave
+    public void AddHeroToZone(GameObject hero)
     {
-        if (totalHeroes < 3)
+        Transform heroesRow = transform.Find("HeroesRow");
+        switch (hero.tag)
         {
-            Transform heroesRow = transform.Find("HeroesRow");
-            if (heroesRow.childCount > 2)
-            {
-                Destroy(heroesRow.GetChild(2).gameObject);
-            }
-            if (totalHeroes < 2 && heroesRow.childCount > 1)
-            {
-                Destroy(heroesRow.GetChild(1).gameObject);
-            }
+            case "1stHero":
+                hero.transform.SetParent(heroesRow.Find("HeroSlot 0"));
+                break;
+            case "2ndHero":
+                hero.transform.SetParent(heroesRow.Find("HeroSlot 1"));
+                break;
+            case "3rdHero":
+                hero.transform.SetParent(heroesRow.Find("HeroSlot 2"));
+                break;
         }
+        hero.transform.localPosition = new Vector3(0, 0, 0);  // Otherwise is centered on scenario map
     }
 
     public void EmptyOutZone()
@@ -696,11 +727,10 @@ public class ZoneInfo : MonoBehaviour
             DestroyImmediate(tokensContainer.GetChild(i).gameObject);
         }  // Must use DestroyImmediate as Destroy doesn't kick in until after the rest of LoadZoneSave(), so you're instantiating new tokens/units before having deleted the old ones
 
-        Transform heroesContainer = transform.Find("HeroesRow");
-        foreach (Transform hero in heroesContainer)
+        List<GameObject> heroesOccupying = GetHeroes();
+        foreach (GameObject hero in heroesOccupying)
         {
-            hero.tag = "Untagged";
-            hero.GetComponent<CanvasGroup>().alpha = (float).2;
+            DestroyImmediate(hero);
         }
 
         List<GameObject> units = GetUnits();
@@ -710,10 +740,9 @@ public class ZoneInfo : MonoBehaviour
         }
     }
 
-    public void LoadZoneSave(ZoneSave zoneSave, int totalHeroes)
+    public void LoadZoneSave(ZoneSave zoneSave)
     {
         isSpawnZone = zoneSave.isSpawnZone;
-        RemoveHeroesToMatchTotal(totalHeroes);
 
         EmptyOutZone();
         Transform tokensRow = transform.Find("TokensRow");
@@ -731,11 +760,6 @@ public class ZoneInfo : MonoBehaviour
                     break;
                 case "PrimedBomb":
                     Instantiate(primedBombPrefab, tokensRow);
-                    break;
-                case "1stHero":
-                case "2ndHero":
-                case "3rdHero":
-                    AddHeroToZone(tokenOrHeroTag);
                     break;
             }
         }
@@ -787,23 +811,18 @@ public class ZoneInfo : MonoBehaviour
         ReorganizeTokens();
 
         //debugString += "}\nunits: { ";
-        foreach (UnitSave unit in zoneSave.units)
+        foreach (UnitSave unitSave in zoneSave.units)
         {
             //debugString += unit.tag + ", ";
-            GameObject unitPrefab = transform.GetComponentInParent<ScenarioMap>().unitPrefabsMasterDict[unit.tag];
+            GameObject unitPrefab = transform.GetComponentInParent<ScenarioMap>().unitPrefabsMasterDict[unitSave.tag];
             if (unitPrefab != null)
             {
                 GameObject spawnedUnit = Instantiate(unitPrefab, GetAvailableUnitSlot().transform);
-                Unit spawnedUnitInfo = spawnedUnit.GetComponent<Unit>();
-                spawnedUnitInfo.ModifyLifePoints((unit.lifePoints - spawnedUnitInfo.lifePoints));
-                if (spawnedUnitInfo.lifePoints < 1)
-                {
-                    spawnedUnit.GetComponent<CanvasGroup>().alpha = (float).2;
-                }
+                spawnedUnit.GetComponent<Unit>().InitializeUnit(unitSave);
             }
             else
             {
-                Debug.LogError("ERROR! In ZoneInfo.LoadZoneSave(), unable to find prefab asset for " + unit.tag + " for " + transform.name);
+                Debug.LogError("ERROR! In ZoneInfo.LoadZoneSave(), unable to find prefab asset for " + unitSave.tag + " for " + transform.name);
             }
         }
         //Debug.Log(debugString + "}");
@@ -844,15 +863,6 @@ public class ZoneSave
             else  // else if (environTokenTags.Contains(row.tag))
             {
                 environTokens.Add(row.GetComponent<EnvironToken>().ToJSON());
-            }
-        }
-
-        Transform heroesRow = zone.transform.Find("HeroesRow");
-        foreach (Transform row in heroesRow)
-        {
-            if (row.GetComponent<CanvasGroup>().alpha == 1)
-            {
-                tokensAndHeroesTags.Add(row.tag);  // This should always be a hero
             }
         }
 

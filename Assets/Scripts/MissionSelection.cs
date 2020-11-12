@@ -16,6 +16,15 @@ public class MissionSelection : MonoBehaviour
         {
             transform.Find("ContinueButton").gameObject.GetComponent<Button>().interactable = false;
         }
+        else  // Check to make sure it's a valid save file
+        {
+            ScenarioSave scenarioSave = JsonUtility.FromJson<ScenarioSave>(File.ReadAllText(Application.persistentDataPath + "/" + PlayerPrefs.GetInt(missionName).ToString() + missionName + ".json"));
+            if (SceneHandler.version != scenarioSave.version)
+            {
+                PlayerPrefs.DeleteKey(missionName);
+                transform.Find("ContinueButton").gameObject.GetComponent<Button>().interactable = false;
+            }
+        }
     }
 
     public void NewGame()

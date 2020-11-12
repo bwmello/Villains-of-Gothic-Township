@@ -2,43 +2,22 @@
     "missionName": "ASinkingFeeling",
     "currentRound": 1,
     "reinforcementPoints": 5,
-    "totalHeroes": 3,
-    "unitIntel": {
-        "heroesIntel": [
-            {
-                "tag": "1stHero",
-                "moveSpeed": 4,
-                "ignoreTerrainDifficulty": 1,
-                "ignoreElevation": 1,
-                "ignoreSize": 1,
-                "wallBreaker": 0,
-                "woundsReceived": 0,
-                "canCounterAttack": false,
-                "canRetaliate": false
-            },
-            {
-                "tag": "2ndHero",
-                "moveSpeed": 4,
-                "ignoreTerrainDifficulty": 1,
-                "ignoreElevation": 1,
-                "ignoreSize": 1,
-                "wallBreaker": 0,
-                "woundsReceived": 0,
-                "canCounterAttack": false,
-                "canRetaliate": false
-            },
-            {
-                "tag": "3rdHero",
-                "moveSpeed": 4,
-                "ignoreTerrainDifficulty": 1,
-                "ignoreElevation": 1,
-                "ignoreSize": 1,
-                "wallBreaker": 0,
-                "woundsReceived": 0,
-                "canCounterAttack": false,
-                "canRetaliate": false
-            }
-        ]
+    "heroes": [
+        {
+            "heroName": "1stHero",
+            "zoneID": 19
+        },
+        {
+            "heroName": "2ndHero",
+            "zoneID": 24
+        },
+        {
+            "heroName": "3rdHero",
+            "zoneID": 5
+        }
+    ],
+    "utilityBelt": {
+        "claimableTokens": []
     },
     "villainRiver": [ "UZI", "CHAINS", "PISTOLS", "REINFORCEMENT", "CROWBAR", "SHOTGUN", "BARN" ],
     "unitTagsMasterList": [ "CHAINS", "CROWBAR", "SHOTGUN", "UZI", "PISTOLS", "BARN", "SUPERBARN" ],
@@ -103,7 +82,7 @@
         },
         {
             "isSpawnZone": true,
-            "tokensAndHeroesTags": [ "3rdHero" ],
+            "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
             "environTokens": [],
             "units": []
@@ -137,14 +116,17 @@
             "units": [
                 {
                     "tag": "PISTOLS",
+                    "isHeroAlly":  false,
                     "lifePoints": 1
                 },
                 {
                     "tag": "UZI",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 },
                 {
                     "tag": "SHOTGUN",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -157,6 +139,7 @@
             "units": [
                 {
                     "tag": "SHOTGUN",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -169,14 +152,17 @@
             "units": [
                 {
                     "tag": "PISTOLS",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 },
                 {
                     "tag": "UZI",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 },
                 {
                     "tag": "CHAINS",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -203,6 +189,7 @@
             "units": [
                 {
                     "tag": "CROWBAR",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -222,6 +209,7 @@
             "units": [
                 {
                     "tag": "CROWBAR",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -242,7 +230,7 @@
         },
         {
             "isSpawnZone": false,
-            "tokensAndHeroesTags": [ "1stHero" ],
+            "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
             "environTokens": [],
             "units": []
@@ -262,6 +250,7 @@
             "units": [
                 {
                     "tag": "CHAINS",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -282,7 +271,7 @@
         },
         {
             "isSpawnZone": true,
-            "tokensAndHeroesTags": [ "2ndHero" ],
+            "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
             "environTokens": [],
             "units": []
@@ -295,6 +284,7 @@
             "units": [
                 {
                     "tag": "CHAINS",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -307,10 +297,12 @@
             "units": [
                 {
                     "tag": "BARN",
+                    "isHeroAlly": false,
                     "lifePoints": 6
                 },
                 {
                     "tag": "PISTOLS",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -344,6 +336,7 @@
             "units": [
                 {
                     "tag": "CROWBAR",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -363,6 +356,7 @@
             "units": [
                 {
                     "tag": "SHOTGUN",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -410,10 +404,12 @@
             "units": [
                 {
                     "tag": "UZI",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 },
                 {
                     "tag": "SHOTGUN",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -426,6 +422,7 @@
             "units": [
                 {
                     "tag": "CHAINS",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -438,6 +435,7 @@
             "units": [
                 {
                     "tag": "UZI",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -450,10 +448,12 @@
             "units": [
                 {
                     "tag": "PISTOLS",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 },
                 {
                     "tag": "CROWBAR",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]

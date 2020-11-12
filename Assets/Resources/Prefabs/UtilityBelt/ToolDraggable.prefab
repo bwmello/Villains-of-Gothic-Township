@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 842014468183664547}
   - component: {fileID: 842014468183664550}
   m_Layer: 5
-  m_Name: GasIconDraggable
+  m_Name: ToolDraggable
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

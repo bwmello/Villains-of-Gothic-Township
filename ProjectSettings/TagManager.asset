@@ -28,9 +28,17 @@ TagManager:
   - Smoke
   - Flame
   - BYSTANDER
-  - RIFLE
   - MUDMAN
   - SKULLFACE
+  - SWATRIFLE
+  - RIFLE
+  - GCPDPISTOL
+  - GCPDNIGHTSTICK
+  - GUARD
+  - SWATBRIEFCASE
+  - DRONETURRET
+  - DRONEGRABBER
+  - ScenarioMap
   layers:
   - Default
   - TransparentFX

@@ -2,21 +2,14 @@
     "missionName": "IceToSeeYou",
     "currentRound": 1,
     "reinforcementPoints": 3,
-    "totalHeroes": 1,
-    "unitIntel": {
-        "heroesIntel": [
-            {
-                "tag": "1stHero",
-                "moveSpeed": 4,
-                "ignoreTerrainDifficulty": 1,
-                "ignoreElevation": 1,
-                "ignoreSize": 1,
-                "wallBreaker": 0,
-                "woundsReceived": 0,
-                "canCounterAttack": false,
-                "canRetaliate": false
-            }
-        ]
+    "heroes": [
+        {
+            "heroName": "1stHero",
+            "zoneID": 3
+        }
+    ],
+    "utilityBelt": {
+        "claimableTokens": []
     },
     "villainRiver": [ "CROWBAR", "SHOTGUN", "OTTERPOP", "REINFORCEMENT", "UZI", "CHAINS", "OTTERPOP" ],
     "unitTagsMasterList": [ "CROWBAR", "SHOTGUN", "OTTERPOP", "UZI", "CHAINS" ],
@@ -63,7 +56,7 @@
         },
         {
             "isSpawnZone": false,
-            "tokensAndHeroesTags": [ "1stHero" ],
+            "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
             "environTokens": [],
             "units": []
@@ -111,6 +104,7 @@
             "units": [
                 {
                     "tag": "UZI",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -123,6 +117,7 @@
             "units": [
                 {
                     "tag": "CROWBAR",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -135,6 +130,7 @@
             "units": [
                 {
                     "tag": "SHOTGUN",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -154,6 +150,7 @@
             "units": [
                 {
                     "tag": "SHOTGUN",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -166,6 +163,7 @@
             "units": [
                 {
                     "tag": "CROWBAR",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -213,6 +211,7 @@
             "units": [
                 {
                     "tag": "CROWBAR",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -239,6 +238,7 @@
             "units": [
                 {
                     "tag": "CHAINS",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -251,6 +251,7 @@
             "units": [
                 {
                     "tag": "CHAINS",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -263,6 +264,7 @@
             "units": [
                 {
                     "tag": "UZI",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -275,6 +277,7 @@
             "units": [
                 {
                     "tag": "OTTERPOP",
+                    "isHeroAlly": false,
                     "lifePoints": 4
                 }
             ]
@@ -301,6 +304,7 @@
             "units": [
                 {
                     "tag": "UZI",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -327,6 +331,7 @@
             "units": [
                 {
                     "tag": "CHAINS",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -374,6 +379,7 @@
             "units": [
                 {
                     "tag": "UZI",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -386,6 +392,7 @@
             "units": [
                 {
                     "tag": "CROWBAR",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]
@@ -405,6 +412,7 @@
             "units": [
                 {
                     "tag": "SHOTGUN",
+                    "isHeroAlly": false,
                     "lifePoints": 1
                 }
             ]

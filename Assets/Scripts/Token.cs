@@ -19,16 +19,23 @@ public class Token : MonoBehaviour  // Should be called ObjectiveToken as there 
         }
     }
 
-    void Blink()
+    public bool isClickable = false;
+    public void SetIsClickable(bool shouldMakeClickable)
     {
-        GameObject redLight = transform.Find("RedLight").gameObject;
-        if (IsActive() && !redLight.activeSelf)
+        gameObject.GetComponent<Button>().enabled = shouldMakeClickable;
+        isClickable = shouldMakeClickable;
+    }
+
+    public void ConfigureClickability()
+    {
+        switch (MissionSpecifics.currentPhase)
         {
-            redLight.SetActive(true);
-        }
-        else
-        {
-            redLight.SetActive(false);
+            case "Hero":
+                SetIsClickable(true);
+                break;
+            case "Villain":
+                SetIsClickable(false);
+                break;
         }
     }
 
@@ -50,5 +57,18 @@ public class Token : MonoBehaviour  // Should be called ObjectiveToken as there 
     public GameObject GetZone()
     {
         return transform.parent.parent.gameObject;  // Grabs ZoneInfoPanel instead of TokensRow. If changes in future, only need to change this function.
+    }
+
+    void Blink()
+    {
+        GameObject redLight = transform.Find("RedLight").gameObject;
+        if (IsActive() && !redLight.activeSelf)
+        {
+            redLight.SetActive(true);
+        }
+        else
+        {
+            redLight.SetActive(false);
+        }
     }
 }
