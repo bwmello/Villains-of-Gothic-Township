@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-//using UnityEngine.Experimental.Rendering.Universal;  // To fetch 2d light, but Unity can't find namespace
+using UnityEngine.Experimental.Rendering.Universal;  // To fetch 2d light, but Unity can't find namespace
 
 
 public class Spotlight : MonoBehaviour
@@ -9,14 +9,15 @@ public class Spotlight : MonoBehaviour
     public Vector3 leftPoint;
     public Vector3 rightPoint;
     private Vector3 startingPoint;
-    //private float startingIntensity;
+    private float startingIntensity;
     private float randomOscillationProgress;
 
     private void Awake()
     {
         startingPoint = transform.localPosition;
         randomOscillationProgress = Random.Range(0f, 3.0f);
-        //startingIntensity = transform.GetComponent<Light2D>().intensity;
+        startingIntensity = transform.GetComponent<Light2D>().intensity;
+        transform.GetComponent<Light2D>().intensity = 0;
     }
 
     IEnumerator Start()
@@ -24,6 +25,10 @@ public class Spotlight : MonoBehaviour
         startingPoint = transform.localPosition;
         while (true)
         {
+            if (transform.GetComponent<Light2D>().intensity < startingIntensity)
+            {
+                transform.GetComponent<Light2D>().intensity += .0015f;
+            }
             yield return StartCoroutine(OscillateLeftAndRight());
         }
     }

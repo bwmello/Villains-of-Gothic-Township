@@ -91,6 +91,7 @@ public class ScenarioMap : MonoBehaviour
     void StartSetup()
     {
         MissionSpecifics.currentPhase = "Setup";
+        UIOverlay.GetComponent<UIOverlay>().InitializeSetupUIOverlay();
         UIOverlay.GetComponent<UIOverlay>().ShowSetupUIOverlay();
     }
 
@@ -171,10 +172,6 @@ public class ScenarioMap : MonoBehaviour
     {
         MissionSpecifics.currentPhase = "Villain";
         DisablePlayerUI();  // Disable all UI so Villain turn isn't interrupted
-        if (currentRound < 1)
-        {
-            yield return new WaitForSecondsRealtime(2);  // If starting with villain turn, add delay so screen doesn't flash/jump
-        }
 
         if (MissionSpecifics.IsGameOver(currentRound))
         {
