@@ -58,7 +58,55 @@ public class UtilityBelt : MonoBehaviour
                 lastTokensContainerUsed = rightTokensContainer;
             }
             claimableToken.GetComponent<ClaimableToken>().LoadClaimableTokenSave(claimableTokenSave);
+            claimableTokens.Add(claimableToken);
         }
+        // Below is alternative for adding ClaimableTokens to the UtilityBelt without the left/rightTokensContainers
+        //Transform pouchesContainer = transform.Find("Pouches");
+        //int availableSlots = pouchesContainer.childCount - 1;
+        //for (int i = 0; i < utilityBeltSave.claimableTokens.Count; i++)
+        //{
+        //    ClaimableTokenSave claimableTokenSave = utilityBeltSave.claimableTokens[i];
+        //    GameObject claimableTokenPrefab = null;
+        //    switch (claimableTokenSave.tokenType)
+        //    {
+        //        case "Computer":
+        //            claimableTokenPrefab = claimableComputerPrefab;
+        //            break;
+        //        case "Briefcase":
+        //            claimableTokenPrefab = claimableBriefcasePrefab;
+        //            break;
+        //        case "SwatRifle":
+        //            claimableTokenPrefab = claimableRiflePrefab;
+        //            break;
+        //    }
+
+        //    GameObject claimableToken = Instantiate(claimableTokenPrefab, pouchesContainer);
+        //    //claimableToken.transform.SetSiblingIndex(i + 2 - (i+1)%availableSlots);  //0:1, 1:3, 2:2, 3:5   3 pouches: 1,3,2,5  4 pouches: 1,3,5,2,5,8   OR  3 pouches: 1,3,1,4
+        //    switch (i)   // Should be replaced with equation above for variable number of pouches/availableSlots
+        //    {
+        //        case 0:
+        //            claimableToken.transform.SetSiblingIndex(1);
+        //            break;
+        //        case 1:
+        //            claimableToken.transform.SetSiblingIndex(3);
+        //            break;
+        //        case 2:
+        //            claimableToken.transform.SetSiblingIndex(2);
+        //            break;
+        //        case 3:
+        //            claimableToken.transform.SetSiblingIndex(5);
+        //            break;
+        //        case 4:
+        //            claimableToken.transform.SetSiblingIndex(3);
+        //            break;
+        //        case 5:
+        //            claimableToken.transform.SetSiblingIndex(7);
+        //            break;
+        //    }
+        //    claimableToken.transform.localPosition = new Vector3(claimableToken.transform.localPosition.x, claimableToken.transform.localPosition.y - 30, claimableToken.transform.localPosition.z);
+        //    claimableToken.GetComponent<ClaimableToken>().LoadClaimableTokenSave(claimableTokenSave);
+        //    claimableTokens.Add(claimableToken);
+        //}
     }
 }
 
