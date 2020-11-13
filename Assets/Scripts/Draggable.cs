@@ -113,11 +113,19 @@ public class Draggable : MonoBehaviour
                             else
                             {
                                 transform.position = positionOnDragStart;
+                                if (parentOnDragStart)
+                                {
+                                    transform.SetParent(parentOnDragStart);
+                                }
                             }
                         }
                         else
                         {
                             transform.position = positionOnDragStart;
+                            if (parentOnDragStart)
+                            {
+                                transform.SetParent(parentOnDragStart);
+                            }
                         }
                         break;
                 }

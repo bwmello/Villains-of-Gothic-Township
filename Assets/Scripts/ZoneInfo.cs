@@ -680,13 +680,22 @@ public class ZoneInfo : MonoBehaviour
     public GameObject GetAvailableUnitSlot()
     {
         GameObject availableUnitSlot = null;
+        GameObject inactiveUnitToDestroy = null;
         foreach (Transform unitSlot in transform.Find("UnitsContainer"))
         {
             if (unitSlot.childCount == 0)  // If unitSlot is empty
             {
-                availableUnitSlot = unitSlot.gameObject;
-                break;
+                return unitSlot.gameObject;  // Bypass if(inactiveUnitToDestroy) check
             }
+            else if (!unitSlot.GetComponentInChildren<Unit>().IsActive())
+            {
+                availableUnitSlot = unitSlot.gameObject;
+                inactiveUnitToDestroy = unitSlot.GetChild(0).gameObject;
+            }
+        }
+        if (inactiveUnitToDestroy)
+        {
+            Destroy(inactiveUnitToDestroy);
         }
         return availableUnitSlot;
     }
