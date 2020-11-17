@@ -223,12 +223,12 @@ public class Animate : MonoBehaviour
 
 
     bool waitingOnPlayerInput = false;
-    public IEnumerator PauseUntilPlayerPushesContinue(GameObject targetedHero)
+    public IEnumerator PauseUntilPlayerPushesContinue(GameObject target)
     {
-        Button heroButton = targetedHero.GetComponent<Button>();
+        Button heroButton = target.GetComponent<Button>();
         heroButton.enabled = true;
         waitingOnPlayerInput = true;
-        GameObject zone = targetedHero.GetComponent<Hero>().GetZone();
+        GameObject zone = target.GetComponentInParent<ZoneInfo>().gameObject;
         GameObject continueButton = Instantiate(continueButtonPrefab, zone.transform);
         if (IsPointOnScreen(zone.transform.TransformPoint(0, -50f, 0)))
         {
@@ -241,7 +241,7 @@ public class Animate : MonoBehaviour
         else
         {
             continueButton.transform.position = zone.transform.TransformPoint(0, -50f, 0);
-            //Debug.LogError("ERROR! Continue button isn't on screen in either available position.");  // Not true, triggers on the left hand side now because of the camera bounds
+            Debug.LogError("ERROR! Continue button isn't on screen in either available position.");  // Not true, triggers on the left hand side now because of the camera bounds
         }
         continueButton.GetComponent<Button>().onClick.AddListener(delegate { waitingOnPlayerInput = false; });
         yield return new WaitUntil(() => !waitingOnPlayerInput);

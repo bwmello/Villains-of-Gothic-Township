@@ -496,7 +496,7 @@ public static class MissionSpecifics
                         };
 
                         List<Unit.UnitPossibleAction> allPossibleUnitActions = otterPop.GetComponent<Unit>().GetPossibleActions(possibleDestinations);
-                        Unit.UnitPossibleAction chosenAction = new Unit.UnitPossibleAction(otterPop.GetComponent<Unit>(), new ActionWeight(null, 0, 0, null), new Unit.ActionProficiency(null, 0, null), 0, zone22, zone22, null, zone22MovePath);
+                        Unit.UnitPossibleAction chosenAction = new Unit.UnitPossibleAction(otterPop.GetComponent<Unit>(), new ActionWeight(null, 0, 0, null), new Unit.ActionProficiency(null, 0, null), 0, zone22, zone22, zone22MovePath, null, null);
                         foreach (Unit.UnitPossibleAction unitAction in allPossibleUnitActions)
                         {
                             if (chosenAction == null || unitAction.actionWeight > chosenAction.actionWeight)

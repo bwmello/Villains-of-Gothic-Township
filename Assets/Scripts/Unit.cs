@@ -1,6 +1,7 @@
 ﻿using System;  // for [Serializable]
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;  // For converting array.ToList()
 using UnityEngine;
 using UnityEngine.UI;  // For button
 using TMPro;  // for TMP_Text to update the henchmen quantity from UnitRows
@@ -608,8 +609,9 @@ public class Unit : MonoBehaviour
         public GameObject finalDestinationZone;  // Where unit ends up, usually the same as the actionZone (unless unit moves after action)
         public MovementPath pathTaken;
         public GameObject targetedZone;
+        public List<GameObject> priorityTargets = new List<GameObject>();
 
-        public UnitPossibleAction(Unit theUnit, MissionSpecifics.ActionWeight unitMissionSpecificAction, ActionProficiency unitActionProficiency, double unitActionWeight, GameObject unitActionZone, GameObject unitFinalDestinationZone, GameObject unitTargetedZone = null, MovementPath unitPathTaken = null)
+        public UnitPossibleAction(Unit theUnit, MissionSpecifics.ActionWeight unitMissionSpecificAction, ActionProficiency unitActionProficiency, double unitActionWeight, GameObject unitActionZone, GameObject unitFinalDestinationZone, MovementPath unitPathTaken = null, GameObject unitTargetedZone = null, List<GameObject> unitPriorityTargets = null)
         {
             myUnit = theUnit;
             missionSpecificAction = unitMissionSpecificAction;
@@ -617,8 +619,9 @@ public class Unit : MonoBehaviour
             actionWeight = unitActionWeight;
             actionZone = unitActionZone;
             finalDestinationZone = unitFinalDestinationZone;
-            targetedZone = unitTargetedZone;
             pathTaken = unitPathTaken;
+            targetedZone = unitTargetedZone;
+            priorityTargets = unitPriorityTargets;
         }
     }
 
@@ -710,66 +713,101 @@ public class Unit : MonoBehaviour
                 switch (actionProficiency.actionType)
                 {
                     case "MELEE":
-                        if (possibleZoneInfo.HasTargetableHeroes())
+                        List<GameObject> meleeTargetableZones = possibleZoneInfo.GetZonesWithTargetsWithinLinesOfSight(reach);
+                        if (meleeTargetableZones.Count > 0)
                         {
                             double averageWounds = GetAverageSuccesses(actionProficiency.proficiencyDice, availableRerolls) + martialArtsSuccesses;
                             averageWounds *= actionProficiency.actionMultiplier;
-                            actionWeight += averageWounds * MissionSpecifics.actionsWeightTable["MELEE"][0].weightFactor;
-                            if (frosty)  // Account for increasing difficult terrain of hero's zone
+                            if (frosty)  // Account for increasing difficult terrain of targets's zone
                             {
-                                actionWeight += UnitIntel.increaseTerrainDifficultyWeight;
+                                actionWeight += UnitIntel.increaseTerrainDifficultyWeight;  // Only counted if there is a target
                             }
-                            if (actionWeight > inactiveWeight)
+
+                            List<(GameObject, double)> priorityTargetsAndWeights = new List<(GameObject, double)>();
+                            foreach (GameObject targetableZone in meleeTargetableZones)
                             {
-                                allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["MELEE"][0], actionProficiency, actionWeight, possibleZone, finalDestinationZone, null, possibleDestinationsAndPaths[finalDestinationZone]));
+                                ZoneInfo targetableZoneInfo = targetableZone.GetComponent<ZoneInfo>();
+                                foreach (GameObject hero in targetableZoneInfo.GetTargetableHeroes())
+                                {
+                                    priorityTargetsAndWeights.Add((hero, averageWounds * MissionSpecifics.actionsWeightTable["MELEE"][0].weightFactor + actionWeight));
+                                }
+                                foreach (GameObject heroAlly in targetableZoneInfo.GetTargetableHeroAllies())
+                                {
+                                    priorityTargetsAndWeights.Add((heroAlly, averageWounds * MissionSpecifics.actionsWeightTable["MELEE"][1].weightFactor + actionWeight));
+                                }
+                            }
+                            priorityTargetsAndWeights.Sort((x, y) => y.Item2.CompareTo(x.Item2));  // Sorts by most valuable weight
+                            if (priorityTargetsAndWeights[0].Item2 > inactiveWeight)
+                            {
+                                List<GameObject> priorityTargets = priorityTargetsAndWeights.Select(x => x.Item1).ToList();
+                                if (priorityTargetsAndWeights[0].Item1.TryGetComponent<Hero>(out var tempHeroComponent))  // tempHeroComponent isn't used, but no other way to use TryGetComponent
+                                {
+                                    allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["MELEE"][0], actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, priorityTargets));  // TargetZone not really needed with priorityTargets list
+                                }
+                                else
+                                {
+                                    allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["MELEE"][1], actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, priorityTargets));
+                                }
                                 zoneAddedToAllPossibleActions = true;
                             }
                         }
-                        //if (possibleZoneInfo.GetTargetableHeroAllies().Count > 0)
-                        //{
-                        //    double averageWounds = GetAverageSuccesses(actionProficiency.proficiencyDice, availableRerolls) + martialArtsSuccesses;
-                        //    averageWounds *= actionProficiency.actionMultiplier;
-                        //    actionWeight += averageWounds * MissionSpecifics.actionsWeightTable["MELEE"][1].weightFactor;
-                        //    if (frosty)  // Account for increasing difficult terrain of hero's zone
-                        //    {
-                        //        actionWeight += UnitIntel.increaseTerrainDifficultyWeight;
-                        //    }
-                        //    if (actionWeight > inactiveWeight)
-                        //    {
-                        //        allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["MELEE"][1], actionProficiency, actionWeight, possibleZone, finalDestinationZone, null, possibleDestinationsAndPaths[finalDestinationZone]));
-                        //        zoneAddedToAllPossibleActions = true;
-                        //    }
-                        //}
                         break;
                     case "RANGED":
-                        GameObject targetedZone = possibleZoneInfo.GetLineOfSightZoneWithHero();
-                        if (targetedZone != null)
+                        List<GameObject> rangedTargetableZones = possibleZoneInfo.GetZonesWithTargetsWithinLinesOfSight();
+                        if (rangedTargetableZones.Count > 0)
                         {
-                            List<GameObject> dicePool = new List<GameObject>(actionProficiency.proficiencyDice);
-                            if (possibleZoneInfo.elevation > targetedZone.GetComponent<ZoneInfo>().elevation)
+                            if (frosty)  // Account for increasing difficult terrain of targets's zone
                             {
-                                dicePool.Add(possibleZoneInfo.environmentalDie);
+                                actionWeight += UnitIntel.increaseTerrainDifficultyWeight;  // Only counted if there is a target
                             }
-                            if (pointBlankRerolls > 0 && targetedZone == possibleZoneInfo.gameObject)
-                            {
-                                availableRerolls += pointBlankRerolls;
-                            }
-                            int smokeHindrance = possibleZoneInfo.GetSmokeBetweenZones(targetedZone);
 
-                            double averageWounds = GetAverageSuccesses(dicePool, availableRerolls) + marksmanSuccesses - actionZoneHindrance - smokeHindrance;
-                            //Debug.Log("!!!GetPossibleActions for zone " + possibleZone.name + ",  averageWounds " + averageWounds.ToString() + "  GetAverageSuccesses(dicePool, rerolls=" + availableRerolls.ToString() + ") " + GetAverageSuccesses(dicePool, availableRerolls).ToString() + "  + marksmanSuccesses - actionZoneHindrance " + actionZoneHindrance.ToString());
-                            if (averageWounds > 0)
+                            List<(GameObject, double)> priorityTargetsAndWeights = new List<(GameObject, double)>();
+                            foreach (GameObject targetableZone in rangedTargetableZones)
                             {
-                                averageWounds *= actionProficiency.actionMultiplier;
+                                ZoneInfo targetableZoneInfo = targetableZone.GetComponent<ZoneInfo>();
+                                List<GameObject> dicePool = new List<GameObject>(actionProficiency.proficiencyDice);
+                                if (possibleZoneInfo.elevation > targetableZoneInfo.elevation)
+                                {
+                                    dicePool.Add(possibleZoneInfo.environmentalDie);
+                                }
+                                if (pointBlankRerolls > 0 && targetableZone == possibleZoneInfo.gameObject)
+                                {
+                                    availableRerolls += pointBlankRerolls;
+                                }
+                                int smokeHindrance = possibleZoneInfo.GetSmokeBetweenZones(targetableZone);
+
+                                double averageWounds = GetAverageSuccesses(dicePool, availableRerolls) + marksmanSuccesses - actionZoneHindrance - smokeHindrance;
+                                //Debug.Log("!!!GetPossibleActions for zone " + possibleZone.name + ",  averageWounds " + averageWounds.ToString() + "  GetAverageSuccesses(dicePool, rerolls=" + availableRerolls.ToString() + ") " + GetAverageSuccesses(dicePool, availableRerolls).ToString() + "  + marksmanSuccesses - actionZoneHindrance " + actionZoneHindrance.ToString());
+                                if (averageWounds > 0)
+                                {
+                                    averageWounds *= actionProficiency.actionMultiplier;
+                                }
+                                else
+                                {
+                                    averageWounds += actionProficiency.actionMultiplier / 2;  // Can't inflict negative wounds, so just try to get this to a low positive number
+                                }
+
+                                foreach (GameObject hero in targetableZoneInfo.GetTargetableHeroes())
+                                {
+                                    priorityTargetsAndWeights.Add((hero, averageWounds * MissionSpecifics.actionsWeightTable["RANGED"][0].weightFactor + actionWeight));
+                                }
+                                foreach (GameObject heroAlly in targetableZoneInfo.GetTargetableHeroAllies())
+                                {
+                                    priorityTargetsAndWeights.Add((heroAlly, averageWounds * MissionSpecifics.actionsWeightTable["RANGED"][1].weightFactor + actionWeight));
+                                }
                             }
-                            else
+                            priorityTargetsAndWeights.Sort((x, y) => y.Item2.CompareTo(x.Item2));  // Sorts by most valuable weight
+                            if (priorityTargetsAndWeights[0].Item2 > inactiveWeight)
                             {
-                                averageWounds += actionProficiency.actionMultiplier / 2;  // Can't inflict negative wounds, so just try to get this to a low positive number
-                            }
-                            actionWeight += averageWounds * MissionSpecifics.actionsWeightTable["RANGED"][0].weightFactor;
-                            if (actionWeight > inactiveWeight)
-                            {
-                                allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["RANGED"][0], actionProficiency, actionWeight, possibleZone, finalDestinationZone, targetedZone, possibleDestinationsAndPaths[finalDestinationZone]));
+                                List<GameObject> priorityTargets = priorityTargetsAndWeights.Select(x => x.Item1).ToList();
+                                if (priorityTargetsAndWeights[0].Item1.TryGetComponent<Hero>(out var tempHeroComponent))  // tempHeroComponent isn't used, but no other way to use TryGetComponent
+                                {
+                                    allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["RANGED"][0], actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, priorityTargets));  // TargetZone not really needed with priorityTargets list
+                                }
+                                else
+                                {
+                                    allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["RANGED"][1], actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, priorityTargets));
+                                }
                                 zoneAddedToAllPossibleActions = true;
                             }
                         }
@@ -809,7 +847,7 @@ public class Unit : MonoBehaviour
                                             actionWeight += grenadeTargetZone.GetComponent<ZoneInfo>().GetUnitsInfo().Count * grenade * UnitIntel.terrainDangeringFriendlies;
                                             if (actionWeight > inactiveWeight)
                                             {
-                                                allPossibleActions.Add(new UnitPossibleAction(this, manipulatable, actionProficiency, actionWeight, possibleZone, finalDestinationZone, grenadeTargetZone, possibleDestinationsAndPaths[finalDestinationZone]));
+                                                allPossibleActions.Add(new UnitPossibleAction(this, manipulatable, actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], grenadeTargetZone, null));
                                                 zoneAddedToAllPossibleActions = true;
                                             }
                                         }
@@ -822,7 +860,7 @@ public class Unit : MonoBehaviour
                                     actionWeight += chanceOfSuccess * manipulatable.weightFactor;
                                     if (actionWeight > inactiveWeight)
                                     {
-                                        allPossibleActions.Add(new UnitPossibleAction(this, manipulatable, actionProficiency, actionWeight, possibleZone, finalDestinationZone, null, possibleDestinationsAndPaths[finalDestinationZone]));
+                                        allPossibleActions.Add(new UnitPossibleAction(this, manipulatable, actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, null));
                                         zoneAddedToAllPossibleActions = true;
                                     }
                                 }
@@ -842,7 +880,7 @@ public class Unit : MonoBehaviour
                                     //Debug.Log("Possible THOUGHT action for " + gameObject.name + " in " + possibleZone.name + "  with chanceOfSuccess: " + chanceOfSuccess.ToString() + "  onlyMovingWeight: " + onlyMovingWeight.ToString() + "  actionWeight: " + actionWeight.ToString() + " which should be greater than inactiveWeight: " + inactiveWeight.ToString());
                                     if (actionWeight > inactiveWeight)
                                     {
-                                        allPossibleActions.Add(new UnitPossibleAction(this, thoughtable, actionProficiency, actionWeight, possibleZone, finalDestinationZone, null, possibleDestinationsAndPaths[finalDestinationZone]));
+                                        allPossibleActions.Add(new UnitPossibleAction(this, thoughtable, actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, null));
                                         zoneAddedToAllPossibleActions = true;
                                     }
                                 }
@@ -855,7 +893,7 @@ public class Unit : MonoBehaviour
             {
                 if (onlyMovingWeight > inactiveWeight)
                 {
-                    allPossibleActions.Add(new UnitPossibleAction(this, defaultGuardAction, moveActionProficiency, onlyMovingWeight, possibleZone, finalDestinationZone, null, possibleDestinationsAndPaths[finalDestinationZone]));
+                    allPossibleActions.Add(new UnitPossibleAction(this, defaultGuardAction, moveActionProficiency, onlyMovingWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, null));
                 }
             }
         }
@@ -1081,93 +1119,165 @@ public class Unit : MonoBehaviour
         switch (unitTurn.actionProficiency.actionType)
         {
             case "MELEE":
-                MissionSpecifics.currentPhase = "VillainAttack";
-                for (int i = 0; i < unitTurn.actionProficiency.actionMultiplier; i++)
+                if (unitTurn.priorityTargets.Count > 0)
                 {
-                    if (!IsActive())  // If Counterattacked and killed, stop attacking
-                    {
-                        yield break;
-                    }
-
-                    if (unitTurn.missionSpecificAction.targetType == "Hero")
-                    {
-                        GameObject targetedHero = currentZoneInfo.GetRandomTargetableHero();  // TODO mirror unitTurn.targetedZone like RANGED for when Reach trait comes into play
-                        if (targetedHero)
-                        {
-                            actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls);
-                            if (actionSuccesses > 0)
-                            {
-                                actionSuccesses += martialArtsSuccesses;
-                            }
-
-                            yield return StartCoroutine(animate.MeleeAttack(gameObject, targetedHero, actionSuccesses));
-                        }
-                    }
-
-                    if (fiery)
-                    {
-                        yield return StartCoroutine(currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Flame", 1, false, true)));
-                    }
-                    if (frosty)
-                    {
-                        yield return StartCoroutine(currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true)));
-                    }
-                }
-                MissionSpecifics.currentPhase = "Villain";
-                break;
-            case "RANGED":
-                if (unitTurn.targetedZone != null)
-                {
-                    ZoneInfo targetedLineOfSightZoneInfo = unitTurn.targetedZone.GetComponent<ZoneInfo>();
-
-                    List<GameObject> dicePool = new List<GameObject>(unitTurn.actionProficiency.proficiencyDice);
-                    if (currentZoneInfo.elevation > targetedLineOfSightZoneInfo.elevation)
-                    {
-                        dicePool.Add(currentZoneInfo.environmentalDie);
-                    }
-
-                    if (currentZone == unitTurn.targetedZone)
-                    {
-                        availableRerolls += pointBlankRerolls;
-                    }
-
-                    int smokeHindrance = currentZoneInfo.GetSmokeBetweenZones(unitTurn.targetedZone);
-
                     MissionSpecifics.currentPhase = "VillainAttack";
+                    GameObject currentMeleeTarget = unitTurn.priorityTargets[0];
+                    int currentMeleeTargetIndex = 0;
                     for (int i = 0; i < unitTurn.actionProficiency.actionMultiplier; i++)
                     {
-                        if (!IsActive())  // If Retaliated and killed, stop attacking
+                        if (!IsActive())  // If Counterattacked and killed, stop attacking
                         {
                             yield break;
                         }
 
-                        GameObject targetedHero = targetedLineOfSightZoneInfo.GetRandomTargetableHero();
-                        actionSuccesses = RollAndReroll(dicePool, availableRerolls);
-                        if (actionSuccesses > 0)
+                        if (currentMeleeTarget.TryGetComponent<Hero>(out Hero targetHero))
                         {
-                            actionSuccesses += marksmanSuccesses;
+                            //Debug.Log("!!!PerformAction(), currently targeting hero. currentMeleeTargetIndex: " + currentMeleeTargetIndex.ToString());
+                            if (targetHero.IsWoundedOut())
+                            {
+                                if (currentMeleeTargetIndex++ < unitTurn.priorityTargets.Count)  // Repeat this iteration of the loop with a new target
+                                {
+                                    currentMeleeTarget = unitTurn.priorityTargets[currentMeleeTargetIndex];
+                                    i--;
+                                    continue;
+                                }
+                                else  // No more targets
+                                {
+                                    break;
+                                }
+                            }
                         }
-                        actionSuccesses -= currentZoneHindrance + smokeHindrance;
-                        if (actionSuccesses < 0)
+                        else if (!currentMeleeTarget.GetComponent<Unit>().IsActive())
                         {
-                            actionSuccesses = 0;
+                            //Debug.Log("!!!PerformAction(), currently targeting unit. currentMeleeTargetIndex: " + currentMeleeTargetIndex.ToString());
+                            if (currentMeleeTargetIndex++ < unitTurn.priorityTargets.Count)  // Repeat this iteration of the loop with a new target
+                            {
+                                currentMeleeTarget = unitTurn.priorityTargets[currentMeleeTargetIndex];
+                                i--;
+                                continue;
+                            }
+                            else  // No more targets
+                            {
+                                break;
+                            }
                         }
 
-                        yield return StartCoroutine(animate.RangedAttack(gameObject, targetedHero, actionSuccesses));
-                        if (fiery)  // Not sure these ever get triggered as the villains with these traits don't have a ranged attack, but the Frost/Fire text: During an attack or after an explosion...
+                        actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls);
+                        if (actionSuccesses > 0)
                         {
-                            yield return StartCoroutine(targetedLineOfSightZoneInfo.AddEnvironTokens(new EnvironTokenSave("Flame", 1, false, true)));
+                            actionSuccesses += martialArtsSuccesses;
+                        }
+                        yield return StartCoroutine(animate.MeleeAttack(gameObject, currentMeleeTarget, actionSuccesses));  // TODO add circularStrike and burst target seeking
+
+                        if (fiery)
+                        {
+                            yield return StartCoroutine(currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Flame", 1, false, true)));
                         }
                         if (frosty)
                         {
-                            yield return StartCoroutine(targetedLineOfSightZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true)));
+                            yield return StartCoroutine(currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true)));
                         }
                     }
                     MissionSpecifics.currentPhase = "Villain";
                 }
-                else
+                break;
+            case "RANGED":
+                if (unitTurn.priorityTargets.Count > 0)
                 {
-                    Debug.LogError("ERROR! RANGED action was performed while targetedLineOfSightZone was null, so henchman just wasted its action wildly firing its gun into the air.");
+                    MissionSpecifics.currentPhase = "VillainAttack";
+                    GameObject currentRangedTarget = unitTurn.priorityTargets[0];
+                    int currentRangedTargetIndex = 0;
+                    for (int i = 0; i < unitTurn.actionProficiency.actionMultiplier; i++)
+                    {
+                        if (!IsActive())  // If Counterattacked and killed, stop attacking
+                        {
+                            yield break;
+                        }
+
+                        GameObject targetZone = null;
+                        if (currentRangedTarget.TryGetComponent<Hero>(out Hero targetHero))
+                        {
+                            if (targetHero.IsWoundedOut())
+                            {
+                                if (currentRangedTargetIndex++ < unitTurn.priorityTargets.Count)  // Repeat this iteration of the loop with a new target
+                                {
+                                    currentRangedTarget = unitTurn.priorityTargets[currentRangedTargetIndex];
+                                    i--;
+                                    continue;
+                                }
+                                else  // No more targets
+                                {
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                targetZone = targetHero.GetZone();
+                            }
+                        }
+                        else if (currentRangedTarget.TryGetComponent<Unit>(out Unit targetUnit))
+                        {
+                            if (!targetUnit.IsActive())
+                            {
+                                if (currentRangedTargetIndex++ < unitTurn.priorityTargets.Count)  // Repeat this iteration of the loop with a new target
+                                {
+                                    currentRangedTarget = unitTurn.priorityTargets[currentRangedTargetIndex];
+                                    i--;
+                                    continue;
+                                }
+                                else  // No more targets
+                                {
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                targetZone = targetUnit.GetZone();
+                            }
+                        }
+
+                        if (targetZone)  // Set from hero vs heroAlly above, not from unitTurn.targetedZone
+                        {
+                            List<GameObject> dicePool = new List<GameObject>(unitTurn.actionProficiency.proficiencyDice);
+                            if (currentZoneInfo.elevation > targetZone.GetComponent<ZoneInfo>().elevation)
+                            {
+                                dicePool.Add(currentZoneInfo.environmentalDie);
+                            }
+
+                            if (currentZone == unitTurn.targetedZone)
+                            {
+                                availableRerolls += pointBlankRerolls;
+                            }
+                            int smokeHindrance = currentZoneInfo.GetSmokeBetweenZones(targetZone);
+
+                            actionSuccesses = RollAndReroll(dicePool, availableRerolls);
+                            if (actionSuccesses > 0)
+                            {
+                                actionSuccesses += marksmanSuccesses;
+                            }
+                            actionSuccesses -= currentZoneHindrance + smokeHindrance;
+                            if (actionSuccesses < 0)
+                            {
+                                actionSuccesses = 0;
+                            }
+                            yield return StartCoroutine(animate.RangedAttack(gameObject, currentRangedTarget, actionSuccesses));  // TODO add circularStrike and burst target seeking
+
+                            if (fiery)
+                            {
+                                yield return StartCoroutine(currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Flame", 1, false, true)));
+                            }
+                            if (frosty)
+                            {
+                                yield return StartCoroutine(currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true)));
+                            }
+                        }
+                        else
+                        {
+                            Debug.LogError("ERROR! RANGED action was performed while targetZone was null, so henchman just wasted its action wildly firing its gun into the air.");
+                        }
+                    }
+                    MissionSpecifics.currentPhase = "Villain";
                 }
                 break;
             case "MANIPULATION":

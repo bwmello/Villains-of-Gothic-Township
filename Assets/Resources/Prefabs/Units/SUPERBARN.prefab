@@ -166,7 +166,7 @@ PrefabInstance:
     - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
         type: 3}
       propertyPath: actionProficiencies.Array.data[0].actionMultiplier
-      value: 1
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
         type: 3}
@@ -176,7 +176,7 @@ PrefabInstance:
     - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
         type: 3}
       propertyPath: actionProficiencies.Array.data[1].actionMultiplier
-      value: 3
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
         type: 3}
@@ -262,25 +262,25 @@ PrefabInstance:
         type: 3}
       propertyPath: actionProficiencies.Array.data[0].proficiencyDice.Array.data[0]
       value: 
-      objectReference: {fileID: 2180432876221642290, guid: cbd0eaa5d05564f668459f2b692b2a98,
+      objectReference: {fileID: 4378926195687391191, guid: 57078db74302144e8a156c288214f7e9,
         type: 3}
     - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
         type: 3}
       propertyPath: actionProficiencies.Array.data[0].proficiencyDice.Array.data[1]
       value: 
-      objectReference: {fileID: 2180432876221642290, guid: cbd0eaa5d05564f668459f2b692b2a98,
+      objectReference: {fileID: 4378926195687391191, guid: 57078db74302144e8a156c288214f7e9,
         type: 3}
     - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
         type: 3}
       propertyPath: actionProficiencies.Array.data[1].proficiencyDice.Array.data[0]
       value: 
-      objectReference: {fileID: 4378926195687391191, guid: 57078db74302144e8a156c288214f7e9,
+      objectReference: {fileID: 2180432876221642290, guid: cbd0eaa5d05564f668459f2b692b2a98,
         type: 3}
     - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
         type: 3}
       propertyPath: actionProficiencies.Array.data[1].proficiencyDice.Array.data[1]
       value: 
-      objectReference: {fileID: 4378926195687391191, guid: 57078db74302144e8a156c288214f7e9,
+      objectReference: {fileID: 2180432876221642290, guid: cbd0eaa5d05564f668459f2b692b2a98,
         type: 3}
     - target: {fileID: 499749899686709246, guid: 7e9b875bf54ec4e7788a6daba46ee04c,
         type: 3}

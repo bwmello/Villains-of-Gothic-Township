@@ -292,7 +292,27 @@ public class ZoneInfo : MonoBehaviour
         return GetTargetableHeroesCount() > 0;
     }
 
-    public GameObject GetLineOfSightZoneWithHero()
+    public bool HasTargets()
+    {
+        if (GetTargetableHeroesCount() > 0)
+        {
+            return true;
+        }
+        else
+        {
+            List<Unit> units = GetUnitsInfo();
+            foreach (Unit unit in units)
+            {
+                if (unit.isHeroAlly)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public GameObject GetLineOfSightZoneWithHero()  // Still used by grenade action in Unit.cs
     {
         List<ZoneInfo> targetableZones = new List<ZoneInfo>();
         if (HasTargetableHeroes())
@@ -316,6 +336,42 @@ public class ZoneInfo : MonoBehaviour
             return targetableZones[0].gameObject;
         }
         return null;
+    }
+
+    public List<GameObject> GetZonesWithTargetsWithinLinesOfSight(int maxRange = -1)  // -1 means no maxRange
+    {
+        List<GameObject> targetableZones = new List<GameObject>();
+        if (HasTargets())
+        {
+            targetableZones.Add(gameObject);
+        }
+
+        if (maxRange > 0)  // Range is limited (maxRange == 0 skips to return)
+        {
+            HashSet<GameObject> uniqueTargetableZones = new HashSet<GameObject>();
+            foreach (LineOfSight lineOfSight in linesOfSight)
+            {
+                for (int i = 0; i < maxRange && i < lineOfSight.sightLine.Count; i++)
+                {
+                    if (!uniqueTargetableZones.Contains(lineOfSight.sightLine[i]) && lineOfSight.sightLine[i].GetComponent<ZoneInfo>().HasTargets())
+                    {
+                        uniqueTargetableZones.Add(lineOfSight.sightLine[i]);  // Adds only unique zones, even without !uniqueTargetableZones.Contains() check
+                    }
+                }
+            }
+            targetableZones.AddRange(uniqueTargetableZones);
+        }
+        else if (maxRange < 0)  // Range is limitless
+        {
+            foreach (GameObject zone in lineOfSightZones)
+            {
+                if (zone.GetComponent<ZoneInfo>().HasTargets())
+                {
+                    targetableZones.Add(zone);
+                }
+            }
+        }
+        return targetableZones;
     }
 
     public int GetHeroesCount()
