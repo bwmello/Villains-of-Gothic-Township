@@ -474,7 +474,7 @@ public class ScenarioMap : MonoBehaviour
             }
         }
         //Debug.Log(unitsPoolDebugString);
-        reinforcementsAvailable.Sort((x, y) => x.Item2.CompareTo(y.Item2));  // Hopefully this sorts the list by the most valuable weight. https://stackoverflow.com/questions/4668525/sort-listtupleint-int-in-place
+        reinforcementsAvailable.Sort((x, y) => x.Item2.CompareTo(y.Item2));  // Sorts list by most valuable weight. https://stackoverflow.com/questions/4668525/sort-listtupleint-int-in-place
 
         string reinforcementsAvailableDebugString = "GetAvailableReinforcements() reinforcementsAvailable: [";
         foreach (Tuple<UnitPool, double, GameObject> reinforcement in reinforcementsAvailable)
@@ -502,29 +502,7 @@ public class ScenarioMap : MonoBehaviour
     {
         foreach (GameObject zone in GameObject.FindGameObjectsWithTag("ZoneInfoPanel"))
         {
-            ZoneInfo zoneInfo = zone.GetComponent<ZoneInfo>();
-            zoneInfo.DestroyFadedTokens();
-        }
-
-        foreach (string unitTag in villainRiver)
-        {
-            if (unitTag != "REINFORCEMENT")
-            {
-                foreach (GameObject unit in GameObject.FindGameObjectsWithTag(unitTag))
-                {
-                    if (unit.GetComponent<CanvasGroup>().alpha < 1)
-                    {
-                        for (int i = 0; i < unitsPool.Length; i++)
-                        {
-                            if (unit == unitsPool[i].unit)
-                            {
-                                unitsPool[i].total -= 1;
-                            }
-                        }
-                        DestroyImmediate(unit);
-                    }
-                }
-            }
+            zone.GetComponent<ZoneInfo>().DestroyFadedTokensAndUnits();
         }
     }
 

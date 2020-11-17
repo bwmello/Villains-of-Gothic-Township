@@ -737,7 +737,8 @@ public class Unit : MonoBehaviour
                                 }
                             }
                             priorityTargetsAndWeights.Sort((x, y) => y.Item2.CompareTo(x.Item2));  // Sorts by most valuable weight
-                            if (priorityTargetsAndWeights[0].Item2 > inactiveWeight)
+                            actionWeight = priorityTargetsAndWeights[0].Item2;
+                            if (actionWeight > inactiveWeight)
                             {
                                 List<GameObject> priorityTargets = priorityTargetsAndWeights.Select(x => x.Item1).ToList();
                                 if (priorityTargetsAndWeights[0].Item1.TryGetComponent<Hero>(out var tempHeroComponent))  // tempHeroComponent isn't used, but no other way to use TryGetComponent
@@ -797,7 +798,8 @@ public class Unit : MonoBehaviour
                                 }
                             }
                             priorityTargetsAndWeights.Sort((x, y) => y.Item2.CompareTo(x.Item2));  // Sorts by most valuable weight
-                            if (priorityTargetsAndWeights[0].Item2 > inactiveWeight)
+                            actionWeight = priorityTargetsAndWeights[0].Item2;
+                            if (actionWeight > inactiveWeight)
                             {
                                 List<GameObject> priorityTargets = priorityTargetsAndWeights.Select(x => x.Item1).ToList();
                                 if (priorityTargetsAndWeights[0].Item1.TryGetComponent<Hero>(out var tempHeroComponent))  // tempHeroComponent isn't used, but no other way to use TryGetComponent
@@ -1084,7 +1086,7 @@ public class Unit : MonoBehaviour
         {
             ZoneInfo destinationInfo = destination.GetComponent<ZoneInfo>();
             transform.SetParent(destinationInfo.GetAvailableUnitSlot().transform);
-            if (movementPath.movementSpent > movePoints && IsActive())  // TODO Reduce bonusMovePointsRemaining based on how far unit gets before dying, but only have movementSpent for destination
+            if (movementPath.movementSpent > movePoints && IsActive())  // TODO Reduce bonusMovePointsRemaining based on how far unit gets before dying to environToken, but only have movementSpent for destination
             {
                 UnitIntel.bonusMovePointsRemaining -= movementPath.movementSpent - movePoints;
             }

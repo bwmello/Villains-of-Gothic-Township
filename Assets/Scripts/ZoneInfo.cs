@@ -95,7 +95,7 @@ public class ZoneInfo : MonoBehaviour
         }
     }
 
-    public List<GameObject> GetUnits()
+    public List<GameObject> GetUnits()  // Returns only .IsActive() units
     {
         List<GameObject> units = new List<GameObject>();
         foreach (Unit unit in GetUnitsInfo())
@@ -109,9 +109,12 @@ public class ZoneInfo : MonoBehaviour
     {
         int currentOccupancy = 0;
         currentOccupancy += GetHeroesCount();  // Assumes size and menace of 1 for each hero
-        foreach (Unit unit in GetUnitsInfo())
+        foreach (Unit unit in gameObject.GetComponentsInChildren<Unit>())
         {
-            currentOccupancy += unit.size;
+            if (unit.IsActive())
+            {
+                currentOccupancy += unit.size;
+            }
         }
         return currentOccupancy;
     }
@@ -121,11 +124,18 @@ public class ZoneInfo : MonoBehaviour
         int currentHindrance = 0;
         currentHindrance += GetHeroesCount();  // Assumes size and menace of 1 for each hero
 
-        foreach (Unit unit in GetUnitsInfo())
+        foreach (Unit unit in gameObject.GetComponentsInChildren<Unit>())
         {
-            if (unit.gameObject != unitToDiscount)  // Unit doesn't count itself for hindrance
+            if (unit.IsActive() && unit.gameObject != unitToDiscount)  // Unit doesn't count itself for hindrance
             {
-                currentHindrance -= isMoving ? unit.size : unit.menace;
+                if (unit.isHeroAlly)
+                {
+                    currentHindrance += isMoving ? unit.size : unit.menace;
+                }
+                else
+                {
+                    currentHindrance -= isMoving ? unit.size : unit.menace;
+                }
             }
         }
 
@@ -140,9 +150,19 @@ public class ZoneInfo : MonoBehaviour
     {
         int currentHindrance = 0;
 
-        foreach (Unit unit in GetUnitsInfo())
+        foreach (Unit unit in gameObject.GetComponentsInChildren<Unit>())
         {
-            currentHindrance += isMoving ? unit.size : unit.menace;
+            if (unit.IsActive())
+            {
+                if (unit.isHeroAlly)
+                {
+                    currentHindrance -= isMoving ? unit.size : unit.menace;
+                }
+                else
+                {
+                    currentHindrance += isMoving ? unit.size : unit.menace;
+                }
+            }
         }
 
         foreach (GameObject heroOccupant in GetHeroes())
@@ -216,9 +236,9 @@ public class ZoneInfo : MonoBehaviour
     public int GetSupportRerolls(GameObject unitToDiscount = null)
     {
         int supportRerolls = 0;
-        foreach (Unit unit in GetUnitsInfo())
+        foreach (Unit unit in gameObject.GetComponentsInChildren<Unit>())
         {
-            if (unitToDiscount != unit.gameObject)
+            if (unit.IsActive() && !unit.isHeroAlly && unitToDiscount != unit.gameObject)
             {
                 supportRerolls += unit.supportRerolls;
             }
@@ -230,18 +250,21 @@ public class ZoneInfo : MonoBehaviour
     {
         double chanceOfFailure = 1;
 
-        foreach (Unit unit in GetUnitsInfo())
+        foreach (Unit unit in gameObject.GetComponentsInChildren<Unit>())
         {
-            foreach (Unit.ActionProficiency proficiency in unit.actionProficiencies)
+            if (unit.IsActive() && !unit.isHeroAlly)
             {
-                if (proficiency.actionType == "MANIPULATION")
+                foreach (Unit.ActionProficiency proficiency in unit.actionProficiencies)
                 {
-                    int totalRequiredSuccesses = requiredSuccesses + GetCurrentHindrance(unit.gameObject);
-                    if (munitionSpecialistApplies)
+                    if (proficiency.actionType == "MANIPULATION")
                     {
-                        totalRequiredSuccesses -= unit.munitionSpecialist;
+                        int totalRequiredSuccesses = requiredSuccesses + GetCurrentHindrance(unit.gameObject);
+                        if (munitionSpecialistApplies)
+                        {
+                            totalRequiredSuccesses -= unit.munitionSpecialist;
+                        }
+                        chanceOfFailure *= 1 - unit.GetChanceOfSuccess(totalRequiredSuccesses, proficiency.proficiencyDice, GetSupportRerolls(unit.gameObject));
                     }
-                    chanceOfFailure *= 1 - unit.GetChanceOfSuccess(totalRequiredSuccesses, proficiency.proficiencyDice, GetSupportRerolls(unit.gameObject));
                 }
             }
         }
@@ -270,7 +293,7 @@ public class ZoneInfo : MonoBehaviour
         return null;
     }
 
-    public void DestroyFadedTokens()
+    public void DestroyFadedTokensAndUnits()
     {
         Transform tokensRow = transform.Find("TokensRow");
         foreach (Transform token in tokensRow)
@@ -278,6 +301,14 @@ public class ZoneInfo : MonoBehaviour
             if (token.gameObject.GetComponent<CanvasGroup>().alpha < (float).5)  // Dissipating EnvironTokens go to .5 while still active
             {
                 DestroyImmediate(token.gameObject);
+            }
+        }
+        List<Unit> unitsInfo = new List<Unit>(gameObject.GetComponentsInChildren<Unit>());
+        for (int i = unitsInfo.Count - 1; i >= 0; i--)
+        {
+            if (!unitsInfo[i].IsActive())
+            {
+                Destroy(unitsInfo[i].gameObject);
             }
         }
     }
@@ -300,10 +331,9 @@ public class ZoneInfo : MonoBehaviour
         }
         else
         {
-            List<Unit> units = GetUnitsInfo();
-            foreach (Unit unit in units)
+            foreach (Unit unit in gameObject.GetComponentsInChildren<Unit>())
             {
-                if (unit.isHeroAlly)
+                if (unit.IsActive() && unit.isHeroAlly)
                 {
                     return true;
                 }
@@ -427,9 +457,9 @@ public class ZoneInfo : MonoBehaviour
     public List<GameObject> GetTargetableHeroAllies()
     {
         List<GameObject> occupyingHeroAllies = new List<GameObject>();
-        foreach (Unit unit in GetUnitsInfo())
+        foreach (Unit unit in gameObject.GetComponentsInChildren<Unit>())
         {
-            if (unit.isHeroAlly)
+            if (unit.IsActive() && unit.isHeroAlly)
             {
                 occupyingHeroAllies.Add(unit.gameObject);
             }
@@ -535,7 +565,7 @@ public class ZoneInfo : MonoBehaviour
     {
         if (affectedUnits == null)
         {
-            affectedUnits = new List<Unit>(GetUnitsInfo());
+            affectedUnits = new List<Unit>(GetUnitsInfo());  // This must be a list of .IsActive() units
         }
         List<GameObject> unitCasualties = new List<GameObject>();
         foreach (Unit affectedUnit in affectedUnits)
@@ -612,9 +642,9 @@ public class ZoneInfo : MonoBehaviour
                     Instantiate(gasPrefab, tokensRow).GetComponent<EnvironToken>().LoadEnvironTokenSave(newEnvironToken);
                     ReorganizeTokens();
                 }
-                foreach (Unit unitInZone in GetUnitsInfo())
+                foreach (Unit unitInZone in gameObject.GetComponentsInChildren<Unit>())
                 {
-                    if (!unitInZone.gasImmunity)
+                    if (unitInZone.IsActive() && !unitInZone.gasImmunity)
                     {
                         affectedUnits.Add(unitInZone);
                     }
@@ -627,9 +657,9 @@ public class ZoneInfo : MonoBehaviour
                     Instantiate(flamePrefab, tokensRow).GetComponent<EnvironToken>().LoadEnvironTokenSave(newEnvironToken);
                     ReorganizeTokens();
                 }
-                foreach (Unit unitInZone in GetUnitsInfo())
+                foreach (Unit unitInZone in gameObject.GetComponentsInChildren<Unit>())
                 {
-                    if (!unitInZone.fiery)
+                    if (unitInZone.IsActive() && !unitInZone.fiery)
                     {
                         affectedUnits.Add(unitInZone);
                     }
@@ -656,9 +686,9 @@ public class ZoneInfo : MonoBehaviour
                     Instantiate(cryogenicPrefab, tokensRow).GetComponent<EnvironToken>().LoadEnvironTokenSave(newEnvironToken);
                     ReorganizeTokens();
                 }
-                foreach (Unit unitInZone in GetUnitsInfo())
+                foreach (Unit unitInZone in gameObject.GetComponentsInChildren<Unit>())
                 {
-                    if (!unitInZone.frosty)
+                    if (unitInZone.IsActive() && !unitInZone.frosty)
                     {
                         affectedUnits.Add(unitInZone);
                     }
@@ -931,7 +961,7 @@ public class ZoneSave
             }
         }
 
-        foreach (Unit unit in zone.GetUnitsInfo())
+        foreach (Unit unit in zone.gameObject.GetComponentsInChildren<Unit>())
         {
             units.Add(unit.ToJSON());
         }
