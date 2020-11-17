@@ -1103,6 +1103,22 @@ public class Unit : MonoBehaviour
         yield return 0;
     }
 
+    public bool WasAttackTargetDropped(GameObject attackTarget)  // Could be either Hero or Unit
+    {
+        if (attackTarget.TryGetComponent<Hero>(out Hero targetHero)) {
+            return targetHero.IsWoundedOut();
+        }
+        else if (attackTarget.TryGetComponent<Unit>(out Unit targetUnit))
+        {
+            return !targetUnit.IsActive();
+        }
+        else
+        {
+            Debug.LogError("ERROR! attackTarget of WasAttackTargetDropped(attackTarget) is neither a hero nor a unit");
+        }
+        return false;
+    }
+
     IEnumerator PerformAction(UnitPossibleAction unitTurn)
     {
         int actionSuccesses = 0;
@@ -1135,10 +1151,10 @@ public class Unit : MonoBehaviour
 
                         if (currentMeleeTarget.TryGetComponent<Hero>(out Hero targetHero))
                         {
-                            //Debug.Log("!!!PerformAction(), currently targeting hero. currentMeleeTargetIndex: " + currentMeleeTargetIndex.ToString());
                             if (targetHero.IsWoundedOut())
                             {
-                                if (currentMeleeTargetIndex++ < unitTurn.priorityTargets.Count)  // Repeat this iteration of the loop with a new target
+                                currentMeleeTargetIndex++;
+                                if (currentMeleeTargetIndex < unitTurn.priorityTargets.Count)  // Repeat this iteration of the loop with a new target
                                 {
                                     currentMeleeTarget = unitTurn.priorityTargets[currentMeleeTargetIndex];
                                     i--;
@@ -1152,8 +1168,8 @@ public class Unit : MonoBehaviour
                         }
                         else if (!currentMeleeTarget.GetComponent<Unit>().IsActive())
                         {
-                            //Debug.Log("!!!PerformAction(), currently targeting unit. currentMeleeTargetIndex: " + currentMeleeTargetIndex.ToString());
-                            if (currentMeleeTargetIndex++ < unitTurn.priorityTargets.Count)  // Repeat this iteration of the loop with a new target
+                            currentMeleeTargetIndex++;
+                            if (currentMeleeTargetIndex < unitTurn.priorityTargets.Count)  // Repeat this iteration of the loop with a new target
                             {
                                 currentMeleeTarget = unitTurn.priorityTargets[currentMeleeTargetIndex];
                                 i--;
@@ -1170,7 +1186,7 @@ public class Unit : MonoBehaviour
                         {
                             actionSuccesses += martialArtsSuccesses;
                         }
-                        yield return StartCoroutine(animate.MeleeAttack(gameObject, currentMeleeTarget, actionSuccesses));  // TODO add circularStrike and burst target seeking
+                        yield return StartCoroutine(animate.MeleeAttack(gameObject, currentMeleeTarget, actionSuccesses));
 
                         if (fiery)
                         {
@@ -1180,7 +1196,41 @@ public class Unit : MonoBehaviour
                         {
                             yield return StartCoroutine(currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true)));
                         }
+
+                        int circularStrikeOccurrences = 0;  // Does this reset on each attack?
+                        while (circularStrike > circularStrikeOccurrences)
+                        {
+                            if (WasAttackTargetDropped(currentMeleeTarget))
+                            {
+                                currentMeleeTargetIndex++;
+                                if (currentMeleeTargetIndex < unitTurn.priorityTargets.Count)
+                                {
+                                    circularStrikeOccurrences++;
+                                    currentMeleeTarget = unitTurn.priorityTargets[currentMeleeTargetIndex];
+                                    yield return StartCoroutine(animate.MeleeAttack(gameObject, currentMeleeTarget, -1));
+
+                                    if (fiery)  // Triggered during the "End the Melee Attack" step, which happens for circularStrike?
+                                    {
+                                        yield return StartCoroutine(currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Flame", 1, false, true)));
+                                    }
+                                    if (frosty)
+                                    {
+                                        yield return StartCoroutine(currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true)));
+                                    }
+                                }
+                                else  // No more targets available
+                                {
+                                    break;
+                                    //goto meleeAttacksFinishedJump;
+                                }
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
                     }
+                    //meleeAttacksFinishedJump: ;  // Might be needed for circularStrike running out of priorityTargets
                     MissionSpecifics.currentPhase = "Villain";
                 }
                 break;
@@ -1202,7 +1252,8 @@ public class Unit : MonoBehaviour
                         {
                             if (targetHero.IsWoundedOut())
                             {
-                                if (currentRangedTargetIndex++ < unitTurn.priorityTargets.Count)  // Repeat this iteration of the loop with a new target
+                                currentRangedTargetIndex++;
+                                if (currentRangedTargetIndex < unitTurn.priorityTargets.Count)  // Repeat this iteration of the loop with a new target
                                 {
                                     currentRangedTarget = unitTurn.priorityTargets[currentRangedTargetIndex];
                                     i--;
@@ -1222,7 +1273,8 @@ public class Unit : MonoBehaviour
                         {
                             if (!targetUnit.IsActive())
                             {
-                                if (currentRangedTargetIndex++ < unitTurn.priorityTargets.Count)  // Repeat this iteration of the loop with a new target
+                                currentRangedTargetIndex++;
+                                if (currentRangedTargetIndex < unitTurn.priorityTargets.Count)  // Repeat this iteration of the loop with a new target
                                 {
                                     currentRangedTarget = unitTurn.priorityTargets[currentRangedTargetIndex];
                                     i--;
@@ -1263,7 +1315,7 @@ public class Unit : MonoBehaviour
                             {
                                 actionSuccesses = 0;
                             }
-                            yield return StartCoroutine(animate.RangedAttack(gameObject, currentRangedTarget, actionSuccesses));  // TODO add circularStrike and burst target seeking
+                            yield return StartCoroutine(animate.RangedAttack(gameObject, currentRangedTarget, actionSuccesses));
 
                             if (fiery)
                             {
@@ -1272,6 +1324,38 @@ public class Unit : MonoBehaviour
                             if (frosty)
                             {
                                 yield return StartCoroutine(currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true)));
+                            }
+
+                            int burstCarryOverOccurrences = 0;
+                            while (burstCarryOver > burstCarryOverOccurrences)
+                            {
+                                if (WasAttackTargetDropped(currentRangedTarget))
+                                {
+                                    currentRangedTargetIndex++;
+                                    if (currentRangedTargetIndex < unitTurn.priorityTargets.Count)
+                                    {
+                                        burstCarryOverOccurrences++;
+                                        currentRangedTarget = unitTurn.priorityTargets[currentRangedTargetIndex];
+                                        yield return StartCoroutine(animate.RangedAttack(gameObject, currentRangedTarget, -1));
+
+                                        if (fiery)
+                                        {
+                                            yield return StartCoroutine(currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Flame", 1, false, true)));
+                                        }
+                                        if (frosty)
+                                        {
+                                            yield return StartCoroutine(currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true)));
+                                        }
+                                    }
+                                    else  // No more targets available
+                                    {
+                                        break;
+                                    }
+                                }
+                                else
+                                {
+                                    break;
+                                }
                             }
                         }
                         else

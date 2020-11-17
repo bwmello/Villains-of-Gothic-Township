@@ -11,6 +11,7 @@ public class Animate : MonoBehaviour
     public Camera cameraStuff;
 
     public GameObject woundPrefab;
+    public GameObject woundQuestionPrefab;
     public GameObject bulletPrefab;
     public GameObject impactPrefab;
     public GameObject grenadePrefab;
@@ -296,10 +297,21 @@ public class Animate : MonoBehaviour
         yield return StartCoroutine(MoveCameraUntilOnscreen(attacker.transform.position, target.transform.position));
 
         List<GameObject> wounds = new List<GameObject>();
-        for (int i = 0; i < woundsTotal; i++)
+        if (woundsTotal >= 0)
         {
-            wounds.Add(Instantiate(woundPrefab, target.transform));
-            wounds[i].transform.localPosition = new Vector3(woundPlacement[i].x, woundPlacement[i].y, 0);
+            for (int i = 0; i < woundsTotal; i++)
+            {
+                wounds.Add(Instantiate(woundPrefab, target.transform));
+                wounds[i].transform.localPosition = new Vector3(woundPlacement[i].x, woundPlacement[i].y, 0);
+            }
+        }
+        else  // if (woundsTotal < 0), woundsTotal is unknown (ex: circularStrike) and wound markers should be replaced with '?' icons
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                wounds.Add(Instantiate(woundQuestionPrefab, target.transform));
+                wounds[i].transform.localPosition = new Vector3(woundPlacement[i].x, woundPlacement[i].y, 0);
+            }
         }
         StartCoroutine(FadeObjects(wounds, 0, 1, woundFadeTimeCoefficient));
 
@@ -375,10 +387,21 @@ public class Animate : MonoBehaviour
         yield return StartCoroutine(MoveCameraUntilOnscreen(attacker.transform.position, target.transform.position));
 
         List<GameObject> wounds = new List<GameObject>();
-        for (int i = 0; i < woundsTotal; i++)
+        if (woundsTotal >= 0)
         {
-            wounds.Add(Instantiate(woundPrefab, target.transform));
-            wounds[i].transform.localPosition = new Vector3(woundPlacement[i].x, woundPlacement[i].y, 0);
+            for (int i = 0; i < woundsTotal; i++)
+            {
+                wounds.Add(Instantiate(woundPrefab, target.transform));
+                wounds[i].transform.localPosition = new Vector3(woundPlacement[i].x, woundPlacement[i].y, 0);
+            }
+        }
+        else  // if (woundsTotal < 0), woundsTotal is unknown (ex: circularStrike) and wound markers should be replaced with '?' icons
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                wounds.Add(Instantiate(woundQuestionPrefab, target.transform));
+                wounds[i].transform.localPosition = new Vector3(woundPlacement[i].x, woundPlacement[i].y, 0);
+            }
         }
         StartCoroutine(FadeObjects(wounds, 0, 1, woundFadeTimeCoefficient));
 

@@ -17,7 +17,7 @@ public class MissionMenu : MonoBehaviour
         spotlight1.transform.localPosition = new Vector3((float)(transform.GetComponent<RectTransform>().rect.width * -0.00260416666), (float)(transform.GetComponent<RectTransform>().rect.height * 0.1574074074), 0);
         // parent_width=1920, x_center=-140, percentage_of_parent_width=-140/1920=-0.07291666666; parent_height=1080, y_center=185, percentage_of_parent_height=185/1080=0.17129629629
         spotlight1.GetComponent<Spotlight>().leftPoint = new Vector3((float)(transform.GetComponent<RectTransform>().rect.width * -0.07291666666), (float)(transform.GetComponent<RectTransform>().rect.height * 0.17129629629), 0);
-        yield return new WaitForSecondsRealtime(Random.Range(1.0f, 2.0f));
+        yield return new WaitForSecondsRealtime(Random.Range(2.0f, 3.0f));
 
         GameObject spotlight2 = Instantiate(spotlightPrefab, transform);
         // parent_width=1920, x_center=480, percentage_of_parent_width=-480/1920=0.25; parent_height=1080, y_center=215, percentage_of_parent_height=215/1080=0.19907407407
