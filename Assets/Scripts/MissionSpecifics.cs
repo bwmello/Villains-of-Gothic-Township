@@ -105,7 +105,18 @@ public static class MissionSpecifics
                 actionsWeightTable["RANGED"] = new List<ActionWeight>(initialAttackWeightTable);
                 actionsWeightTable["MELEE"].Add(new ActionWeight("BYSTANDER", 0, 20, null));
                 actionsWeightTable["RANGED"].Add(new ActionWeight("BYSTANDER", 0, 20, null));
+
+                actionsWeightTable["THOUGHT"] = new List<ActionWeight>();
                 UtilityBelt utilityBelt = scenarioMap.UIOverlay.GetComponent<UIOverlay>().utilityBelt.GetComponent<UtilityBelt>();  // Pretty terrible chain of calls just to get claimableTokens
+                //List<GameObject> claimableTokens = new List<GameObject>(utilityBelt.claimableTokens);
+                foreach (GameObject claimableTokenObject in utilityBelt.claimableTokens)
+                {
+                    ClaimableToken claimableToken = claimableTokenObject.GetComponent<ClaimableToken>();
+                    if (claimableToken.tokenType == "Computer" && !claimableToken.isClaimed)
+                    {
+                        actionsWeightTable["THOUGHT"].Add(new ActionWeight("Computer", 3, 80, DeactivateComputer));
+                    }
+                }
                 break;
         }
     }
@@ -190,7 +201,7 @@ public static class MissionSpecifics
                     break;
             }
         }
-        if (button.CompareTag("PrimedBomb"))
+        else if (button.CompareTag("PrimedBomb"))
         {
             switch (missionName)
             {
@@ -205,14 +216,40 @@ public static class MissionSpecifics
                     break;
             }
         }
+        else if (button.CompareTag("Computer"))
+        {
+            switch (missionName)
+            {
+                case "AFewBadApples":
+                    UtilityBelt utilityBelt = scenarioMap.UIOverlay.GetComponent<UIOverlay>().utilityBelt.GetComponent<UtilityBelt>();  // Pretty terrible chain of calls just to get claimableTokens
+                    if (button.GetComponent<Token>().IsActive())
+                    {
+                        foreach (GameObject claimableTokenObject in utilityBelt.claimableTokens)
+                        {
+                            ClaimableToken claimableToken = claimableTokenObject.GetComponent<ClaimableToken>();
+                            if (claimableToken.tokenType == "Computer")
+                            {
+                                if (!claimableToken.isClaimed)
+                                {
+                                    claimableToken.ClaimableTokenClicked();
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    break;  // Allow Computer token to be faded/unfaded below
+                default:
+                    break;
+            }
+        }
         CanvasGroup buttonCanvas = button.GetComponent<CanvasGroup>();
         if (buttonCanvas.alpha == 1)  // Token was disabled, so remove from board
         {
-            buttonCanvas.alpha = (float).2;
+            buttonCanvas.alpha = .2f;
         }
         else  // Mistake was made in removing token, so add token back to the board
         {
-            buttonCanvas.alpha = (float)1;
+            buttonCanvas.alpha = 1f;
         }
     }
 
@@ -371,6 +408,54 @@ public static class MissionSpecifics
         yield return 0;
     }
 
+    public static List<Unit.UnitPossibleAction> GetPredeterminedActivations()
+    {
+        switch (missionName)
+        {
+            //case "ASinkingFeeling":
+            //    return null;
+            case "IceToSeeYou":
+                switch (currentRound)
+                {
+                    case 1:
+                        GameObject otterPop = GameObject.FindGameObjectWithTag("OTTERPOP");
+                        GameObject zone26 = scenarioMap.gameObject.transform.Find("ZoneInfoPanel 26").gameObject;
+                        GameObject zone25 = scenarioMap.gameObject.transform.Find("ZoneInfoPanel 25").gameObject;
+                        GameObject zone22 = scenarioMap.gameObject.transform.Find("ZoneInfoPanel 22").gameObject;
+                        GameObject zone15 = scenarioMap.gameObject.transform.Find("ZoneInfoPanel 15").gameObject;
+                        GameObject zone16 = scenarioMap.gameObject.transform.Find("ZoneInfoPanel 16").gameObject;
+                        Unit.MovementPath zone22MovePath = new Unit.MovementPath(2, 0, new List<GameObject>() { zone26, zone25 });
+                        Dictionary<GameObject, Unit.MovementPath> possibleDestinations = new Dictionary<GameObject, Unit.MovementPath>
+                        {
+                            { zone22, zone22MovePath },
+                            { zone15, new Unit.MovementPath(4, 0, new List<GameObject>() { zone25, zone22 }) },
+                            { zone16, new Unit.MovementPath(4, 0, new List<GameObject>() { zone25, zone22 }) },
+                        };
+
+                        List<Unit.UnitPossibleAction> allPossibleUnitActions = otterPop.GetComponent<Unit>().GetPossibleActions(possibleDestinations);
+                        Unit.UnitPossibleAction chosenAction = new Unit.UnitPossibleAction(otterPop.GetComponent<Unit>(), new ActionWeight(null, 0, 0, null), new Unit.ActionProficiency(null, 0, null), 0, zone22, zone22, zone22MovePath, null, null);
+                        foreach (Unit.UnitPossibleAction unitAction in allPossibleUnitActions)
+                        {
+                            if (chosenAction == null || unitAction.actionWeight > chosenAction.actionWeight)
+                            {
+                                chosenAction = unitAction;
+                            }
+                        }
+
+                        //return new Dictionary<GameObject, Unit.UnitPossibleAction> { { otterPop, chosenAction } };
+                        return new List<Unit.UnitPossibleAction> { chosenAction };
+
+                    default:
+                        break;
+                }
+                break;
+
+            default:
+                break;
+        }
+        return null;
+    }
+
     /* ActionCallbacks specific to "ASinkingFeeling" mission */
     public static IEnumerator PrimeBombManually(GameObject unit, GameObject target, int totalSuccesses, int requiredSuccesses)
     {
@@ -476,55 +561,6 @@ public static class MissionSpecifics
         }
         Object.Destroy(successContainer);
         yield return 0;
-    }
-
-    //public static Dictionary<GameObject, Unit.UnitPossibleAction> GetPredeterminedActivations()
-    public static List<Unit.UnitPossibleAction> GetPredeterminedActivations()
-    {
-        switch (missionName)
-        {
-            //case "ASinkingFeeling":
-            //    return null;
-            case "IceToSeeYou":
-                switch (currentRound)
-                {
-                    case 1:
-                        GameObject otterPop = GameObject.FindGameObjectWithTag("OTTERPOP");
-                        GameObject zone26 = scenarioMap.gameObject.transform.Find("ZoneInfoPanel 26").gameObject;
-                        GameObject zone25 = scenarioMap.gameObject.transform.Find("ZoneInfoPanel 25").gameObject;
-                        GameObject zone22 = scenarioMap.gameObject.transform.Find("ZoneInfoPanel 22").gameObject;
-                        GameObject zone15 = scenarioMap.gameObject.transform.Find("ZoneInfoPanel 15").gameObject;
-                        GameObject zone16 = scenarioMap.gameObject.transform.Find("ZoneInfoPanel 16").gameObject;
-                        Unit.MovementPath zone22MovePath = new Unit.MovementPath(2, 0, new List<GameObject>() { zone26, zone25 });
-                        Dictionary<GameObject, Unit.MovementPath> possibleDestinations = new Dictionary<GameObject, Unit.MovementPath>
-                        {
-                            { zone22, zone22MovePath },
-                            { zone15, new Unit.MovementPath(4, 0, new List<GameObject>() { zone25, zone22 }) },
-                            { zone16, new Unit.MovementPath(4, 0, new List<GameObject>() { zone25, zone22 }) },
-                        };
-
-                        List<Unit.UnitPossibleAction> allPossibleUnitActions = otterPop.GetComponent<Unit>().GetPossibleActions(possibleDestinations);
-                        Unit.UnitPossibleAction chosenAction = new Unit.UnitPossibleAction(otterPop.GetComponent<Unit>(), new ActionWeight(null, 0, 0, null), new Unit.ActionProficiency(null, 0, null), 0, zone22, zone22, zone22MovePath, null, null);
-                        foreach (Unit.UnitPossibleAction unitAction in allPossibleUnitActions)
-                        {
-                            if (chosenAction == null || unitAction.actionWeight > chosenAction.actionWeight)
-                            {
-                                chosenAction = unitAction;
-                            }
-                        }
-
-                        //return new Dictionary<GameObject, Unit.UnitPossibleAction> { { otterPop, chosenAction } };
-                        return new List<Unit.UnitPossibleAction> { chosenAction };
-
-                    default:
-                        break;
-                }
-                break;
-
-            default:
-                break;
-        }
-        return null;
     }
 
     /* ActionCallbacks specific to "IceToSeeYou" mission */
@@ -667,6 +703,45 @@ public static class MissionSpecifics
             }
             unitZoneInfo.RemoveComputer();
             SetActionsWeightTable();
+        }
+        Object.Destroy(successContainer);
+        yield return 0;
+    }
+
+    /* ActionCallbacks specific to "AFewBadApples" mission */
+    public static IEnumerator DeactivateComputer(GameObject unit, GameObject target, int totalSuccesses, int requiredSuccesses)
+    {
+        ZoneInfo unitZoneInfo = unit.GetComponent<Unit>().GetZone().GetComponent<ZoneInfo>();
+        // Animate success vs failure UI
+        GameObject successContainer = Object.Instantiate(unitZoneInfo.successVsFailurePrefab, animationContainer.transform);
+        successContainer.transform.position = unit.transform.TransformPoint(new Vector3(0, 12, 0));
+
+        successContainer.GetComponent<RectTransform>().sizeDelta = new Vector2(requiredSuccesses * 10, successContainer.GetComponent<RectTransform>().rect.height);
+        Transform successContainerText = successContainer.transform.GetChild(0);
+        successContainerText.GetComponent<RectTransform>().sizeDelta = new Vector2(requiredSuccesses * 10, successContainerText.GetComponent<RectTransform>().rect.height);
+        string successContainerBlanks = "_";
+        for (int i = 1; i < requiredSuccesses; i++)
+        {
+            successContainerBlanks += " _";
+        }
+        successContainerText.GetComponent<TMP_Text>().text = successContainerBlanks;
+
+        for (int i = -1; i < (totalSuccesses >= 0 ? totalSuccesses : 0); i++)
+        {
+            yield return new WaitForSecondsRealtime(1);
+            if (i == requiredSuccesses - 1)  // Otherwise there can be more results (checks/x's) displayed than requiredSuccesses
+            {
+                break;
+            }
+            GameObject successOrFailurePrefab = i + 1 < totalSuccesses ? unitZoneInfo.successPrefab : unitZoneInfo.failurePrefab;
+            GameObject successOrFailureMarker = Object.Instantiate(successOrFailurePrefab, successContainer.transform);
+        }
+        yield return new WaitForSecondsRealtime(1);
+
+        if (totalSuccesses >= requiredSuccesses)
+        {
+            unitZoneInfo.RemoveComputer();
+            yield return new WaitForSecondsRealtime(2);
         }
         Object.Destroy(successContainer);
         yield return 0;
