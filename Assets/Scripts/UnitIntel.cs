@@ -12,6 +12,7 @@ public static class UnitIntel
     public static double terrainDangerWeight = -50;  // * terrainDanger
     public static double terrainDangeringFriendlies = -10;  // * terrainDanger * quantity of friendly units.  Chance of unit dying is 2/3 per terrainDanger
     public static double increaseTerrainDifficultyWeight = 10;
+    public static double additionalTargetsForAdditionalAttacksWeight = 3;
     public static double[] bonusMovePointWeight = new double[] { 0, -15, -30, -45 };  // Accessed by UnitIntel.bonusMovePointWeight[movePointsUsed - unit.movePoints], so bonusMovePointWeight[0] = 0
     public static double[] partialMoveWeight = new double[] { .25, .0625 };  // * actionWeight. Accessed by UnitIntel.partialMoveWeight[additional moves required - 1]
     //public static Dictionary<string, double> partialMoveWeight = new Dictionary<string, double>()

@@ -737,7 +737,19 @@ public class Unit : MonoBehaviour
                                 }
                             }
                             priorityTargetsAndWeights.Sort((x, y) => y.Item2.CompareTo(x.Item2));  // Sorts by most valuable weight
+
                             actionWeight = priorityTargetsAndWeights[0].Item2;
+                            if (priorityTargetsAndWeights.Count > 1 && circularStrike > 0)
+                            {
+                                if (circularStrike > 0)
+                                {
+                                    actionWeight += UnitIntel.additionalTargetsForAdditionalAttacksWeight;
+                                }
+                            }
+                            else if (priorityTargetsAndWeights.Count == 1 && actionProficiency.actionMultiplier > 1)
+                            {
+                                actionWeight -= actionProficiency.actionMultiplier * UnitIntel.additionalTargetsForAdditionalAttacksWeight;  // Wounds from additional attacks not guaranteed
+                            }
                             if (actionWeight > inactiveWeight)
                             {
                                 List<GameObject> priorityTargets = priorityTargetsAndWeights.Select(x => x.Item1).ToList();
@@ -798,7 +810,19 @@ public class Unit : MonoBehaviour
                                 }
                             }
                             priorityTargetsAndWeights.Sort((x, y) => y.Item2.CompareTo(x.Item2));  // Sorts by most valuable weight
+
                             actionWeight = priorityTargetsAndWeights[0].Item2;
+                            if (priorityTargetsAndWeights.Count > 1 && burstCarryOver > 0)
+                            {
+                                if (circularStrike > 0)
+                                {
+                                    actionWeight += UnitIntel.additionalTargetsForAdditionalAttacksWeight;
+                                }
+                            }
+                            else if (priorityTargetsAndWeights.Count == 1 && actionProficiency.actionMultiplier > 1)
+                            {
+                                actionWeight -= actionProficiency.actionMultiplier * UnitIntel.additionalTargetsForAdditionalAttacksWeight;  // Wounds from additional attacks not guaranteed
+                            }
                             if (actionWeight > inactiveWeight)
                             {
                                 List<GameObject> priorityTargets = priorityTargetsAndWeights.Select(x => x.Item1).ToList();
