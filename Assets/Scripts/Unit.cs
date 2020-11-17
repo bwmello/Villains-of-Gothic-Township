@@ -723,6 +723,12 @@ public class Unit : MonoBehaviour
                                 actionWeight += UnitIntel.increaseTerrainDifficultyWeight;  // Only counted if there is a target
                             }
 
+                            List<MissionSpecifics.ActionWeight> highPriorityTargets = new List<MissionSpecifics.ActionWeight>();
+                            for (int i = 2; i < MissionSpecifics.actionsWeightTable["MELEE"].Count; i++)
+                            {
+                                highPriorityTargets.Add(MissionSpecifics.actionsWeightTable["MELEE"][i]);
+                            }
+
                             List<(GameObject, double)> priorityTargetsAndWeights = new List<(GameObject, double)>();
                             foreach (GameObject targetableZone in meleeTargetableZones)
                             {
@@ -733,7 +739,20 @@ public class Unit : MonoBehaviour
                                 }
                                 foreach (GameObject heroAlly in targetableZoneInfo.GetTargetableHeroAllies())
                                 {
-                                    priorityTargetsAndWeights.Add((heroAlly, averageWounds * MissionSpecifics.actionsWeightTable["MELEE"][1].weightFactor + actionWeight));
+                                    bool isHighPriorityTarget = false;
+                                    foreach (MissionSpecifics.ActionWeight highPriorityTarget in highPriorityTargets)
+                                    {
+                                        if (heroAlly.CompareTag(highPriorityTarget.targetType))
+                                        {
+                                            isHighPriorityTarget = true;
+                                            priorityTargetsAndWeights.Add((heroAlly, averageWounds * highPriorityTarget.weightFactor + actionWeight));
+                                            break;
+                                        }
+                                    }
+                                    if (!isHighPriorityTarget)
+                                    {
+                                        priorityTargetsAndWeights.Add((heroAlly, averageWounds * MissionSpecifics.actionsWeightTable["MELEE"][1].weightFactor + actionWeight));
+                                    }
                                 }
                             }
                             priorityTargetsAndWeights.Sort((x, y) => y.Item2.CompareTo(x.Item2));  // Sorts by most valuable weight
@@ -741,15 +760,20 @@ public class Unit : MonoBehaviour
                             actionWeight = priorityTargetsAndWeights[0].Item2;
                             if (priorityTargetsAndWeights.Count > 1 && circularStrike > 0)
                             {
-                                if (circularStrike > 0)
-                                {
-                                    actionWeight += UnitIntel.additionalTargetsForAdditionalAttacksWeight;
-                                }
+                                actionWeight += UnitIntel.additionalTargetsForAdditionalAttacksWeight;
                             }
                             else if (priorityTargetsAndWeights.Count == 1 && actionProficiency.actionMultiplier > 1)
                             {
                                 actionWeight -= actionProficiency.actionMultiplier * UnitIntel.additionalTargetsForAdditionalAttacksWeight;  // Wounds from additional attacks not guaranteed
                             }
+
+                            //string priorityTargetsDebugString = "PriorityTargetsDebugString for unit " + gameObject.name;
+                            //foreach ((GameObject, double) priorityTargetAndWeight in priorityTargetsAndWeights)  // Doesn't include change to actionWeight above
+                            //{
+                            //    priorityTargetsDebugString += "    Targeting " + priorityTargetAndWeight.Item1.name + " with weight: " + priorityTargetAndWeight.Item2.ToString();
+                            //}
+                            //Debug.Log(priorityTargetsDebugString);
+
                             if (actionWeight > inactiveWeight)
                             {
                                 List<GameObject> priorityTargets = priorityTargetsAndWeights.Select(x => x.Item1).ToList();
@@ -772,6 +796,12 @@ public class Unit : MonoBehaviour
                             if (frosty)  // Account for increasing difficult terrain of targets's zone
                             {
                                 actionWeight += UnitIntel.increaseTerrainDifficultyWeight;  // Only counted if there is a target
+                            }
+
+                            List<MissionSpecifics.ActionWeight> highPriorityTargets = new List<MissionSpecifics.ActionWeight>();
+                            for (int i = 2; i < MissionSpecifics.actionsWeightTable["RANGED"].Count; i++)
+                            {
+                                highPriorityTargets.Add(MissionSpecifics.actionsWeightTable["RANGED"][i]);
                             }
 
                             List<(GameObject, double)> priorityTargetsAndWeights = new List<(GameObject, double)>();
@@ -806,7 +836,20 @@ public class Unit : MonoBehaviour
                                 }
                                 foreach (GameObject heroAlly in targetableZoneInfo.GetTargetableHeroAllies())
                                 {
-                                    priorityTargetsAndWeights.Add((heroAlly, averageWounds * MissionSpecifics.actionsWeightTable["RANGED"][1].weightFactor + actionWeight));
+                                    bool isHighPriorityTarget = false;
+                                    foreach (MissionSpecifics.ActionWeight highPriorityTarget in highPriorityTargets)
+                                    {
+                                        if (heroAlly.CompareTag(highPriorityTarget.targetType))
+                                        {
+                                            isHighPriorityTarget = true;
+                                            priorityTargetsAndWeights.Add((heroAlly, averageWounds * highPriorityTarget.weightFactor + actionWeight));
+                                            break;
+                                        }
+                                    }
+                                    if (!isHighPriorityTarget)
+                                    {
+                                        priorityTargetsAndWeights.Add((heroAlly, averageWounds * MissionSpecifics.actionsWeightTable["RANGED"][1].weightFactor + actionWeight));
+                                    }
                                 }
                             }
                             priorityTargetsAndWeights.Sort((x, y) => y.Item2.CompareTo(x.Item2));  // Sorts by most valuable weight
@@ -814,10 +857,7 @@ public class Unit : MonoBehaviour
                             actionWeight = priorityTargetsAndWeights[0].Item2;
                             if (priorityTargetsAndWeights.Count > 1 && burstCarryOver > 0)
                             {
-                                if (circularStrike > 0)
-                                {
-                                    actionWeight += UnitIntel.additionalTargetsForAdditionalAttacksWeight;
-                                }
+                                actionWeight += UnitIntel.additionalTargetsForAdditionalAttacksWeight;
                             }
                             else if (priorityTargetsAndWeights.Count == 1 && actionProficiency.actionMultiplier > 1)
                             {

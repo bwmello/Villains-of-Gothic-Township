@@ -18,9 +18,10 @@ public static class MissionSpecifics
     public static int currentRound;
     public static string currentPhase = "Setup";  // "Setup", "Villain", "VillainAttack", "Hero", "GameOver"
 
+    public static List<ActionWeight> initialAttackWeightTable = new List<ActionWeight>() { new ActionWeight("Hero", 0, 10, null), new ActionWeight("HeroAlly", 0, 3, null) };  // 10 * averageTotalWounds vs heroes, 3 * averageTotalWounds vs heroAllies
     public static Dictionary<string, List<ActionWeight>> actionsWeightTable = new Dictionary<string, List<ActionWeight>>() {
-        { "MELEE", new List<ActionWeight>() { new ActionWeight("Hero", 0, 10, null), new ActionWeight("HeroAlly", 0, 3, null) } },  // 10 * averageTotalWounds vs heroes, 3 * averageTotalWounds vs heroAllies
-        { "RANGED", new List<ActionWeight>() { new ActionWeight("Hero", 0, 10, null), new ActionWeight("HeroAlly", 0, 3, null) } }
+        { "MELEE", new List<ActionWeight>(initialAttackWeightTable) },
+        { "RANGED", new List<ActionWeight>(initialAttackWeightTable) }
     };
 
     public delegate IEnumerator ActionCallback(GameObject unit, GameObject target, int totalSuccesses, int requiredSuccesses);
@@ -98,6 +99,13 @@ public static class MissionSpecifics
                 {
                     actionsWeightTable["GUARD"].Add(new ActionWeight("Bomb", 0, 20, null));
                 }
+                break;
+            case "AFewBadApples":
+                actionsWeightTable["MELEE"] = new List<ActionWeight>(initialAttackWeightTable);
+                actionsWeightTable["RANGED"] = new List<ActionWeight>(initialAttackWeightTable);
+                actionsWeightTable["MELEE"].Add(new ActionWeight("BYSTANDER", 0, 20, null));
+                actionsWeightTable["RANGED"].Add(new ActionWeight("BYSTANDER", 0, 20, null));
+                UtilityBelt utilityBelt = scenarioMap.UIOverlay.GetComponent<UIOverlay>().utilityBelt.GetComponent<UtilityBelt>();  // Pretty terrible chain of calls just to get claimableTokens
                 break;
         }
     }
