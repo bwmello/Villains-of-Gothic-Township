@@ -770,10 +770,10 @@ public static class MissionSpecifics
             for (int i = 0; i < cryoZoneTargets.Count; i++)  // Subtract friendly fire from each target zone's weight
             {
                 //string cryoZoneTargetsDebugString = "For zone " + cryoZoneTargets[i].Item2.name;
-                foreach (Unit inAreaUnit in cryoZoneTargets[i].Item2.GetComponent<ZoneInfo>().GetUnitsInfo())
+                foreach (Unit inAreaUnit in cryoZoneTargets[i].Item2.GetComponentsInChildren<Unit>())
                 {
                     //cryoZoneTargetsDebugString += " unit " + inAreaUnit.name;
-                    if (!inAreaUnit.frosty)
+                    if (inAreaUnit.IsActive() && !inAreaUnit.isHeroAlly && !inAreaUnit.frosty)
                     {
                         //cryoZoneTargets[i].Item1 -= 5;  // Doesn't work because I think .Item1 is a clone of the value ("return value is not a variable")
                         cryoZoneTargets[i] = (cryoZoneTargets[i].Item1 - 9, cryoZoneTargets[i].Item2);

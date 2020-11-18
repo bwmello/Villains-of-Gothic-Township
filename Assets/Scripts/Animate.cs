@@ -224,22 +224,21 @@ public class Animate : MonoBehaviour
 
 
     bool waitingOnPlayerInput = false;
-    public IEnumerator PauseUntilPlayerPushesContinue(GameObject target)
+    public IEnumerator PauseUntilPlayerPushesContinue(GameObject targetZone)
     {
         waitingOnPlayerInput = true;
-        GameObject zone = target.GetComponentInParent<ZoneInfo>().gameObject;
-        GameObject continueButton = Instantiate(continueButtonPrefab, zone.transform);
-        if (IsPointOnScreen(zone.transform.TransformPoint(0, -50f, 0)))
+        GameObject continueButton = Instantiate(continueButtonPrefab, targetZone.transform);
+        if (IsPointOnScreen(targetZone.transform.TransformPoint(0, -50f, 0)))
         {
-            continueButton.transform.position = zone.transform.TransformPoint(0, -50f, 0);
+            continueButton.transform.position = targetZone.transform.TransformPoint(0, -50f, 0);
         }
-        else if (IsPointOnScreen(zone.transform.TransformPoint(0, 50f, 0)))
+        else if (IsPointOnScreen(targetZone.transform.TransformPoint(0, 50f, 0)))
         {
-            continueButton.transform.position = zone.transform.TransformPoint(0, 50f, 0);
+            continueButton.transform.position = targetZone.transform.TransformPoint(0, 50f, 0);
         }
         else
         {
-            continueButton.transform.position = zone.transform.TransformPoint(0, -50f, 0);
+            continueButton.transform.position = targetZone.transform.TransformPoint(0, -50f, 0);
             Debug.LogError("ERROR! Continue button isn't on screen in either available position.");  // Not true, triggers on the left hand side now because of the camera bounds
         }
         continueButton.GetComponent<Button>().onClick.AddListener(delegate { waitingOnPlayerInput = false; });
@@ -321,7 +320,7 @@ public class Animate : MonoBehaviour
         {
             panAndZoom.controlCamera = true;
         }
-        yield return StartCoroutine(PauseUntilPlayerPushesContinue(target));
+        yield return StartCoroutine(PauseUntilPlayerPushesContinue(targetZoneInfo.gameObject));
 
         attacker.GetComponent<Unit>().SetIsClickable(true);
         targetZoneInfo.SetIsClickableForHeroesAndAllies(true);
@@ -409,7 +408,7 @@ public class Animate : MonoBehaviour
         {
             panAndZoom.controlCamera = true;
         }
-        yield return StartCoroutine(PauseUntilPlayerPushesContinue(target));
+        yield return StartCoroutine(PauseUntilPlayerPushesContinue(targetZoneInfo.gameObject));
 
         attacker.GetComponent<Unit>().SetIsClickable(false);
         targetZoneInfo.SetIsClickableForHeroesAndAllies(false);

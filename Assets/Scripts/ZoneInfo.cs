@@ -545,16 +545,31 @@ public class ZoneInfo : MonoBehaviour
 
     public void SetIsClickableForHeroesAndAllies(bool shouldMakeClickable)  // This also makes inactive heroes/units clickable, but does that really matter?
     {
-        foreach (Unit unit in this.GetComponentsInChildren<Unit>())
+        foreach (Unit unit in GetComponentsInChildren<Unit>())
         {
             if (unit.isHeroAlly)  // && unit.IsActive()
             {
                 unit.SetIsClickable(shouldMakeClickable);
             }
         }
-        foreach (Hero hero in this.GetComponentsInChildren<Hero>())
+        foreach (Hero hero in GetComponentsInChildren<Hero>())
         {  // if (!hero.IsWoundedOut) {
             hero.SetIsClickable(shouldMakeClickable);
+        }
+    }
+
+    public void ConfigureClickAndDragabilityForHeroesAndAllies()  // This also (potentially) makes inactive heroes/units clickable, but does that really matter?
+    {
+        foreach (Unit unit in GetComponentsInChildren<Unit>())
+        {
+            if (unit.isHeroAlly)  // && unit.IsActive()
+            {
+                unit.ConfigureClickAndDragability();
+            }
+        }
+        foreach (Hero hero in GetComponentsInChildren<Hero>())
+        {  // if (!hero.IsWoundedOut) {
+            hero.ConfigureClickAndDragability();
         }
     }
 
@@ -581,21 +596,24 @@ public class ZoneInfo : MonoBehaviour
     {
         if (affectedUnits == null)
         {
-            affectedUnits = new List<Unit>(GetUnitsInfo());  // This must be a list of .IsActive() units
+            affectedUnits = new List<Unit>(GetComponentsInChildren<Unit>());
         }
         List<GameObject> unitCasualties = new List<GameObject>();
-        foreach (Unit affectedUnit in affectedUnits)
+        foreach (Unit unit in affectedUnits)
         {
-            int automaticWounds = 0;
-            Dice damageDie = environmentalDie.GetComponent<Dice>();
-            for (int i = 0; i < dangerIncrease; i++)
+            if (unit.IsActive() && !unit.isHeroAlly)
             {
-                automaticWounds += damageDie.Roll();
-            }
-            affectedUnit.ModifyLifePoints(-automaticWounds);
-            if (!affectedUnit.IsActive())
-            {
-                unitCasualties.Add(affectedUnit.gameObject);
+                int automaticWounds = 0;
+                Dice damageDie = environmentalDie.GetComponent<Dice>();
+                for (int i = 0; i < dangerIncrease; i++)
+                {
+                    automaticWounds += damageDie.Roll();
+                }
+                unit.ModifyLifePoints(-automaticWounds);
+                if (!unit.IsActive())
+                {
+                    unitCasualties.Add(unit.gameObject);
+                }
             }
         }
         if (unitCasualties.Count > 0)
@@ -604,7 +622,7 @@ public class ZoneInfo : MonoBehaviour
             yield return StartCoroutine(animate.FadeObjects(unitCasualties, 1, unitFadeAlpha));
         }
 
-        if (HasHeroes())  // Gives heroes chance to roll damage on themselves (as they can use their rerolls)
+        if (HasTargets())  // Gives heroes/heroAllies chance to roll damage on themselves (as they can use their rerolls)
         {
             List<GameObject> terrainDangerIcons = new List<GameObject>();
             for (int i = 0; i < dangerIncrease; i++)
@@ -612,39 +630,15 @@ public class ZoneInfo : MonoBehaviour
                 terrainDangerIcons.Add(Instantiate(terrainDangerIconPrefab, transform));
                 terrainDangerIcons[i].transform.localPosition = terrainDangerIconPlacement[i];
             }
-            GameObject animationContainer = GameObject.FindGameObjectWithTag("AnimationContainer");
-            yield return StartCoroutine(PauseUntilPlayerPushesContinue(animationContainer));
+            SetIsClickableForHeroesAndAllies(true);
+            yield return StartCoroutine(animate.PauseUntilPlayerPushesContinue(gameObject));
+            ConfigureClickAndDragabilityForHeroesAndAllies();  // If Hero phase, should still be click/draggable
             for (int i = terrainDangerIcons.Count - 1; i >= 0; i--)
             {
                 Destroy(terrainDangerIcons[i]);
             }
         }
         yield return null;
-    }
-
-    Boolean waitingOnPlayerInput = false;
-    IEnumerator PauseUntilPlayerPushesContinue(GameObject animationContainer)  // TODO this function replicates one in Unit.cs/Animate.cs, move both to a shared class and distinguish between pausing for one hero and multiple
-    {
-        waitingOnPlayerInput = true;
-        List<GameObject> heroes = GetHeroes();
-        foreach (GameObject hero in heroes)
-        {
-            Button heroButton = hero.GetComponent<Button>();
-            heroButton.enabled = true;
-        }
-
-        GameObject continueButton = Instantiate(confirmButtonPrefab, transform);
-        continueButton.transform.position = transform.TransformPoint(0, -30f, 0);
-        continueButton.GetComponent<Button>().onClick.AddListener(delegate { waitingOnPlayerInput = false; });
-        yield return new WaitUntil(() => !waitingOnPlayerInput);
-
-        foreach (GameObject hero in heroes)
-        {
-            Button heroButton = hero.GetComponent<Button>();
-            heroButton.enabled = false;
-        }
-        Destroy(continueButton);
-        yield return 0;
     }
 
     public void EnableDropZone()
@@ -723,9 +717,9 @@ public class ZoneInfo : MonoBehaviour
                     Instantiate(gasPrefab, tokensRow).GetComponent<EnvironToken>().LoadEnvironTokenSave(newEnvironToken);
                     ReorganizeTokens();
                 }
-                foreach (Unit unitInZone in gameObject.GetComponentsInChildren<Unit>())
+                foreach (Unit unitInZone in GetComponentsInChildren<Unit>())
                 {
-                    if (unitInZone.IsActive() && !unitInZone.gasImmunity)
+                    if (!unitInZone.gasImmunity)  // IsActive() and !isHeroAlly checked in IncreaseTerrainDangerTemporarily()
                     {
                         affectedUnits.Add(unitInZone);
                     }
@@ -740,7 +734,7 @@ public class ZoneInfo : MonoBehaviour
                 }
                 foreach (Unit unitInZone in gameObject.GetComponentsInChildren<Unit>())
                 {
-                    if (unitInZone.IsActive() && !unitInZone.fiery)
+                    if (!unitInZone.fiery)
                     {
                         affectedUnits.Add(unitInZone);
                     }
@@ -769,7 +763,7 @@ public class ZoneInfo : MonoBehaviour
                 }
                 foreach (Unit unitInZone in gameObject.GetComponentsInChildren<Unit>())
                 {
-                    if (unitInZone.IsActive() && !unitInZone.frosty)
+                    if (!unitInZone.frosty)
                     {
                         affectedUnits.Add(unitInZone);
                     }

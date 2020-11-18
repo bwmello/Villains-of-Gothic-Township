@@ -350,11 +350,15 @@ public class ScenarioMap : MonoBehaviour
             }
             else
             {
-                foreach (GameObject unit in GameObject.FindGameObjectsWithTag(unitTag))
+                foreach (GameObject unitObject in GameObject.FindGameObjectsWithTag(unitTag))
                 {
-                    double currentUnitMostValuableActionWeight = unit.GetComponent<Unit>().GetMostValuableActionWeight();
-                    unitsOfTag.Add((unit, currentUnitMostValuableActionWeight));
-                    currentWeightOfUnitTurn += currentUnitMostValuableActionWeight;
+                    Unit unit = unitObject.GetComponent<Unit>();
+                    if (unit.IsActive())  // Doublecheck unit is active as CleanupZones() may be lagging behind
+                    {
+                        double currentUnitMostValuableActionWeight = unit.GetMostValuableActionWeight();
+                        unitsOfTag.Add((unitObject, currentUnitMostValuableActionWeight));
+                        currentWeightOfUnitTurn += currentUnitMostValuableActionWeight;
+                    }
                 }
             }
 
