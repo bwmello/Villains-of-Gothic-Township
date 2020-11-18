@@ -24,6 +24,7 @@ public class ZoneInfo : MonoBehaviour
     public GameObject computerPrefab;
     public GameObject bombPrefab;
     public GameObject primedBombPrefab;
+    public GameObject briefcasePrefab;
     public GameObject gasPrefab;
     public GameObject flamePrefab;
     public GameObject smokePrefab;
@@ -542,6 +543,21 @@ public class ZoneInfo : MonoBehaviour
         }
     }
 
+    public void SetIsClickableForHeroesAndAllies(bool shouldMakeClickable)  // This also makes inactive heroes/units clickable, but does that really matter?
+    {
+        foreach (Unit unit in this.GetComponentsInChildren<Unit>())
+        {
+            if (unit.isHeroAlly)  // && unit.IsActive()
+            {
+                unit.SetIsClickable(shouldMakeClickable);
+            }
+        }
+        foreach (Hero hero in this.GetComponentsInChildren<Hero>())
+        {  // if (!hero.IsWoundedOut) {
+            hero.SetIsClickable(shouldMakeClickable);
+        }
+    }
+
     public int GetTerrainDangerTotal(Unit unit = null)
     {
         int terrainDangerTotal = terrainDanger;
@@ -606,6 +622,31 @@ public class ZoneInfo : MonoBehaviour
         yield return null;
     }
 
+    Boolean waitingOnPlayerInput = false;
+    IEnumerator PauseUntilPlayerPushesContinue(GameObject animationContainer)  // TODO this function replicates one in Unit.cs/Animate.cs, move both to a shared class and distinguish between pausing for one hero and multiple
+    {
+        waitingOnPlayerInput = true;
+        List<GameObject> heroes = GetHeroes();
+        foreach (GameObject hero in heroes)
+        {
+            Button heroButton = hero.GetComponent<Button>();
+            heroButton.enabled = true;
+        }
+
+        GameObject continueButton = Instantiate(confirmButtonPrefab, transform);
+        continueButton.transform.position = transform.TransformPoint(0, -30f, 0);
+        continueButton.GetComponent<Button>().onClick.AddListener(delegate { waitingOnPlayerInput = false; });
+        yield return new WaitUntil(() => !waitingOnPlayerInput);
+
+        foreach (GameObject hero in heroes)
+        {
+            Button heroButton = hero.GetComponent<Button>();
+            heroButton.enabled = false;
+        }
+        Destroy(continueButton);
+        yield return 0;
+    }
+
     public void EnableDropZone()
     {
         transform.Find("DropZone").gameObject.SetActive(true);
@@ -614,6 +655,46 @@ public class ZoneInfo : MonoBehaviour
     public void DisableDropZone()
     {
         transform.Find("DropZone").gameObject.SetActive(false);
+    }
+
+    public void AddObjectiveToken(string tokenTag)
+    {
+        GameObject objectiveTokenPrefab = null;
+        switch (tokenTag)
+        {
+            case "Bomb":
+                objectiveTokenPrefab = bombPrefab;
+                break;
+            case "Briefcase":
+                objectiveTokenPrefab = briefcasePrefab;
+                break;
+            case "Computer":
+                objectiveTokenPrefab = computerPrefab;
+                break;
+            case "PrimedBomb":
+                objectiveTokenPrefab = primedBombPrefab;
+                break;
+        }
+        if (objectiveTokenPrefab)
+        {
+            Transform tokensRow = transform.Find("TokensRow");
+            GameObject objectiveToken = Instantiate(objectiveTokenPrefab, tokensRow);
+            objectiveToken.GetComponent<Token>().ConfigureClickability();
+            ReorganizeTokens();
+        }
+    }
+
+    public void RemoveObjectiveToken(string tokenTag)
+    {
+        foreach (Token token in gameObject.GetComponentsInChildren<Token>())
+        {
+            if (token.CompareTag(tokenTag))
+            {
+                DestroyImmediate(token.gameObject);  // Destroy() doesn't kick in before ReorganizeTokens()
+                ReorganizeTokens();
+                break;
+            }
+        }
     }
 
     public IEnumerator AddEnvironTokens(EnvironTokenSave newEnvironToken)
@@ -699,31 +780,6 @@ public class ZoneInfo : MonoBehaviour
                 Debug.LogError("ERROR! In ZoneInfo.LoadZoneSave(), unable to identify EnvironToken " + newEnvironToken.tag + " for " + transform.name);
                 break;
         }
-        yield return 0;
-    }
-
-    Boolean waitingOnPlayerInput = false;
-    IEnumerator PauseUntilPlayerPushesContinue(GameObject animationContainer)  // TODO this function replicates one in Unit.cs, move both to a shared class and distinguish between pausing for one hero and multiple
-    {
-        waitingOnPlayerInput = true;
-        List<GameObject> heroes = GetHeroes();
-        foreach (GameObject hero in heroes)
-        {
-            Button heroButton = hero.GetComponent<Button>();
-            heroButton.enabled = true;
-        }
-
-        GameObject continueButton = Instantiate(confirmButtonPrefab, transform);
-        continueButton.transform.position = transform.TransformPoint(0, -30f, 0);
-        continueButton.GetComponent<Button>().onClick.AddListener(delegate { waitingOnPlayerInput = false; });
-        yield return new WaitUntil(() => !waitingOnPlayerInput);
-
-        foreach (GameObject hero in heroes)
-        {
-            Button heroButton = hero.GetComponent<Button>();
-            heroButton.enabled = false;
-        }
-        Destroy(continueButton);
         yield return 0;
     }
 

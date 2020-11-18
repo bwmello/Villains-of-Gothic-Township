@@ -9,11 +9,7 @@ using System.Text.RegularExpressions;  // for comparing Zones (by their numbers)
 public static class MissionSpecifics
 {
     public static string missionName;
-    public static GameObject bombPrefab;
-    public static GameObject primedBombPrefab;
     public static GameObject mainCamera;
-    public static GameObject animationContainer;
-    public static Animate animate;
     public static ScenarioMap scenarioMap;
     public static int currentRound;
     public static string currentPhase = "Setup";  // "Setup", "Villain", "VillainAttack", "Hero", "GameOver"
@@ -129,6 +125,8 @@ public static class MissionSpecifics
                 return 7;
             case "IceToSeeYou":
                 return 8;
+            case "AFewBadApples":
+                return 6;
         }
         return -1;
     }
@@ -194,9 +192,35 @@ public static class MissionSpecifics
                 case "IceToSeeYou":
                     GameObject tokenZone = button.gameObject.GetComponent<Token>().GetZone();
                     Object.DestroyImmediate(button.gameObject);
-                    Object.Instantiate(primedBombPrefab, tokenZone.transform.Find("TokensRow"));
+                    Object.Instantiate(scenarioMap.primedBombPrefab, tokenZone.transform.Find("TokensRow"));
                     tokenZone.GetComponent<ZoneInfo>().ReorganizeTokens();
                     return;
+                default:
+                    break;
+            }
+        }
+        else if (button.CompareTag("Briefcase"))
+        {
+            switch (missionName)
+            {
+                case "AFewBadApples":
+                    UtilityBelt utilityBelt = scenarioMap.UIOverlay.GetComponent<UIOverlay>().utilityBelt.GetComponent<UtilityBelt>();  // Pretty terrible chain of calls just to get claimableTokens
+                    if (button.GetComponent<Token>().IsActive())
+                    {
+                        foreach (GameObject claimableTokenObject in utilityBelt.claimableTokens)
+                        {
+                            ClaimableToken claimableToken = claimableTokenObject.GetComponent<ClaimableToken>();
+                            if (claimableToken.tokenType == "Briefcase")
+                            {
+                                if (!claimableToken.isClaimed)
+                                {
+                                    claimableToken.ClaimableTokenClicked();
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    break;  // Allow token to be faded/unfaded below
                 default:
                     break;
             }
@@ -208,7 +232,7 @@ public static class MissionSpecifics
                 case "IceToSeeYou":
                     GameObject tokenZone = button.gameObject.GetComponent<Token>().GetZone();
                     Object.DestroyImmediate(button.gameObject);
-                    Object.Instantiate(bombPrefab, tokenZone.transform.Find("TokensRow"));
+                    Object.Instantiate(scenarioMap.bombPrefab, tokenZone.transform.Find("TokensRow"));
                     tokenZone.GetComponent<ZoneInfo>().ReorganizeTokens();
                     return;
                 default:
@@ -293,6 +317,40 @@ public static class MissionSpecifics
                     return true;
                 }
                 break;
+            case "AFewBadApples":
+                int totalBystandersRemaining = 0;
+                foreach (GameObject bystander in GameObject.FindGameObjectsWithTag("BYSTANDER"))
+                {
+                    if (bystander.GetComponent<Unit>().IsActive())
+                    {
+                        totalBystandersRemaining++;
+                    }
+                }
+                int totalComputers = GetTotalActiveTokens(new List<string>() { "Computer" });
+                UtilityBelt utilityBelt = scenarioMap.UIOverlay.GetComponent<UIOverlay>().utilityBelt.GetComponent<UtilityBelt>();  // Pretty terrible chain of calls just to get claimableTokens
+                int totalClaimedTokens = 0;
+                bool isComputerTokenClaimed = false;
+                foreach (GameObject claimableTokenObject in utilityBelt.claimableTokens)
+                {
+                    ClaimableToken claimableToken = claimableTokenObject.GetComponent<ClaimableToken>();
+                    if (claimableToken.isClaimed)
+                    {
+                        totalClaimedTokens++;
+                        if (claimableToken.tokenType == "Computer")
+                        {
+                            isComputerTokenClaimed = true;
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                if (currentRound >= GetFinalRound() || totalClaimedTokens >= 3 || totalBystandersRemaining == 0 || (!isComputerTokenClaimed && totalComputers == 0))
+                {
+                    return true;
+                }
+                break;
             default:
                 break;
         }
@@ -317,6 +375,27 @@ public static class MissionSpecifics
                     return true;
                 }
                 break;
+            case "AFewBadApples":
+                int totalBystandersRemaining = GameObject.FindGameObjectsWithTag("BYSTANDER").Length;
+                UtilityBelt utilityBelt = scenarioMap.UIOverlay.GetComponent<UIOverlay>().utilityBelt.GetComponent<UtilityBelt>();  // Pretty terrible chain of calls just to get claimableTokens
+                int totalClaimedTokens = 0;
+                foreach (GameObject claimableTokenObject in utilityBelt.claimableTokens)
+                {
+                    ClaimableToken claimableToken = claimableTokenObject.GetComponent<ClaimableToken>();
+                    if (claimableToken.isClaimed)
+                    {
+                        totalClaimedTokens++;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                if (totalClaimedTokens >= 3 && totalBystandersRemaining > 0)
+                {
+                    return true;
+                }
+                break;
             default:
                 break;
         }
@@ -332,7 +411,7 @@ public static class MissionSpecifics
                 {
                     foreach (GameObject primedBomb in GetActiveTokens(new List<string>() { "PrimedBomb" }))
                     {
-                        animate.ShowLoopingExplosion(primedBomb.transform.position);
+                        scenarioMap.animate.ShowLoopingExplosion(primedBomb.transform.position);
                     }
                 }
                 break;
@@ -341,7 +420,7 @@ public static class MissionSpecifics
                 {
                     foreach (GameObject primedBomb in GetActiveTokens(new List<string>() { "PrimedBomb" }))
                     {
-                        animate.ShowLoopingExplosion(primedBomb.transform.position);
+                        scenarioMap.animate.ShowLoopingExplosion(primedBomb.transform.position);
                     }
                 }
                 break;
@@ -396,7 +475,7 @@ public static class MissionSpecifics
                 else
                 {
                     Unit superBarnInfo = superBarn.GetComponent<Unit>();
-                    yield return animate.StartCoroutine(superBarnInfo.ActivateUnit());
+                    yield return scenarioMap.animate.StartCoroutine(superBarnInfo.ActivateUnit());
                     superBarnInfo.ModifyLifePoints(-2);
                     if (superBarnInfo.lifePoints < 1)
                     {
@@ -406,6 +485,36 @@ public static class MissionSpecifics
                 break;
         }
         yield return 0;
+    }
+
+    public static void UnitKilled(GameObject unit)
+    {
+        switch (missionName)
+        {
+            case "AFewBadApples":
+                if (unit.CompareTag("MUDMAN") || unit.CompareTag("SKULLFACE"))
+                {
+                    unit.GetComponent<Unit>().GetZone().GetComponent<ZoneInfo>().AddObjectiveToken("Briefcase");
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    public static void UnitResuscitated(GameObject unit)
+    {
+        switch (missionName)
+        {
+            case "AFewBadApples":
+                if (unit.CompareTag("MUDMAN") || unit.CompareTag("SKULLFACE"))
+                {
+                    unit.GetComponent<Unit>().GetZone().GetComponent<ZoneInfo>().RemoveObjectiveToken("Briefcase");
+                }
+                break;
+            default:
+                break;
+        }
     }
 
     public static List<Unit.UnitPossibleAction> GetPredeterminedActivations()
@@ -461,7 +570,7 @@ public static class MissionSpecifics
     {
         ZoneInfo unitZoneInfo = unit.GetComponent<Unit>().GetZone().GetComponent<ZoneInfo>();
         // Animate success vs failure UI
-        GameObject successContainer = Object.Instantiate(unitZoneInfo.successVsFailurePrefab, animationContainer.transform);
+        GameObject successContainer = Object.Instantiate(unitZoneInfo.successVsFailurePrefab, scenarioMap.animationContainer.transform);
         successContainer.transform.position = unit.transform.TransformPoint(new Vector3(0, 12, 0));
 
         successContainer.GetComponent<RectTransform>().sizeDelta = new Vector2(requiredSuccesses * 10, successContainer.GetComponent<RectTransform>().rect.height);
@@ -488,7 +597,7 @@ public static class MissionSpecifics
 
         if (totalSuccesses >= requiredSuccesses)
         {
-            yield return animate.StartCoroutine(animate.MoveCameraUntilOnscreen(mainCamera.transform.position, unitZoneInfo.GetBomb().transform.position));  // Move camera to bomb being armed
+            yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, unitZoneInfo.GetBomb().transform.position));  // Move camera to bomb being armed
             unitZoneInfo.PrimeBomb();
             yield return new WaitForSecondsRealtime(2);
             SetActionsWeightTable();
@@ -501,7 +610,7 @@ public static class MissionSpecifics
     {
         ZoneInfo unitZoneInfo = unit.GetComponent<Unit>().GetZone().GetComponent<ZoneInfo>();
         // Animate success vs failure UI
-        GameObject successContainer = Object.Instantiate(unitZoneInfo.successVsFailurePrefab, animationContainer.transform);
+        GameObject successContainer = Object.Instantiate(unitZoneInfo.successVsFailurePrefab, scenarioMap.animationContainer.transform);
         successContainer.transform.position = unit.transform.TransformPoint(new Vector3(0, 12, 0));
 
         successContainer.GetComponent<RectTransform>().sizeDelta = new Vector2(requiredSuccesses * 10, successContainer.GetComponent<RectTransform>().rect.height);
@@ -548,7 +657,7 @@ public static class MissionSpecifics
             if (chosenBombZone != null)
             {
                 unitZoneInfo.RemoveComputer();
-                yield return animate.StartCoroutine(animate.MoveCameraUntilOnscreen(mainCamera.transform.position, chosenBombZone.GetBomb().transform.position));  // Move camera to bomb being armed
+                yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, chosenBombZone.GetBomb().transform.position));  // Move camera to bomb being armed
                 chosenBombZone.PrimeBomb();
                 yield return new WaitForSecondsRealtime(2);
                 //unitTurn.targetedZone = chosenBombZone.transform.gameObject;  // Only useful for DEBUG statement at end of PerformAction()
@@ -569,7 +678,7 @@ public static class MissionSpecifics
     {
         ZoneInfo unitZoneInfo = unit.GetComponent<Unit>().GetZone().GetComponent<ZoneInfo>();
         // Animate success vs failure UI
-        GameObject successContainer = Object.Instantiate(unitZoneInfo.successVsFailurePrefab, animationContainer.transform);
+        GameObject successContainer = Object.Instantiate(unitZoneInfo.successVsFailurePrefab, scenarioMap.animationContainer.transform);
         successContainer.transform.position = unit.transform.TransformPoint(new Vector3(0, 12, 0));
 
         successContainer.GetComponent<RectTransform>().sizeDelta = new Vector2(requiredSuccesses * 10, successContainer.GetComponent<RectTransform>().rect.height);
@@ -696,9 +805,9 @@ public static class MissionSpecifics
                         break;
                     }
                 }
-                yield return animate.StartCoroutine(animate.MoveCameraUntilOnscreen(mainCamera.transform.position, zoneToCryo.transform.position));
+                yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, zoneToCryo.transform.position));
                 yield return new WaitForSecondsRealtime(1);
-                yield return animate.StartCoroutine(zoneToCryo.GetComponent<ZoneInfo>().AddEnvironTokens(new EnvironTokenSave("Cryogenic", 1, false, true)));
+                yield return scenarioMap.animate.StartCoroutine(zoneToCryo.GetComponent<ZoneInfo>().AddEnvironTokens(new EnvironTokenSave("Cryogenic", 1, false, true)));
                 yield return new WaitForSecondsRealtime(2);
             }
             unitZoneInfo.RemoveComputer();
@@ -713,7 +822,7 @@ public static class MissionSpecifics
     {
         ZoneInfo unitZoneInfo = unit.GetComponent<Unit>().GetZone().GetComponent<ZoneInfo>();
         // Animate success vs failure UI
-        GameObject successContainer = Object.Instantiate(unitZoneInfo.successVsFailurePrefab, animationContainer.transform);
+        GameObject successContainer = Object.Instantiate(unitZoneInfo.successVsFailurePrefab, scenarioMap.animationContainer.transform);
         successContainer.transform.position = unit.transform.TransformPoint(new Vector3(0, 12, 0));
 
         successContainer.GetComponent<RectTransform>().sizeDelta = new Vector2(requiredSuccesses * 10, successContainer.GetComponent<RectTransform>().rect.height);

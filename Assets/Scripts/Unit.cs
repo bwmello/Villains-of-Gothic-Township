@@ -188,6 +188,7 @@ public class Unit : MonoBehaviour
 
     public void ModifyLifePoints(int difference)
     {
+        float initialAlpha = this.GetComponent<CanvasGroup>().alpha;
         lifePoints += difference;
         if (lifePoints > lifePointsMax)
         {
@@ -217,6 +218,18 @@ public class Unit : MonoBehaviour
         else
         {
             this.GetComponent<CanvasGroup>().alpha = fadedAlpha;
+        }
+
+        if (this.GetComponent<CanvasGroup>().alpha != initialAlpha)  // If unit was alive and is now dead or vice versa
+        {
+            if (IsActive())
+            {
+                MissionSpecifics.UnitResuscitated(gameObject);
+            }
+            else
+            {
+                MissionSpecifics.UnitKilled(gameObject);
+            }
         }
     }
 

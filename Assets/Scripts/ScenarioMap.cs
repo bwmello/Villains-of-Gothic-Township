@@ -40,11 +40,12 @@ public class ScenarioMap : MonoBehaviour
     public int reinforcementPoints = 5;
     public List<GameObject> heroes;
 
-    private GameObject animationContainer;
-    private Animate animate;
+    public GameObject animationContainer;
+    public Animate animate;
     public GameObject heroPrefab;
-    public GameObject bombPrefab;  // These prefabs are here just to pass off to static MissionSpecifics
+    public GameObject bombPrefab;  // These prefabs are here just to be used by MissionSpecifics
     public GameObject primedBombPrefab;
+    public GameObject briefcasePrefab;
 
 
     void Awake()
@@ -53,10 +54,6 @@ public class ScenarioMap : MonoBehaviour
         animate = animationContainer.GetComponent<Animate>();
         MissionSpecifics.scenarioMap = this;
         MissionSpecifics.mainCamera = GameObject.FindGameObjectWithTag("MainCamera");  // Might be able to be replaced with animate.mainCamera, but as both happen in Awake() maybe not;
-        MissionSpecifics.animationContainer = animationContainer;
-        MissionSpecifics.animate = animate;
-        MissionSpecifics.bombPrefab = bombPrefab;
-        MissionSpecifics.primedBombPrefab = primedBombPrefab;
         unitPrefabsMasterDict = new Dictionary<string, GameObject>();
         foreach (GameObject unitPrefab in unitPrefabsMasterList)
         {
@@ -222,6 +219,10 @@ public class ScenarioMap : MonoBehaviour
 
             villainRiver.Remove(unitTypeToActivate);
             villainRiver.Add(unitTypeToActivate);
+            if (MissionSpecifics.IsGameOver(currentRound))
+            {
+                yield break;  // Skip to IsGameOver evaluation at end of Villain turn
+            }
         }
         yield return 0;
     }
@@ -234,6 +235,10 @@ public class ScenarioMap : MonoBehaviour
             if (unitInfo.IsActive())  // Check if killed (but not yet removed) by previous unit's turn
             {
                 yield return StartCoroutine(unit.GetComponent<Unit>().ActivateUnit());
+                if (MissionSpecifics.IsGameOver(currentRound))
+                {
+                    yield break;  // Skip to IsGameOver evaluation at end of Villain turn
+                }
             }
         }
         while (UnitIntel.unitsToActivateLast.Count > 0)  // Now activate any units that were going to use an activateLast ActionWeight
@@ -244,6 +249,10 @@ public class ScenarioMap : MonoBehaviour
                 if (unitInfo.IsActive())
                 {
                     yield return StartCoroutine(unitInfo.ActivateUnit(true));  // param activatingLast = true
+                    if (MissionSpecifics.IsGameOver(currentRound))
+                    {
+                        yield break;  // Skip to IsGameOver evaluation at end of Villain turn
+                    }
                 }
             }
             else
@@ -256,27 +265,35 @@ public class ScenarioMap : MonoBehaviour
 
     IEnumerator StartHeroTurn()
     {
-        MissionSpecifics.currentPhase = "Hero";
-        DissipateEnvironTokens(true);
-        CleanupZones();
-
-        currentRound += 1;
-        MissionSpecifics.currentRound = currentRound;
-        if (currentRound > 1)
+        if (MissionSpecifics.IsGameOver(currentRound))
         {
-            SaveIntoJson();
+            MissionSpecifics.EndGameAnimation();
+            UIOverlay.GetComponent<UIOverlay>().ShowGameOverPanel();
         }
-
-        foreach (GameObject heroObject in heroes)
+        else
         {
-            heroObject.GetComponent<Hero>().RestReset();
-        }
+            MissionSpecifics.currentPhase = "Hero";
+            DissipateEnvironTokens(true);
+            CleanupZones();
 
-        // Re-Enable all the UI buttons which were disabled at EndHeroTurn()
-        EnablePlayerUI();
-        // Reactivate camera controls
-        Camera.main.GetComponent<PanAndZoom>().controlCamera = true;
-        yield return UIOverlay.GetComponent<UIOverlay>().AdvanceClock(currentRound);  // Once clock is visible, advance it
+            currentRound += 1;
+            MissionSpecifics.currentRound = currentRound;
+            if (currentRound > 1)
+            {
+                SaveIntoJson();
+            }
+
+            foreach (GameObject heroObject in heroes)
+            {
+                heroObject.GetComponent<Hero>().RestReset();
+            }
+
+            // Re-Enable all the UI buttons which were disabled at EndHeroTurn()
+            EnablePlayerUI();
+            // Reactivate camera controls
+            Camera.main.GetComponent<PanAndZoom>().controlCamera = true;
+            yield return UIOverlay.GetComponent<UIOverlay>().AdvanceClock(currentRound);  // Once clock is visible, advance it
+        }
         yield return 0;
     }
 

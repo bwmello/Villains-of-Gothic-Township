@@ -260,6 +260,8 @@ MonoBehaviour:
     type: 3}
   primedBombPrefab: {fileID: 1237332250277100696, guid: 1ab30b78c61aa4f62985dff6fc3c2f7e,
     type: 3}
+  briefcasePrefab: {fileID: 5866883846847253779, guid: 341a340fc117f4fba9e28d2e96da66bc,
+    type: 3}
   gasPrefab: {fileID: 7277206314685628404, guid: e9ebf41599b4240debd66e2d883f0934,
     type: 3}
   flamePrefab: {fileID: 0}

@@ -226,8 +226,6 @@ public class Animate : MonoBehaviour
     bool waitingOnPlayerInput = false;
     public IEnumerator PauseUntilPlayerPushesContinue(GameObject target)
     {
-        Button heroButton = target.GetComponent<Button>();
-        heroButton.enabled = true;
         waitingOnPlayerInput = true;
         GameObject zone = target.GetComponentInParent<ZoneInfo>().gameObject;
         GameObject continueButton = Instantiate(continueButtonPrefab, zone.transform);
@@ -246,7 +244,6 @@ public class Animate : MonoBehaviour
         }
         continueButton.GetComponent<Button>().onClick.AddListener(delegate { waitingOnPlayerInput = false; });
         yield return new WaitUntil(() => !waitingOnPlayerInput);
-        heroButton.enabled = false;
         Destroy(continueButton);
         yield return 0;
     }
@@ -281,6 +278,8 @@ public class Animate : MonoBehaviour
     private readonly Vector2[] woundPlacement = new[] { new Vector2(-9f, 8f), new Vector2(9f, 8f), new Vector2(-9f, -8f), new Vector2(9f, -8f), new Vector2(-9f, 0f), new Vector2(9f, 0f), new Vector2(-3f, 8f), new Vector2(3f, -8f), new Vector2(3f, 8f), new Vector2(-3f, -8f) };
     public IEnumerator MeleeAttack(GameObject attacker, GameObject target, int woundsTotal)
     {
+        ZoneInfo targetZoneInfo = target.GetComponentInParent<ZoneInfo>();  // Used for enabling all hero and heroAlly buttons in target's zone
+
         attacker.GetComponent<ObjectShake>().StartShaking();
         target.GetComponent<ObjectShake>().StartShaking();
 
@@ -315,10 +314,8 @@ public class Animate : MonoBehaviour
         }
         StartCoroutine(FadeObjects(wounds, 0, 1, woundFadeTimeCoefficient));
 
-        foreach (Button unitButton in attacker.transform.GetComponentsInChildren<Button>())
-        {
-            unitButton.enabled = true;
-        }
+        attacker.GetComponent<Unit>().SetIsClickable(true);
+        targetZoneInfo.SetIsClickableForHeroesAndAllies(true);
         PanAndZoom panAndZoom = mainCamera.GetComponent<PanAndZoom>();
         if (!IsPointOnScreen(attacker.transform.position))
         {
@@ -326,10 +323,8 @@ public class Animate : MonoBehaviour
         }
         yield return StartCoroutine(PauseUntilPlayerPushesContinue(target));
 
-        foreach (Button unitButton in attacker.transform.GetComponentsInChildren<Button>())
-        {
-            unitButton.enabled = false;
-        }
+        attacker.GetComponent<Unit>().SetIsClickable(true);
+        targetZoneInfo.SetIsClickableForHeroesAndAllies(true);
         panAndZoom.controlCamera = false;
         CameraToFixedZoom();
 
@@ -380,6 +375,8 @@ public class Animate : MonoBehaviour
 
     public IEnumerator RangedAttack(GameObject attacker, GameObject target, int woundsTotal)
     {
+        ZoneInfo targetZoneInfo = target.GetComponentInParent<ZoneInfo>();  // Used for enabling all hero and heroAlly buttons in target's zone
+
         attacker.GetComponent<ObjectShake>().StartShaking();
         target.GetComponent<ObjectShake>().StartShaking();
         StartCoroutine(ShowBulletPath(attacker.transform.position, target.transform.position, 3f));
@@ -405,10 +402,8 @@ public class Animate : MonoBehaviour
         }
         StartCoroutine(FadeObjects(wounds, 0, 1, woundFadeTimeCoefficient));
 
-        foreach (Button unitButton in attacker.transform.GetComponentsInChildren<Button>())
-        {
-            unitButton.enabled = true;
-        }
+        attacker.GetComponent<Unit>().SetIsClickable(true);
+        targetZoneInfo.SetIsClickableForHeroesAndAllies(true);
         PanAndZoom panAndZoom = mainCamera.GetComponent<PanAndZoom>();
         if (!IsPointOnScreen(attacker.transform.position))  // If you can still see the attacker after panning to the target, player doesn't need camera control
         {
@@ -416,10 +411,8 @@ public class Animate : MonoBehaviour
         }
         yield return StartCoroutine(PauseUntilPlayerPushesContinue(target));
 
-        foreach (Button unitButton in attacker.transform.GetComponentsInChildren<Button>())
-        {
-            unitButton.enabled = false;
-        }
+        attacker.GetComponent<Unit>().SetIsClickable(false);
+        targetZoneInfo.SetIsClickableForHeroesAndAllies(false);
         panAndZoom.controlCamera = false;
 
         EndBulletPaths();
