@@ -830,6 +830,7 @@ public class Unit : MonoBehaviour
                                 {
                                     availableRerolls += pointBlankRerolls;
                                 }
+                                //Debug.Log("!!!Trying to get smokeHindrance for " + tag + " from zone " + possibleZoneInfo.name + " to zone " + targetableZone.name);
                                 int smokeHindrance = possibleZoneInfo.GetSmokeBetweenZones(targetableZone);
 
                                 double averageWounds = GetAverageSuccesses(dicePool, availableRerolls) + marksmanSuccesses - actionZoneHindrance - smokeHindrance;
@@ -1116,7 +1117,9 @@ public class Unit : MonoBehaviour
         GameObject destination = null;  // Needed for transform.SetParent(destination.transform) after loop
         if (movementPath.zones.Count > 1)
         {
-            Vector3 finalCoordinates = movementPath.zones[movementPath.zones.Count - 1].GetComponent<ZoneInfo>().GetAvailableUnitSlot().transform.position;
+            Vector3 unitSlotCoords = movementPath.zones[movementPath.zones.Count - 1].GetComponent<ZoneInfo>().GetAvailableUnitSlot().transform.position;
+            Vector3 endZoneCoords = movementPath.zones[movementPath.zones.Count - 1].transform.position;
+            Vector3 finalCoordinates = animate.GetPointFurthestFromOrigin(transform.position, unitSlotCoords, endZoneCoords);
             float secondsToDelayBeforeCameraMove = animate.PostionCameraBeforeCameraMove(transform.position, finalCoordinates);
             yield return new WaitForSecondsRealtime(1);  // Pause with camera on unit before move
             StartCoroutine(animate.MoveCameraUntilOnscreen(transform.position, finalCoordinates, secondsToDelay: secondsToDelayBeforeCameraMove));
@@ -1223,7 +1226,7 @@ public class Unit : MonoBehaviour
                     {
                         if (!IsActive())  // If Counterattacked and killed, stop attacking
                         {
-                            yield break;
+                            break;  // Exit the while loop (and same IsActive() check above exits the for loop) so you can still set MissionSpecifics.currentPhase = "Villain";
                         }
 
                         if (currentMeleeTarget.TryGetComponent<Hero>(out Hero targetHero))
@@ -1277,7 +1280,7 @@ public class Unit : MonoBehaviour
                         int circularStrikeOccurrences = 0;  // Does this reset on each attack?
                         while (circularStrike > circularStrikeOccurrences)
                         {
-                            if (WasAttackTargetDropped(currentMeleeTarget))
+                            if (IsActive() && WasAttackTargetDropped(currentMeleeTarget))
                             {
                                 currentMeleeTargetIndex++;
                                 if (currentMeleeTargetIndex < unitTurn.priorityTargets.Count)
@@ -1303,7 +1306,7 @@ public class Unit : MonoBehaviour
                             }
                             else
                             {
-                                break;
+                                break;  // Exit the while loop (and same IsActive() check above exits the for loop) so you can still set MissionSpecifics.currentPhase = "Villain";
                             }
                         }
                     }
@@ -1321,7 +1324,7 @@ public class Unit : MonoBehaviour
                     {
                         if (!IsActive())  // If Counterattacked and killed, stop attacking
                         {
-                            yield break;
+                            break;  // Exit the for loop so you can still set MissionSpecifics.currentPhase = "Villain";
                         }
 
                         GameObject targetZone = null;
@@ -1406,7 +1409,7 @@ public class Unit : MonoBehaviour
                             int burstCarryOverOccurrences = 0;
                             while (burstCarryOver > burstCarryOverOccurrences)
                             {
-                                if (WasAttackTargetDropped(currentRangedTarget))
+                                if (IsActive() && WasAttackTargetDropped(currentRangedTarget))
                                 {
                                     currentRangedTargetIndex++;
                                     if (currentRangedTargetIndex < unitTurn.priorityTargets.Count)
@@ -1431,7 +1434,7 @@ public class Unit : MonoBehaviour
                                 }
                                 else
                                 {
-                                    break;
+                                    break;  // Exit the while loop (and same IsActive() check above exits the for loop) so you can still set MissionSpecifics.currentPhase = "Villain";
                                 }
                             }
                         }

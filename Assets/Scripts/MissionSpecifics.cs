@@ -597,7 +597,8 @@ public static class MissionSpecifics
 
         if (totalSuccesses >= requiredSuccesses)
         {
-            yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, unitZoneInfo.GetBomb().transform.position));  // Move camera to bomb being armed
+            //yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, unitZoneInfo.GetBomb().transform.position));  // Move camera to bomb being armed  // Not much difference between bomb's position and bomb zone's position
+            yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, unitZoneInfo.transform.position));  // Move camera to zone of bomb being armed
             unitZoneInfo.PrimeBomb();
             yield return new WaitForSecondsRealtime(2);
             SetActionsWeightTable();
@@ -657,7 +658,8 @@ public static class MissionSpecifics
             if (chosenBombZone != null)
             {
                 unitZoneInfo.RemoveComputer();
-                yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, chosenBombZone.GetBomb().transform.position));  // Move camera to bomb being armed
+                //yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, chosenBombZone.GetBomb().transform.position));  // Move camera to bomb being armed  // Not much difference between bomb's position and bomb zone's position
+                yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, chosenBombZone.transform.position));  // Move camera to zone of bomb being armed
                 chosenBombZone.PrimeBomb();
                 yield return new WaitForSecondsRealtime(2);
                 //unitTurn.targetedZone = chosenBombZone.transform.gameObject;  // Only useful for DEBUG statement at end of PerformAction()

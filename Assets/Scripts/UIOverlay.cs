@@ -22,6 +22,7 @@ public class UIOverlay : MonoBehaviour
     public GameObject openMenuButton;
     public GameObject menuPanel;
     public GameObject reportBugPanel;
+    public GameObject continueAfterAttackButton;  // Not really used as Animate.PauseUntilPlayerPushesContinue refers to the button directly
     public GameObject endSetupButton;
     public GameObject setupPanel;
     public GameObject x5ScaleContainerPrefab;

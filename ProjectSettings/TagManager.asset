@@ -83,3 +83,6 @@ TagManager:
   - name: Animation
     uniqueID: 3469284183
     locked: 0
+  - name: UIOverlay
+    uniqueID: 1061755951
+    locked: 0

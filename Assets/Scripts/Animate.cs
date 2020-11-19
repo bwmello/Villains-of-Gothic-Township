@@ -9,6 +9,7 @@ public class Animate : MonoBehaviour
 {
     public GameObject mainCamera;
     public Camera cameraStuff;
+    public GameObject continueButtonUIOverlay;  // Used for PauseUntilPlayerPushesContinue() without having to go through the UIOverlay
 
     public GameObject woundPrefab;
     public GameObject woundQuestionPrefab;
@@ -17,7 +18,6 @@ public class Animate : MonoBehaviour
     public GameObject grenadePrefab;
     public GameObject explosionPrefab;
     public GameObject explosionLoopingPrefab;
-    public GameObject continueButtonPrefab;
 
 
     private void Awake()
@@ -152,24 +152,44 @@ public class Animate : MonoBehaviour
         return false;
     }
 
+    public Vector3 GetPointFurthestFromOrigin(Vector3 origin, Vector3 point1, Vector3 point2)
+    {
+        float x = Mathf.Abs(origin.x - point1.x) >= Mathf.Abs(origin.x - point2.x) ? point1.x : point2.x;
+        float y = Mathf.Abs(origin.y - point1.y) >= Mathf.Abs(origin.y - point2.y) ? point1.y : point2.y;
+        return new Vector3(x, y, origin.z);  // z doesn't really matter
+    }
+
     public Vector3 GetCameraCoordsBetweenFocusAndTarget(Vector3 focus, Vector3 target, float buffer = .2f)
     {
         float height = 2f * cameraStuff.orthographicSize - buffer;
         float width = height * cameraStuff.aspect - buffer;
         Vector3 halfwayPoint = (focus + target) / 2;
+        float x = halfwayPoint.x;
+        float y = halfwayPoint.y;
 
-        if (width / 2 >= Mathf.Abs(focus.x - halfwayPoint.x) && height / 2 >= Mathf.Abs(focus.y - halfwayPoint.y))
+        if (width / 2 < Mathf.Abs(focus.x - halfwayPoint.x))  // If camera isn't wide enough to show both focus.x and halfwayPoint.x
         {
-            //Debug.Log("!!!GetCameraCoordsBetweenFocusAndTarget focus: " + focus.ToString() + "   target: " + target.ToString() + "   halfwayPoint: " + halfwayPoint.ToString() + "   Mathf.Abs(focus.x - halfwayPoint.x): " + Mathf.Abs(focus.x - halfwayPoint.x).ToString() + "   Mathf.Abs(focus.y - halfwayPoint.y): " + Mathf.Abs(focus.y - halfwayPoint.y).ToString() + "\ncameraWidth: " + width.ToString() + "   cameraHeight: " + height.ToString());
-            return new Vector3(halfwayPoint.x, halfwayPoint.y, mainCamera.transform.position.z);
+            x = focus.x < target.x ? focus.x + width / 2 : focus.x - width / 2;
         }
-        else
+        if (height / 2 < Mathf.Abs(focus.y - halfwayPoint.y))  // If camera height isn't tall enough to show both focus.x and halfwayPoint.x
         {
-            float x = focus.x < target.x ? focus.x + width / 2 : focus.x - width / 2;
-            float y = focus.y < target.y ? focus.y + height / 2 : focus.y - height / 2;
-            //Debug.Log("!!!GetCameraCoordsBetweenFocusAndTarget focus: " + focus.ToString() + "   target: " + target.ToString() + "   halfwayPoint: " + halfwayPoint.ToString() + "   inFocusPoint: " + new Vector3(x, y, halfwayPoint.z).ToString() + "\ncameraWidth: " + width.ToString() + "   cameraHeight: " + height.ToString());
-            return new Vector3(x, y, mainCamera.transform.position.z);
+            y = focus.y < target.y ? focus.y + height / 2 : focus.y - height / 2;
         }
+        //Debug.Log("!!!GetCameraCoordsBetweenFocusAndTarget focus: " + focus.ToString() + "   target: " + target.ToString() + "   final x,y coordinates: (" + x.ToString() + ", " + y.ToString() + ")   halfwayPoint (ignore the z): " + halfwayPoint.ToString() + "   Mathf.Abs(focus.x - halfwayPoint.x): " + Mathf.Abs(focus.x - halfwayPoint.x).ToString() + "   Mathf.Abs(focus.y - halfwayPoint.y): " + Mathf.Abs(focus.y - halfwayPoint.y).ToString() + "\ncameraWidth: " + width.ToString() + "   cameraHeight: " + height.ToString());
+        return new Vector3(x, y, mainCamera.transform.position.z);
+
+        //if (width / 2 >= Mathf.Abs(focus.x - halfwayPoint.x) && height / 2 >= Mathf.Abs(focus.y - halfwayPoint.y))  // Doesn't account for focus being offscreen for just width or for just height
+        //{
+        //    Debug.Log("!!!GetCameraCoordsBetweenFocusAndTarget focus: " + focus.ToString() + "   target: " + target.ToString() + "   inFocusPoint: " + new Vector3(x, y, mainCamera.transform.position.z).ToString() + "   halfwayPoint (ignore the z): " + halfwayPoint.ToString() + "   Mathf.Abs(focus.x - halfwayPoint.x): " + Mathf.Abs(focus.x - halfwayPoint.x).ToString() + "   Mathf.Abs(focus.y - halfwayPoint.y): " + Mathf.Abs(focus.y - halfwayPoint.y).ToString() + "\ncameraWidth: " + width.ToString() + "   cameraHeight: " + height.ToString());
+        //    return new Vector3(halfwayPoint.x, halfwayPoint.y, mainCamera.transform.position.z);
+        //}
+        //else
+        //{
+        //    float x = focus.x < target.x ? focus.x + width / 2 : focus.x - width / 2;
+        //    float y = focus.y < target.y ? focus.y + height / 2 : focus.y - height / 2;
+        //    Debug.Log("!!!GetCameraCoordsBetweenFocusAndTarget focus: " + focus.ToString() + "   target: " + target.ToString() + "   halfwayPoint: " + halfwayPoint.ToString() + "   inFocusPoint: " + new Vector3(x, y, halfwayPoint.z).ToString() + "\ncameraWidth: " + width.ToString() + "   cameraHeight: " + height.ToString());
+        //    return new Vector3(x, y, mainCamera.transform.position.z);
+        //}
     }
 
     public float PostionCameraBeforeCameraMove(Vector3 origin, Vector3 destination)  // Only used for Unit.AnimateMovementPath()
@@ -206,7 +226,9 @@ public class Animate : MonoBehaviour
         else
         {
             camStartCoords = GetCameraCoordsBetweenFocusAndTarget(origin, destination);
-            //Debug.Log("!!!MoveCameraUntilOnscreen, origin " + origin.ToString() + "  not on screen, so setting camStartCoords to between FocusAndTarget: " + camStartCoords.ToString());
+            mainCamera.transform.position = camStartCoords;
+            yield return new WaitForSecondsRealtime(1f);  // Before panning camera to target, pause on origin (otherwise unit making long distance ranged attack is only on screen for a split second)
+            //Debug.Log("!!!MoveCameraUntilOnscreen, origin " + origin.ToString() + "  not on screen, so setting camStartCoords to between that and destination: " + destination.ToString() + "  and getting GetCameraCoordsBetweenFocusAndTarget: " + camStartCoords.ToString());
         }
 
         while (t < 1f)
@@ -215,6 +237,7 @@ public class Animate : MonoBehaviour
             mainCamera.transform.position = new Vector3(Mathf.Lerp(camStartCoords.x, destination.x, t), Mathf.Lerp(camStartCoords.y, destination.y, t), mainCamera.transform.position.z);
             if (IsPointOnScreen(destination))  // If destination is on camera, stop moving camera
             {
+                //Debug.Log("!!!destination is on screen, so breaking MoveCamera loop");
                 break;
             }
             yield return null;
@@ -227,26 +250,16 @@ public class Animate : MonoBehaviour
     public IEnumerator PauseUntilPlayerPushesContinue(GameObject targetZone)
     {
         waitingOnPlayerInput = true;
-        GameObject continueButton = Instantiate(continueButtonPrefab, targetZone.transform);
-        if (IsPointOnScreen(targetZone.transform.TransformPoint(0, -50f, 0)))
-        {
-            continueButton.transform.position = targetZone.transform.TransformPoint(0, -50f, 0);
-        }
-        else if (IsPointOnScreen(targetZone.transform.TransformPoint(0, 50f, 0)))
-        {
-            continueButton.transform.position = targetZone.transform.TransformPoint(0, 50f, 0);
-        }
-        else
-        {
-            continueButton.transform.position = targetZone.transform.TransformPoint(0, -50f, 0);
-            Debug.LogError("ERROR! Continue button isn't on screen in either available position.");  // Not true, triggers on the left hand side now because of the camera bounds
-        }
-        continueButton.GetComponent<Button>().onClick.AddListener(delegate { waitingOnPlayerInput = false; });
+        continueButtonUIOverlay.SetActive(true);
         yield return new WaitUntil(() => !waitingOnPlayerInput);
-        Destroy(continueButton);
+        continueButtonUIOverlay.SetActive(false);
         yield return 0;
     }
 
+    public void ContinueButtonUIOverlayClicked()
+    {
+        waitingOnPlayerInput = false;
+    }
 
     private bool showingImpact = false;
     public IEnumerator ShowImpact(Vector3 impactPosition, float frequency)
@@ -282,17 +295,12 @@ public class Animate : MonoBehaviour
         attacker.GetComponent<ObjectShake>().StartShaking();
         target.GetComponent<ObjectShake>().StartShaking();
 
-        //Vector3 pointFacingEnemy = Vector3.Lerp(target.transform.position, attacker.transform.position, 0.3f);
-        // vector pointing from the planet to the player
         Vector3 difference = attacker.transform.position - target.transform.position;
-        // the direction of the launch, normalized
-        Vector3 directionOnly = difference.normalized;
-        // the point along this vector you are requesting
-        Vector3 pointAlongDirection = target.transform.position + (directionOnly * .07f);  // * float is the distance along this direction
-        //Debug.Log("!!!target.transform.position: " + target.transform.position.ToString() + "  pointAlongDirection: " + pointAlongDirection.ToString());
+        Vector3 directionOnly = difference.normalized;  // the direction of the launch, normalized
+        Vector3 pointAlongDirection = target.transform.position + (directionOnly * .07f);  // the point along this vector you are requesting  // * float is the distance along this direction
         StartCoroutine(ShowImpact(pointAlongDirection, 3f));
-
-        yield return StartCoroutine(MoveCameraUntilOnscreen(attacker.transform.position, target.transform.position));
+        Vector3 targetFurthestPoint = GetPointFurthestFromOrigin(attacker.transform.position, target.transform.position, targetZoneInfo.transform.position);
+        yield return StartCoroutine(MoveCameraUntilOnscreen(attacker.transform.position, targetFurthestPoint));
 
         List<GameObject> wounds = new List<GameObject>();
         if (woundsTotal >= 0)
@@ -316,10 +324,11 @@ public class Animate : MonoBehaviour
         attacker.GetComponent<Unit>().SetIsClickable(true);
         targetZoneInfo.SetIsClickableForHeroesAndAllies(true);
         PanAndZoom panAndZoom = mainCamera.GetComponent<PanAndZoom>();
-        if (!IsPointOnScreen(attacker.transform.position))
-        {
-            panAndZoom.controlCamera = true;
-        }
+        //if (!IsPointOnScreen(attacker.transform.position))  // If you can still see the attacker after panning to the target, player doesn't need camera control
+        //{
+        //    panAndZoom.controlCamera = true;
+        //}
+        panAndZoom.controlCamera = true;  // Until I can guarantee the entire target zone is on screen, give player control of camera so they can click any heroAlly units within the target zone
         yield return StartCoroutine(PauseUntilPlayerPushesContinue(targetZoneInfo.gameObject));
 
         attacker.GetComponent<Unit>().SetIsClickable(true);
@@ -379,8 +388,8 @@ public class Animate : MonoBehaviour
         attacker.GetComponent<ObjectShake>().StartShaking();
         target.GetComponent<ObjectShake>().StartShaking();
         StartCoroutine(ShowBulletPath(attacker.transform.position, target.transform.position, 3f));
-
-        yield return StartCoroutine(MoveCameraUntilOnscreen(attacker.transform.position, target.transform.position));
+        Vector3 targetFurthestPoint = GetPointFurthestFromOrigin(attacker.transform.position, target.transform.position, targetZoneInfo.transform.position);
+        yield return StartCoroutine(MoveCameraUntilOnscreen(attacker.transform.position, targetFurthestPoint));
 
         List<GameObject> wounds = new List<GameObject>();
         if (woundsTotal >= 0)
@@ -404,10 +413,11 @@ public class Animate : MonoBehaviour
         attacker.GetComponent<Unit>().SetIsClickable(true);
         targetZoneInfo.SetIsClickableForHeroesAndAllies(true);
         PanAndZoom panAndZoom = mainCamera.GetComponent<PanAndZoom>();
-        if (!IsPointOnScreen(attacker.transform.position))  // If you can still see the attacker after panning to the target, player doesn't need camera control
-        {
-            panAndZoom.controlCamera = true;
-        }
+        //if (!IsPointOnScreen(attacker.transform.position))  // If you can still see the attacker after panning to the target, player doesn't need camera control
+        //{
+        //    panAndZoom.controlCamera = true;
+        //}
+        panAndZoom.controlCamera = true;  // Until I can guarantee the entire target zone is on screen, give player control of camera so they can click any heroAlly units within the target zone
         yield return StartCoroutine(PauseUntilPlayerPushesContinue(targetZoneInfo.gameObject));
 
         attacker.GetComponent<Unit>().SetIsClickable(false);
@@ -427,7 +437,7 @@ public class Animate : MonoBehaviour
         yield return 0;
     }
 
-    public IEnumerator ThrowGrenade(Vector3 origin, Vector3 destination)
+    public IEnumerator ThrowGrenade(Vector3 origin, Vector3 destination)  // destination is the targetZone of the grenade throw
     {
         GameObject grenade = Instantiate(grenadePrefab, transform);
         grenade.transform.position = origin;

@@ -56,9 +56,19 @@ public class ZoneInfo : MonoBehaviour
         }
     }
 
+    private int initialLinesOfSightCount;
     private void Awake()
     {
         animate = GameObject.FindGameObjectWithTag("AnimationContainer").GetComponent<Animate>();
+        initialLinesOfSightCount = linesOfSight.Count;  // ZoneInfoPanel 18 can't include {17, 11, 4} in its linesOfSight, or else they're removed on LoadZoneSave. I guess because 11 is a room with only 1 linesOfSight? It's weird, because ZoneInfoPanel can include {11, 17, 18} in its linesOfSight just fine.
+    }
+
+    private void Start()
+    {
+        if (initialLinesOfSightCount != linesOfSight.Count)
+        {
+            Debug.LogError(gameObject.name + " had an initialLinesOfSightCount " + initialLinesOfSightCount.ToString() + " in Awake() but now has linesOfSight.Count " + linesOfSight.Count.ToString());
+        }
     }
 
     public int GetZoneID()
