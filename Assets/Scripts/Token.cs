@@ -22,7 +22,8 @@ public class Token : MonoBehaviour  // Should be called ObjectiveToken as there 
     public bool isClickable = false;
     public void SetIsClickable(bool shouldMakeClickable)
     {
-        gameObject.GetComponent<Button>().enabled = shouldMakeClickable;
+        //gameObject.GetComponent<Button>().enabled = shouldMakeClickable;
+        gameObject.GetComponent<Button>().interactable = shouldMakeClickable;
         isClickable = shouldMakeClickable;
     }
 

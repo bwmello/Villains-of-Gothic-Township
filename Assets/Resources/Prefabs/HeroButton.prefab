@@ -362,7 +362,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2437008969555922052}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
   m_Name: 
@@ -379,7 +379,7 @@ MonoBehaviour:
     m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
     m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
     m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
-    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
+    m_DisabledColor: {r: 1, g: 1, b: 1, a: 1}
     m_ColorMultiplier: 1
     m_FadeDuration: 0.1
   m_SpriteState:
@@ -393,7 +393,7 @@ MonoBehaviour:
     m_PressedTrigger: Pressed
     m_SelectedTrigger: Highlighted
     m_DisabledTrigger: Disabled
-  m_Interactable: 1
+  m_Interactable: 0
   m_TargetGraphic: {fileID: 2437008969555922056}
   m_OnClick:
     m_PersistentCalls:
@@ -425,7 +425,7 @@ MonoBehaviour:
   settings:
     _blur: 0
     _endAngle: 360
-    _fillColor: {r: 1, g: 1, b: 1, a: 1}
+    _fillColor: {r: 0.8509804, g: 0.8509804, b: 1, a: 1}
     _fillColor2: {r: 0.94509804, g: 0.76862746, b: 0.05882353, a: 1}
     _fillOffset: {x: 0, y: 0}
     _fillPathLoops: 0
@@ -519,8 +519,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   heroName: 
-  isClickable: 1
-  isDraggable: 1
+  moveSpeed: 4
+  ignoreTerrainDifficulty: 1
+  ignoreElevation: 1
+  ignoreSize: 1
+  isClickable: 0
+  isDraggable: 0
 --- !u!114 &841162575038944361
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -585,7 +589,7 @@ BoxCollider2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2437008969555922052}
-  m_Enabled: 1
+  m_Enabled: 0
   m_Density: 1
   m_Material: {fileID: 0}
   m_IsTrigger: 0

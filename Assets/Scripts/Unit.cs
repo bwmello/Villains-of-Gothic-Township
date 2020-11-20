@@ -5,6 +5,7 @@ using System.Linq;  // For converting array.ToList()
 using UnityEngine;
 using UnityEngine.UI;  // For button
 using TMPro;  // for TMP_Text to update the henchmen quantity from UnitRows
+using Shapes2D;  // for changing color to blue if isHeroAlly
 
 public class Unit : MonoBehaviour
 {
@@ -84,6 +85,11 @@ public class Unit : MonoBehaviour
         animate = GameObject.FindGameObjectWithTag("AnimationContainer").GetComponent<Animate>();  // Not initiated quickly enough in Start()
     }
 
+    void Start()
+    {
+        ConfigureColor();
+    }
+
     public void InitializeUnit(UnitSave unitSave)  // Called from ZoneInfo.LoadZoneSave()
     {
         ModifyLifePoints(unitSave.lifePoints - lifePoints);
@@ -112,29 +118,43 @@ public class Unit : MonoBehaviour
     }
 
     public bool isClickable = false;
-    public void SetIsClickable(bool shouldMakeClickable)
+    public void SetIsClickable(bool shouldMakeClickable, bool shouldConfigureColor = true)  // If called directly (not through ConfigureClickAndDragability(), you shouldConfigureColor as well
     {
+        //if  (shouldMakeClickable != isClickable) {
         if (IsVillain())
         {
             foreach (Button button in transform.GetComponentsInChildren<Button>())
             {
-                button.enabled = shouldMakeClickable;
+                //button.enabled = shouldMakeClickable;
+                button.interactable = shouldMakeClickable;
             }
         }
         else
         {
-            gameObject.GetComponent<Button>().enabled = shouldMakeClickable;
+            //gameObject.GetComponent<Button>().enabled = shouldMakeClickable;
+            gameObject.GetComponent<Button>().interactable = shouldMakeClickable;
         }
         isClickable = shouldMakeClickable;
+
+        if (shouldConfigureColor)
+        {
+            ConfigureColor();
+        }
     }
 
-    public bool isDraggable = false;
-    public void SetIsDraggable(bool shouldMakeDraggable)
+    public bool isDraggable = false;  // Should this exist both here and in Draggable script?
+    public void SetIsDraggable(bool shouldMakeDraggable, bool shouldConfigureColor = true)  // If called directly (not through ConfigureClickAndDragability(), you shouldConfigureColor as well
     {
-        if (!IsVillain())  // Villains are never draggable
+        if (!IsVillain())  // && shouldMakeDraggable != isDraggable  // Villains are never draggable
         {
-            gameObject.GetComponent<Draggable>().isDraggable = shouldMakeDraggable;
+            GetComponent<BoxCollider2D>().enabled = shouldMakeDraggable;  // Doesn't prevent from being dragged but will stop/start registering OnCollisionEnter/Exit events
+            GetComponent<Draggable>().isDraggable = shouldMakeDraggable;
             isDraggable = shouldMakeDraggable;
+        }
+
+        if (shouldConfigureColor)
+        {
+            ConfigureColor();
         }
     }
 
@@ -142,21 +162,60 @@ public class Unit : MonoBehaviour
     {
         switch (MissionSpecifics.currentPhase)
         {
+            //case "Setup":
             case "Hero":
-                SetIsClickable(true);
+                SetIsClickable(true, false);
                 if (isHeroAlly)
                 {
-                    SetIsDraggable(true);
+                    SetIsDraggable(true, false);
                 }
                 else
                 {
-                    SetIsDraggable(false);
+                    SetIsDraggable(false, false);
                 }
                 break;
             case "Villain":
-                SetIsClickable(false);
-                SetIsDraggable(false);
+                SetIsClickable(false, false);
+                SetIsDraggable(false, false);
                 break;
+        }
+        ConfigureColor();
+    }
+
+    public void ConfigureColor()
+    {
+        if (!IsVillain())
+        {
+            //Button button = GetComponent<Button>();
+            //var colorBlock = button.colors;
+            //colorBlock.disabledColor = new Color(1f, 1f, 1f);
+            //button.colors = colorBlock;
+            Shape shape = GetComponent<Shape>();
+            if (!isHeroAlly)
+            {
+                shape.settings.fillColor = (isClickable || isDraggable) ? new Color(1f, .85f, .85f) : new Color(.8f, .45f, .45f);
+            }
+            else
+            {
+                if (isClickable || isDraggable)
+                {
+                    shape.settings.fillColor = new Color(.85f, .85f, 1f);
+                }
+                else
+                {
+                    shape.settings.fillColor = new Color(.45f, .45f, .8f);
+
+                }
+                //shape.settings.fillColor = (isClickable || isDraggable) ? new Color(.85f, .85f, 1f) : new Color(.45f, .45f, .8f);
+            }
+            //shape.ComputeAndApply();  // According to Shapes2D doc, there may be flicker without this call but I haven't noticed any difference
+        }
+        else
+        {
+            foreach (Shape villainShape in GetComponentsInChildren<Shape>())
+            {
+                villainShape.settings.fillColor = (isClickable || isDraggable) ? new Color(1f, .85f, .85f) : new Color(.85f, .5f, .5f);
+            }
         }
     }
 

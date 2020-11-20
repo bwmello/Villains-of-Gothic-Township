@@ -38,10 +38,20 @@ public class Draggable : MonoBehaviour
             Camera.main.GetComponent<PanAndZoom>().controlCamera = false;  // TODO Comment this out then test on device
             positionOnDragStart = transform.position;
             transform.localScale = new Vector3(1.5f, 1.5f, 1);
-            if (draggableType == "Hero" || draggableType == "Unit")  // Any draggable not inside the UIOverlay
+            switch (draggableType)
             {
-                parentOnDragStart = transform.parent;
-                transform.SetParent(GameObject.FindGameObjectWithTag("AnimationContainer").transform);
+                case "Smoke":
+                case "Gas":
+                case "WallBreak":
+                case "AllySetup":
+                    parentOnDragStart = transform.parent;
+                    transform.SetParent(GetComponentInParent<UIOverlay>().uiAnimationContainer.transform);  // So you can't drag it behind other UIOverlay draggables
+                    break;
+                case "Hero":
+                case "Unit":  // Any draggable not inside the UIOverlay
+                    parentOnDragStart = transform.parent;
+                    transform.SetParent(GameObject.FindGameObjectWithTag("AnimationContainer").transform);
+                    break;
             }
         }
     }
@@ -55,31 +65,43 @@ public class Draggable : MonoBehaviour
                 switch (draggableType)
                 {
                     case "Smoke":
-                        ZoneInfo smokeTargetZone = dropZone.GetComponentInParent<ZoneInfo>();
+                        ZoneInfo smokeTargetZone = dropZone.GetComponent<ZoneInfo>();
                         if (smokeTargetZone)
                         {
-                            StartCoroutine(dropZone.GetComponentInParent<ZoneInfo>().AddEnvironTokens(new EnvironTokenSave("Smoke", 1, true, false)));
+                            StartCoroutine(smokeTargetZone.AddEnvironTokens(new EnvironTokenSave("Smoke", 1, true, false)));
+                        }
+                        if (parentOnDragStart)
+                        {
+                            transform.SetParent(parentOnDragStart);
                         }
                         break;
                     case "Gas":
-                        ZoneInfo gasTargetZone = dropZone.GetComponentInParent<ZoneInfo>();
+                        ZoneInfo gasTargetZone = dropZone.GetComponent<ZoneInfo>();
                         if (gasTargetZone)  // Prevents error when dropped on another ToolDraggable's collider.
                         {
-                            StartCoroutine(dropZone.GetComponentInParent<ZoneInfo>().AddEnvironTokens(new EnvironTokenSave("Gas", 1, true, false)));
+                            StartCoroutine(gasTargetZone.AddEnvironTokens(new EnvironTokenSave("Gas", 1, true, false)));
+                        }
+                        if (parentOnDragStart)
+                        {
+                            transform.SetParent(parentOnDragStart);
                         }
                         break;
                     case "WallBreak":
-                        WallRubble targetWallRubble = dropZone.GetComponentInParent<WallRubble>();
+                        WallRubble targetWallRubble = dropZone.GetComponent<WallRubble>();
                         if (targetWallRubble)
                         {
-                            dropZone.GetComponentInParent<WallRubble>().WallRubblePlaced();
+                            targetWallRubble.WallRubblePlaced();
+                        }
+                        if (parentOnDragStart)
+                        {
+                            transform.SetParent(parentOnDragStart);
                         }
                         break;
                     case "Hero":
-                        ZoneInfo heroTargetZone = dropZone.GetComponentInParent<ZoneInfo>();
+                        ZoneInfo heroTargetZone = dropZone.GetComponent<ZoneInfo>();
                         if (heroTargetZone)
                         {
-                            dropZone.GetComponentInParent<ZoneInfo>().AddHeroToZone(gameObject);
+                            heroTargetZone.AddHeroToZone(gameObject);
                         }
                         else
                         {
@@ -87,10 +109,10 @@ public class Draggable : MonoBehaviour
                         }
                         break;
                     case "AllySetup":
-                        ZoneInfo allySetupTargetZone = dropZone.GetComponentInParent<ZoneInfo>();
+                        ZoneInfo allySetupTargetZone = dropZone.GetComponent<ZoneInfo>();
                         if (allySetupTargetZone)
                         {
-                            GameObject placedAlly = allySetupTargetZone.GetComponentInParent<ZoneInfo>().AddUnitToZone(tag, gameObject.GetComponent<Unit>().size);
+                            GameObject placedAlly = allySetupTargetZone.AddUnitToZone(tag, gameObject.GetComponent<Unit>().size);
                             if (placedAlly)  // May not have been anymore available unitSlots
                             {
                                 Unit placedAllyUnit = placedAlly.GetComponent<Unit>();
@@ -99,12 +121,16 @@ public class Draggable : MonoBehaviour
                                 placedAllyUnit.isHeroAlly = true;
                             }
                         }
+                        if (parentOnDragStart)
+                        {
+                            transform.SetParent(parentOnDragStart);
+                        }
                         break;
                     case "Unit":
-                        ZoneInfo unitTargetZone = dropZone.GetComponentInParent<ZoneInfo>();
+                        ZoneInfo unitTargetZone = dropZone.GetComponent<ZoneInfo>();
                         if (unitTargetZone)
                         {
-                            GameObject availableUnitSlot = dropZone.GetComponentInParent<ZoneInfo>().GetAvailableUnitSlot();
+                            GameObject availableUnitSlot = unitTargetZone.GetAvailableUnitSlot();
                             if (availableUnitSlot)
                             {
                                 transform.SetParent(availableUnitSlot.transform);
@@ -151,15 +177,36 @@ public class Draggable : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        dropZone = collision.gameObject;
+        if (draggableType == "WallBreak")
+        {
+            GameObject wallBreak = collision.transform.parent.gameObject;
+            if (wallBreak && wallBreak.TryGetComponent<WallRubble>(out var tempWallRubble)) {
+                dropZone = wallBreak;
+            }
+        }
+        else  // Smoke, Gas, Hero, Ally, Unit
+        {
+            GameObject zoneInfoPanel = collision.transform.parent.gameObject;
+            if (zoneInfoPanel && zoneInfoPanel.TryGetComponent<ZoneInfo>(out var tempZoneInfoPanel))
+            {
+                dropZone = zoneInfoPanel;
+            }
+        }
+        //string onCollisionEnterDebugString = "!!!" + gameObject.name + " OnCollisionEnter2D with " + collision.gameObject.name + " and collision.transform.parent.gameObject " + collision.transform.parent.gameObject.name + "  with dropZone now set to: ";
+        //onCollisionEnterDebugString += dropZone ? dropZone.name : "null";
+        //Debug.Log(onCollisionEnterDebugString);
     }
 
     private void OnCollisionExit2D(Collision2D collision)
     {
-        if (dropZone == collision.gameObject)  // Helps WallBreak dropping be a little more reliable when being dragged over other WallBreak DropZones.
+        //string onCollisionExitDebugString = "!!!" + gameObject.name + " OnCollisionExit2D with " + collision.gameObject.name + " and collision.transform.parent.gameObject " + collision.transform.parent.gameObject.name + "  with dropZone previously: ";
+        //onCollisionExitDebugString += dropZone ? dropZone.name : " null";
+        if (dropZone == collision.transform.parent.gameObject)  // Helps WallBreak dropping be a little more reliable when being dragged over other WallBreak DropZones.
         {
             dropZone = null;
         }
+        //onCollisionExitDebugString += dropZone ? "  with dropZone now set to: " + dropZone.name : "  with dropZone now set to: null";
+        //Debug.Log(onCollisionExitDebugString);
     }
 
     private void EnableDropZones()
@@ -171,7 +218,7 @@ public class Draggable : MonoBehaviour
             {
                 dropZone.GetComponent<WallRubble>().EnableDropZone();
             }
-            else  // Smoke, Gas, Hero, Ally, Bystander
+            else  // Smoke, Gas, Hero, Ally, Unit
             {
                 dropZone.GetComponent<ZoneInfo>().EnableDropZone();
             }
@@ -186,7 +233,7 @@ public class Draggable : MonoBehaviour
             {
                 dropZone.GetComponent<WallRubble>().DisableDropZone();
             }
-            else  // Smoke, Gas, Hero, Ally, Bystander
+            else  // Smoke, Gas, Hero, Ally
             {
                 dropZone.GetComponent<ZoneInfo>().DisableDropZone();
             }

@@ -19,6 +19,11 @@ public class Hero : MonoBehaviour
     //public bool canCounterRangedAttacks = false;
 
 
+    private void Start()
+    {
+        ConfigureColor();
+    }
+
     public void InitializeHero(string newHeroName)
     {
         heroName = newHeroName;
@@ -37,17 +42,29 @@ public class Hero : MonoBehaviour
     }
 
     public bool isClickable = false;
-    public void SetIsClickable(bool shouldMakeClickable)
+    public void SetIsClickable(bool shouldMakeClickable, bool shouldConfigureColor = true)  // If called directly (not through ConfigureClickAndDragability(), you shouldConfigureColor as well
     {
-        gameObject.GetComponent<Button>().enabled = shouldMakeClickable;
+        //gameObject.GetComponent<Button>().enabled = shouldMakeClickable;
+        gameObject.GetComponent<Button>().interactable = shouldMakeClickable;
         isClickable = shouldMakeClickable;
+
+        if (shouldConfigureColor)
+        {
+            ConfigureColor();
+        }
     }
 
-    public bool isDraggable = false;
-    public void SetIsDraggable(bool shouldMakeDraggable)
+    public bool isDraggable = false;  // Should this exist both here and in Draggable script?
+    public void SetIsDraggable(bool shouldMakeDraggable, bool shouldConfigureColor = true)  // If called directly (not through ConfigureClickAndDragability(), you shouldConfigureColor as well
     {
-        gameObject.GetComponent<Draggable>().isDraggable = shouldMakeDraggable;
+        GetComponent<BoxCollider2D>().enabled = shouldMakeDraggable;  // Doesn't prevent from being dragged but will stop/start registering OnCollisionEnter/Exit events
+        GetComponent<Draggable>().isDraggable = shouldMakeDraggable;
         isDraggable = shouldMakeDraggable;
+
+        if (shouldConfigureColor)
+        {
+            ConfigureColor();
+        }
     }
 
     public void ConfigureClickAndDragability()
@@ -55,14 +72,20 @@ public class Hero : MonoBehaviour
         switch (MissionSpecifics.currentPhase)
         {
             case "Hero":
-                SetIsClickable(true);
-                SetIsDraggable(true);
+                SetIsClickable(true, false);
+                SetIsDraggable(true, false);
                 break;
             case "Villain":
-                SetIsClickable(false);
-                SetIsDraggable(false);
+                SetIsClickable(false, false);
+                SetIsDraggable(false, false);
                 break;
         }
+        ConfigureColor();
+    }
+
+    public void ConfigureColor()
+    {
+        GetComponent<Shapes2D.Shape>().settings.fillColor = (isClickable || isDraggable) ? new Color(.85f, .85f, 1f) : new Color(.5f, .5f, .85f);
     }
 
     public void HeroButtonClicked(Button button)

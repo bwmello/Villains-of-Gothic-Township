@@ -331,8 +331,8 @@ public class Animate : MonoBehaviour
         panAndZoom.controlCamera = true;  // Until I can guarantee the entire target zone is on screen, give player control of camera so they can click any heroAlly units within the target zone
         yield return StartCoroutine(PauseUntilPlayerPushesContinue(targetZoneInfo.gameObject));
 
-        attacker.GetComponent<Unit>().SetIsClickable(true);
-        targetZoneInfo.SetIsClickableForHeroesAndAllies(true);
+        attacker.GetComponent<Unit>().SetIsClickable(false);
+        targetZoneInfo.SetIsClickableForHeroesAndAllies(false);
         panAndZoom.controlCamera = false;
         CameraToFixedZoom();
 

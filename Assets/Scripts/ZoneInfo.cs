@@ -65,7 +65,7 @@ public class ZoneInfo : MonoBehaviour
 
     private void Start()
     {
-        if (initialLinesOfSightCount != linesOfSight.Count)
+        if (initialLinesOfSightCount != linesOfSight.Count && GameObject.FindGameObjectsWithTag("WallRubble").Length < 1)
         {
             Debug.LogError(gameObject.name + " had an initialLinesOfSightCount " + initialLinesOfSightCount.ToString() + " in Awake() but now has linesOfSight.Count " + linesOfSight.Count.ToString());
         }

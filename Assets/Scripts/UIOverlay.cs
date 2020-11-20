@@ -27,6 +27,7 @@ public class UIOverlay : MonoBehaviour
     public GameObject setupPanel;
     public GameObject x5ScaleContainerPrefab;
     public GameObject gameOverPanel;
+    public GameObject uiAnimationContainer;  // Thus far just used so AllySetup draggables aren't dragged behind one another
 
     public GameObject scenarioMap;  // Needed to get currentRound for OpenMenu()
 
@@ -63,18 +64,25 @@ public class UIOverlay : MonoBehaviour
     public void InitializeSetupUIOverlay()
     {
         Dictionary<string, GameObject> unitPrefabsMasterDict = scenarioMap.GetComponent<ScenarioMap>().unitPrefabsMasterDict;
+        //List<GameObject> potentialAllies = new List<GameObject>();  // For the not working, commented out "prevent the shit ton of collisions on load" thing
         foreach (string allyName in scenarioMap.GetComponent<ScenarioMap>().potentialAlliesList)
         {
             GameObject scaleContainer = Instantiate(x5ScaleContainerPrefab, setupPanel.transform);
+            //potentialAllies.Add(Instantiate(unitPrefabsMasterDict[allyName], scaleContainer.transform));
             GameObject potentialAlly = Instantiate(unitPrefabsMasterDict[allyName], scaleContainer.transform);
+            potentialAlly.GetComponent<Unit>().isHeroAlly = true;  // To make these blue instead of red
             Shape potentialAllyShape = potentialAlly.GetComponent<Shape>();
             potentialAllyShape.settings.roundness = 10;
             potentialAllyShape.settings.outlineSize = 1;
             //potentialAllyShape.ComputeAndApply();  // Doesn't seem to change anything, outlineSize/roundness changes aren't applied until GameObject selected in editor
             potentialAlly.GetComponent<Draggable>().draggableType = "AllySetup";
-            potentialAlly.GetComponent<Unit>().SetIsClickable(false);
+            potentialAlly.GetComponent<Unit>().SetIsClickable(false);  // Redundant, but keep it just in case
             potentialAlly.GetComponent<Unit>().SetIsDraggable(true);
         }
+        //foreach (GameObject potentialAlly in potentialAllies)  // Doesn't work, as I believe all this still happens before a frame update. Intention: Wait until all potentialAllies are created before SetIsDraggable(true), else you'll get a shit ton of collisions on load
+        //{
+        //    potentialAlly.GetComponent<Unit>().SetIsDraggable(true);
+        //}
     }
 
     public void ShowSetupUIOverlay()
