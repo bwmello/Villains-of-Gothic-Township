@@ -145,18 +145,31 @@ public static class MissionSpecifics
         return 0;
     }
 
+    static System.Random random = new System.Random();
+
     public static int GetAttackRollBonus()  // For adjusting diffficulty of the game. Applied to Melee, Ranged, and Manipulation:Grenade attacks. Not taken into account for GetAverageSuccesses/GetChanceOfSuccess
     {
         switch (missionName)
         {
             case "ASinkingFeeling":
-                return 1;
+                //return 1;
+                return random.Next(0, 2);  // .5, half of the time 0, the other half of the time 1
             case "IceToSeeYou":
                 return 0;
             case "AFewBadApples":
-                return 1;
+                return random.Next(0, 2);  // .5, half of the time 0, the other half of the time 1
         }
         return 0;
+    }
+
+    public static int[] GetWoundShieldValues()
+    {
+        //switch (missionName)
+        //{
+        //    default:
+        //        return new int[] { 0, 1, 2 };
+        //}
+        return new int[] { 0, 1, 2 };
     }
 
     public static double GetHeroProximityToObjectiveWeightMultiplier(GameObject zone, bool isPartialMove = false)

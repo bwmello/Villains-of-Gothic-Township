@@ -478,6 +478,19 @@ public class ZoneInfo : MonoBehaviour
         return occupyingHeroAllies;
     }
 
+    public int GetTargetableHeroesAlliesCount()
+    {
+        int heroeAlliesCount = 0;
+        foreach (Unit unit in GetComponentsInChildren<Unit>())
+        {
+            if (unit.IsActive() && unit.isHeroAlly)
+            {
+                heroeAlliesCount += 1;
+            }
+        }
+        return heroeAlliesCount;
+    }
+
     public GameObject GetRandomHero()
     {
         List<GameObject> heroes = GetHeroes();
@@ -973,7 +986,7 @@ public class ZoneInfo : MonoBehaviour
             if (unitPrefab != null)
             {
                 GameObject spawnedUnit = Instantiate(unitPrefab, GetAvailableUnitSlot().transform);
-                spawnedUnit.GetComponent<Unit>().InitializeUnit(unitSave);
+                spawnedUnit.GetComponent<Unit>().LoadUnitSave(unitSave);
             }
             else
             {
@@ -1000,11 +1013,9 @@ public class ZoneSave
         id = zone.id;
         isSpawnZone = zone.isSpawnZone;
         Transform tokensRow = zone.transform.Find("TokensRow");
-        List<string> objectiveTokenTags = new List<string> { "Computer", "Bomb", "PrimedBomb" };
-        //List<string> environTokenTags = new List<string> { "Gas", "Flame", "Smoke", "Frost", "Cryogenic" };
         foreach (Transform row in tokensRow)
         {
-            if (objectiveTokenTags.Contains(row.tag))
+            if (row.TryGetComponent<Token>(out Token tempToken))
             {
                 if (row.GetComponent<CanvasGroup>().alpha == 1)
                 {
@@ -1015,7 +1026,7 @@ public class ZoneSave
                     fadedTokensTags.Add(row.tag);  // This should always be a token
                 }
             }
-            else  // else if (environTokenTags.Contains(row.tag))
+            else  // else if (row.TryGetComponent<EnvironToken>(out EnvironToken tempEnvironToken))
             {
                 environTokens.Add(row.GetComponent<EnvironToken>().ToJSON());
             }

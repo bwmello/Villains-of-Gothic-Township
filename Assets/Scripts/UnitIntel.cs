@@ -11,6 +11,7 @@ public static class UnitIntel
     // Non-action behavior weight (actions accounted for in MissionSpecifics.cs)
     public static double terrainDangerWeight = -50;  // * terrainDanger
     public static double terrainDangeringFriendlies = -10;  // * terrainDanger * quantity of friendly units.  Chance of unit dying is 2/3 per terrainDanger
+    public static double provokingCounterAttackWeight = -20;  // / defense, the less chance you have of dying to 2 yellow counterAttack dice
     public static double increaseTerrainDifficultyWeight = 10;
     public static double additionalTargetsForAdditionalAttacksWeight = 3;
     public static double[] bonusMovePointWeight = new double[] { 0, -15, -30, -45 };  // Accessed by UnitIntel.bonusMovePointWeight[movePointsUsed - unit.movePoints], so bonusMovePointWeight[0] = 0

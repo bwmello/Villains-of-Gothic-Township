@@ -1,7 +1,7 @@
 {
     "missionName": "AFewBadApples",
     "currentRound": 0,
-    "reinforcementPoints": 4,
+    "reinforcementPoints": 5,
     "heroes": [
         {
             "heroName": "1stHero",

@@ -523,6 +523,8 @@ MonoBehaviour:
   ignoreTerrainDifficulty: 1
   ignoreElevation: 1
   ignoreSize: 1
+  canCounterMeleeAttacks: 0
+  canCounterRangedAttacks: 0
   isClickable: 0
   isDraggable: 0
 --- !u!114 &841162575038944361

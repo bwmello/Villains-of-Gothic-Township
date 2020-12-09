@@ -432,7 +432,8 @@ public class ScenarioMap : MonoBehaviour
                     animate.mainCamera.transform.position = new Vector3(availableUnitSlot.transform.position.x, availableUnitSlot.transform.position.y, animate.mainCamera.transform.position.z);
                 }
                 yield return new WaitForSecondsRealtime(1);
-                Instantiate(reinforcementsAvailable[i].Item1.unit, availableUnitSlot.transform);  // spawn Unit
+                GameObject spawnedUnit = Instantiate(reinforcementsAvailable[i].Item1.unit, availableUnitSlot.transform);  // spawn Unit
+                spawnedUnit.GetComponent<Unit>().GenerateWoundShields();
                 yield return new WaitForSecondsRealtime(1);
                 Debug.Log("CallReinforcements() spawning " + reinforcementsAvailable[i].Item1.unit.tag + " at " + reinforcementsAvailable[i].Item3.name);
             }
@@ -610,7 +611,7 @@ public class ScenarioMap : MonoBehaviour
         foreach (HeroSave heroSave in scenarioSave.heroes)
         {
             GameObject hero = Instantiate(heroPrefab, transform);  // If not made child of ScenarioMap, scale goes crazy
-            hero.GetComponent<Hero>().InitializeHero(heroSave.heroName);
+            hero.GetComponent<Hero>().LoadHeroSave(heroSave);
             GameObject heroZone = zones[heroSave.zoneID];
             heroZone.GetComponent<ZoneInfo>().AddHeroToZone(hero);
             heroes.Add(hero);

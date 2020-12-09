@@ -15,21 +15,13 @@ public class Hero : MonoBehaviour
     public int ignoreSize = 1;
     //public int wallBreaker = 0;  // wall breaking items are single use, making tracking this pointless
     //public int woundsReceived = 0;
-    //public bool canCounterMeleeAttacks = false;
-    //public bool canCounterRangedAttacks = false;
+    public bool canCounterMeleeAttacks = false;
+    public bool canCounterRangedAttacks = false;
 
 
     private void Start()
     {
         ConfigureColor();
-    }
-
-    public void InitializeHero(string newHeroName)
-    {
-        heroName = newHeroName;
-        transform.tag = heroName;
-        transform.Find("NumButtonText").GetComponent<TMP_Text>().text = heroName.Substring(0, 1);
-        transform.Find("AlphaButtonText").GetComponent<TMP_Text>().text = heroName.Substring(1, 2);
     }
 
     public bool IsWoundedOut()
@@ -134,6 +126,16 @@ public class Hero : MonoBehaviour
         return placeableAllyZones;
     }
 
+    public void LoadHeroSave(HeroSave heroSave)
+    {
+        heroName = heroSave.heroName;
+        transform.tag = heroName;
+        transform.Find("NumButtonText").GetComponent<TMP_Text>().text = heroName.Substring(0, 1);
+        transform.Find("AlphaButtonText").GetComponent<TMP_Text>().text = heroName.Substring(1, 2);
+        canCounterMeleeAttacks = heroSave.canCounterMeleeAttacks;
+        canCounterRangedAttacks = heroSave.canCounterRangedAttacks;
+    }
+
     public HeroSave ToJSON()
     {
         return new HeroSave(this);
@@ -145,10 +147,14 @@ public class HeroSave
 {
     public string heroName;
     public int zoneID;
+    public bool canCounterMeleeAttacks;
+    public bool canCounterRangedAttacks;
 
     public HeroSave(Hero hero)
     {
         heroName = hero.heroName;
         zoneID = hero.GetZone().GetComponent<ZoneInfo>().id;
+        canCounterMeleeAttacks = hero.canCounterMeleeAttacks;
+        canCounterRangedAttacks = hero.canCounterRangedAttacks;
     }
 }

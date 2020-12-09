@@ -17,6 +17,7 @@ public class Unit : MonoBehaviour
     public int lifePoints = 1;
     public int lifePointsMax = 1;
     public int defense;
+    public int woundShields = -1;  // Adds to defense. 0 to 2 randomly added on Instantiation. -1 means not yet initialized
     public int reinforcementCost = 1;
     public int ignoreRangedWounds = 0;  // TODO implement for GCPDNIGHTSTICK
     public int protectedByAllies = 0;  // TODO for PISTOLS, popup prompt if removing protected Unit while they have this many allies in their zone OR auto redirect attack and alert player
@@ -88,12 +89,6 @@ public class Unit : MonoBehaviour
     void Start()
     {
         ConfigureColor();
-    }
-
-    public void InitializeUnit(UnitSave unitSave)  // Called from ZoneInfo.LoadZoneSave()
-    {
-        ModifyLifePoints(unitSave.lifePoints - lifePoints);
-        isHeroAlly = unitSave.isHeroAlly;
     }
 
     public bool IsActive()
@@ -807,7 +802,12 @@ public class Unit : MonoBehaviour
                                 ZoneInfo targetableZoneInfo = targetableZone.GetComponent<ZoneInfo>();
                                 foreach (GameObject hero in targetableZoneInfo.GetTargetableHeroes())
                                 {
-                                    priorityTargetsAndWeights.Add((hero, averageWounds * MissionSpecifics.actionsWeightTable["MELEE"][0].weightFactor + actionWeight));
+                                    double targetHeroWeight = averageWounds * MissionSpecifics.actionsWeightTable["MELEE"][0].weightFactor + actionWeight;
+                                    if (hero.GetComponent<Hero>().canCounterMeleeAttacks)
+                                    {
+                                        targetHeroWeight -= UnitIntel.provokingCounterAttackWeight / defense;
+                                    }
+                                    priorityTargetsAndWeights.Add((hero, targetHeroWeight));
                                 }
                                 foreach (GameObject heroAlly in targetableZoneInfo.GetTargetableHeroAllies())
                                 {
@@ -905,7 +905,12 @@ public class Unit : MonoBehaviour
 
                                 foreach (GameObject hero in targetableZoneInfo.GetTargetableHeroes())
                                 {
-                                    priorityTargetsAndWeights.Add((hero, averageWounds * MissionSpecifics.actionsWeightTable["RANGED"][0].weightFactor + actionWeight));
+                                    double targetHeroWeight = averageWounds * MissionSpecifics.actionsWeightTable["RANGED"][0].weightFactor + actionWeight;
+                                    if (hero.GetComponent<Hero>().canCounterRangedAttacks)
+                                    {
+                                        targetHeroWeight -= UnitIntel.provokingCounterAttackWeight / defense;
+                                    }
+                                    priorityTargetsAndWeights.Add((hero, targetHeroWeight));
                                 }
                                 foreach (GameObject heroAlly in targetableZoneInfo.GetTargetableHeroAllies())
                                 {
@@ -1283,11 +1288,7 @@ public class Unit : MonoBehaviour
                     int currentMeleeTargetIndex = 0;
                     for (int i = 0; i < unitTurn.actionProficiency.actionMultiplier; i++)
                     {
-                        if (!IsActive())  // If Counterattacked and killed, stop attacking
-                        {
-                            break;  // Exit the while loop (and same IsActive() check above exits the for loop) so you can still set MissionSpecifics.currentPhase = "Villain";
-                        }
-
+                        GameObject targetZone = null;
                         if (currentMeleeTarget.TryGetComponent<Hero>(out Hero targetHero))
                         {
                             if (targetHero.IsWoundedOut())
@@ -1301,24 +1302,37 @@ public class Unit : MonoBehaviour
                                 }
                                 else  // No more targets
                                 {
-                                    break;
+                                    goto meleeAttacksFinishedJump;
                                 }
                             }
+                            else
+                            {
+                                targetZone = targetHero.GetZone();
+                            }
                         }
-                        else if (!currentMeleeTarget.GetComponent<Unit>().IsActive())
+                        else if (currentMeleeTarget.TryGetComponent<Unit>(out Unit targetUnit))
                         {
-                            currentMeleeTargetIndex++;
-                            if (currentMeleeTargetIndex < unitTurn.priorityTargets.Count)  // Repeat this iteration of the loop with a new target
+                            if (!targetUnit.IsActive())
                             {
-                                currentMeleeTarget = unitTurn.priorityTargets[currentMeleeTargetIndex];
-                                i--;
-                                continue;
+                                currentMeleeTargetIndex++;
+                                if (currentMeleeTargetIndex < unitTurn.priorityTargets.Count)  // Repeat this iteration of the loop with a new target
+                                {
+                                    currentMeleeTarget = unitTurn.priorityTargets[currentMeleeTargetIndex];
+                                    i--;
+                                    continue;
+                                }
+                                else  // No more targets
+                                {
+                                    goto meleeAttacksFinishedJump;
+                                }
                             }
-                            else  // No more targets
+                            else
                             {
-                                break;
+                                targetZone = targetUnit.GetZone();
                             }
                         }
+                        ZoneInfo targetZoneInfo = targetZone.GetComponent<ZoneInfo>();
+                        int totalZoneEnemiesBeforeAttack = targetZoneInfo.GetTargetableHeroesCount() + targetZoneInfo.GetTargetableHeroesAlliesCount();
 
                         actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls);
                         if (actionSuccesses > 0)
@@ -1327,49 +1341,99 @@ public class Unit : MonoBehaviour
                         }
                         yield return StartCoroutine(animate.MeleeAttack(gameObject, currentMeleeTarget, actionSuccesses));
 
+                        int totalZoneEnemiesAfterAttack = targetZoneInfo.GetTargetableHeroesCount() + targetZoneInfo.GetTargetableHeroesAlliesCount();
+
                         if (fiery)
                         {
-                            yield return StartCoroutine(currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Flame", 1, false, true)));
+                            yield return StartCoroutine(targetZoneInfo.AddEnvironTokens(new EnvironTokenSave("Flame", 1, false, true)));
                         }
                         if (frosty)
                         {
-                            yield return StartCoroutine(currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true)));
+                            yield return StartCoroutine(targetZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true)));
                         }
 
                         int circularStrikeOccurrences = 0;  // Does this reset on each attack?
                         while (circularStrike > circularStrikeOccurrences)
                         {
-                            if (IsActive() && WasAttackTargetDropped(currentMeleeTarget))
+                            if (IsActive())
                             {
-                                currentMeleeTargetIndex++;
-                                if (currentMeleeTargetIndex < unitTurn.priorityTargets.Count)
+                                if (totalZoneEnemiesAfterAttack < totalZoneEnemiesBeforeAttack)
                                 {
-                                    circularStrikeOccurrences++;
-                                    currentMeleeTarget = unitTurn.priorityTargets[currentMeleeTargetIndex];
+                                    if (WasAttackTargetDropped(currentMeleeTarget))
+                                    {
+                                        currentMeleeTargetIndex++;
+                                        if (currentMeleeTargetIndex < unitTurn.priorityTargets.Count)
+                                        {
+                                            currentMeleeTarget = unitTurn.priorityTargets[currentMeleeTargetIndex];
+                                            if (currentMeleeTarget.TryGetComponent<Hero>(out Hero carryOverTargetHero))
+                                            {
+                                                if (carryOverTargetHero.IsWoundedOut())
+                                                {
+                                                    continue;  // Start circularStrike loop over to select new currentMeleeTarget
+                                                }
+                                                else
+                                                {
+                                                    targetZone = carryOverTargetHero.GetZone();
+                                                }
+                                            }
+                                            else if (currentMeleeTarget.TryGetComponent<Unit>(out Unit carryOverTargetUnit))
+                                            {
+                                                if (!carryOverTargetUnit.IsActive())
+                                                {
+                                                    continue;  // Start circularStrike loop over to select new currentMeleeTarget
+                                                }
+                                                else
+                                                {
+                                                    targetZone = carryOverTargetUnit.GetZone();
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            goto meleeAttacksFinishedJump;  // No more targets
+                                        }
+                                        targetZoneInfo = targetZone.GetComponent<ZoneInfo>();
+                                        totalZoneEnemiesBeforeAttack = targetZoneInfo.GetTargetableHeroesCount() + targetZoneInfo.GetTargetableHeroesAlliesCount();
+                                    }
+                                    else
+                                    {
+                                        totalZoneEnemiesBeforeAttack = totalZoneEnemiesAfterAttack;
+                                    }
                                     yield return StartCoroutine(animate.MeleeAttack(gameObject, currentMeleeTarget, -1));
+                                    circularStrikeOccurrences++;
+
+                                    totalZoneEnemiesAfterAttack = targetZoneInfo.GetTargetableHeroesCount() + targetZoneInfo.GetTargetableHeroesAlliesCount();
 
                                     if (fiery)  // Triggered during the "End the Melee Attack" step, which happens for circularStrike?
                                     {
-                                        yield return StartCoroutine(currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Flame", 1, false, true)));
+                                        yield return StartCoroutine(targetZoneInfo.AddEnvironTokens(new EnvironTokenSave("Flame", 1, false, true)));
                                     }
                                     if (frosty)
                                     {
-                                        yield return StartCoroutine(currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true)));
+                                        yield return StartCoroutine(targetZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true)));
                                     }
                                 }
-                                else  // No more targets available
+                                else
                                 {
                                     break;
-                                    //goto meleeAttacksFinishedJump;
                                 }
                             }
                             else
                             {
-                                break;  // Exit the while loop (and same IsActive() check above exits the for loop) so you can still set MissionSpecifics.currentPhase = "Villain";
+                                break;  // Exit the while loop (and same IsActive() check below exits the for loop) so you can still set MissionSpecifics.currentPhase = "Villain";
                             }
                         }
+
+                        if (!IsActive())  // If Counterattacked and killed, stop attacking
+                        {
+                            if (currentMeleeTarget.TryGetComponent<Hero>(out Hero vengefulHero))
+                            {
+                                vengefulHero.canCounterMeleeAttacks = true;
+                            }
+                            goto meleeAttacksFinishedJump;  // break doesn't cut it because you're back at the top of the loop. Better to jump
+                        }
                     }
-                    //meleeAttacksFinishedJump: ;  // Might be needed for circularStrike running out of priorityTargets
+                    meleeAttacksFinishedJump:;  // Needed when running out of priorityTargets
                     MissionSpecifics.currentPhase = "Villain";
                 }
                 break;
@@ -1381,11 +1445,6 @@ public class Unit : MonoBehaviour
                     int currentRangedTargetIndex = 0;
                     for (int i = 0; i < unitTurn.actionProficiency.actionMultiplier; i++)
                     {
-                        if (!IsActive())  // If Counterattacked and killed, stop attacking
-                        {
-                            break;  // Exit the for loop so you can still set MissionSpecifics.currentPhase = "Villain";
-                        }
-
                         GameObject targetZone = null;
                         if (currentRangedTarget.TryGetComponent<Hero>(out Hero targetHero))
                         {
@@ -1400,7 +1459,7 @@ public class Unit : MonoBehaviour
                                 }
                                 else  // No more targets
                                 {
-                                    break;
+                                    goto rangeAttacksFinishedJump;
                                 }
                             }
                             else
@@ -1421,7 +1480,7 @@ public class Unit : MonoBehaviour
                                 }
                                 else  // No more targets
                                 {
-                                    break;
+                                    goto rangeAttacksFinishedJump;
                                 }
                             }
                             else
@@ -1432,6 +1491,9 @@ public class Unit : MonoBehaviour
 
                         if (targetZone)  // Set from hero vs heroAlly above, not from unitTurn.targetedZone
                         {
+                            ZoneInfo targetZoneInfo = targetZone.GetComponent<ZoneInfo>();
+                            int totalZoneEnemiesBeforeAttack = targetZoneInfo.GetTargetableHeroesCount() + targetZoneInfo.GetTargetableHeroesAlliesCount();
+
                             List<GameObject> dicePool = new List<GameObject>(unitTurn.actionProficiency.proficiencyDice);
                             if (currentZoneInfo.elevation > targetZone.GetComponent<ZoneInfo>().elevation)
                             {
@@ -1456,44 +1518,86 @@ public class Unit : MonoBehaviour
                             }
                             yield return StartCoroutine(animate.RangedAttack(gameObject, currentRangedTarget, actionSuccesses));
 
+                            int totalZoneEnemiesAfterAttack = targetZoneInfo.GetTargetableHeroesCount() + targetZoneInfo.GetTargetableHeroesAlliesCount();
+
                             if (fiery)
                             {
-                                yield return StartCoroutine(currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Flame", 1, false, true)));
+                                yield return StartCoroutine(targetZoneInfo.AddEnvironTokens(new EnvironTokenSave("Flame", 1, false, true)));
                             }
                             if (frosty)
                             {
-                                yield return StartCoroutine(currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true)));
+                                yield return StartCoroutine(targetZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true)));
                             }
 
                             int burstCarryOverOccurrences = 0;
                             while (burstCarryOver > burstCarryOverOccurrences)
                             {
-                                if (IsActive() && WasAttackTargetDropped(currentRangedTarget))
+                                if (IsActive())
                                 {
-                                    currentRangedTargetIndex++;
-                                    if (currentRangedTargetIndex < unitTurn.priorityTargets.Count)
+                                    if (totalZoneEnemiesAfterAttack < totalZoneEnemiesBeforeAttack)
                                     {
-                                        burstCarryOverOccurrences++;
-                                        currentRangedTarget = unitTurn.priorityTargets[currentRangedTargetIndex];
-                                        yield return StartCoroutine(animate.RangedAttack(gameObject, currentRangedTarget, -1));
-
-                                        if (fiery)
+                                        if (WasAttackTargetDropped(currentRangedTarget))
                                         {
-                                            yield return StartCoroutine(currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Flame", 1, false, true)));
+                                            currentRangedTargetIndex++;
+                                            if (currentRangedTargetIndex < unitTurn.priorityTargets.Count)
+                                            {
+                                                currentRangedTarget = unitTurn.priorityTargets[currentRangedTargetIndex];
+                                                if (currentRangedTarget.TryGetComponent<Hero>(out Hero carryOverTargetHero))
+                                                {
+                                                    if (carryOverTargetHero.IsWoundedOut())
+                                                    {
+                                                        continue;  // Start burstCarryOver loop over to select new currentRangedTarget
+                                                    }
+                                                    else
+                                                    {
+                                                        targetZone = carryOverTargetHero.GetZone();
+                                                    }
+                                                }
+                                                else if (currentRangedTarget.TryGetComponent<Unit>(out Unit carryOverTargetUnit))
+                                                {
+                                                    if (!carryOverTargetUnit.IsActive())
+                                                    {
+                                                        continue;  // Start carryOver loop over to select new currentRangedTarget
+                                                    }
+                                                    else
+                                                    {
+                                                        targetZone = carryOverTargetUnit.GetZone();
+                                                    }
+                                                }
+                                            }
+                                            else
+                                            {
+                                                goto rangeAttacksFinishedJump;  // No more targets
+                                            }
+                                            targetZoneInfo = targetZone.GetComponent<ZoneInfo>();
+                                            totalZoneEnemiesBeforeAttack = targetZoneInfo.GetTargetableHeroesCount() + targetZoneInfo.GetTargetableHeroesAlliesCount();
+                                        }
+                                        else
+                                        {
+                                            totalZoneEnemiesBeforeAttack = totalZoneEnemiesAfterAttack;
+                                        }
+                                        yield return StartCoroutine(animate.RangedAttack(gameObject, currentRangedTarget, -1));
+                                        burstCarryOverOccurrences++;
+
+                                        totalZoneEnemiesAfterAttack = targetZoneInfo.GetTargetableHeroesCount() + targetZoneInfo.GetTargetableHeroesAlliesCount();
+
+                                        if (fiery)  // Triggered during the "End the Melee Attack" step, which happens for circularStrike?
+                                        {
+                                            yield return StartCoroutine(targetZoneInfo.AddEnvironTokens(new EnvironTokenSave("Flame", 1, false, true)));
                                         }
                                         if (frosty)
                                         {
-                                            yield return StartCoroutine(currentZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true)));
+                                            yield return StartCoroutine(targetZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true)));
                                         }
                                     }
-                                    else  // No more targets available
+                                    else
                                     {
                                         break;
                                     }
                                 }
                                 else
                                 {
-                                    break;  // Exit the while loop (and same IsActive() check above exits the for loop) so you can still set MissionSpecifics.currentPhase = "Villain";
+                                    break;  // Exit the while loop (and same IsActive() check below exits the for loop) so you can still set MissionSpecifics.currentPhase = "Villain";
                                 }
                             }
                         }
@@ -1501,7 +1605,17 @@ public class Unit : MonoBehaviour
                         {
                             Debug.LogError("ERROR! RANGED action was performed while targetZone was null, so henchman just wasted its action wildly firing its gun into the air.");
                         }
+
+                        if (!IsActive())  // If Counterattacked and killed, stop attacking
+                        {
+                            if (currentRangedTarget.TryGetComponent<Hero>(out Hero vengefulHero))
+                            {
+                                vengefulHero.canCounterRangedAttacks = true;
+                            }
+                            goto rangeAttacksFinishedJump;  // break doesn't cut it because you're back at the top of the loop. Better to jump
+                        }
                     }
+                    rangeAttacksFinishedJump:;  // Needed when running out of priorityTargets
                     MissionSpecifics.currentPhase = "Villain";
                 }
                 break;
@@ -1756,6 +1870,131 @@ public class Unit : MonoBehaviour
         return rolledSuccesses;
     }
 
+    public void ShowWoundShields()
+    {
+        int currentlyDisplayedWoundShields = 0;
+        foreach (Transform woundShield in transform.Find("WoundShieldsContainer"))
+        {
+            if (currentlyDisplayedWoundShields >= woundShields)
+            {
+                break;
+            }
+            woundShield.gameObject.SetActive(true);
+            currentlyDisplayedWoundShields++;
+        }
+    }
+
+    public void HideWoundShields()
+    {
+        foreach (Transform woundShield in transform.Find("WoundShieldsContainer"))
+        {
+            woundShield.gameObject.SetActive(false);
+        }
+    }
+
+    public void GenerateWoundShields()  // Called on ScenarioMap.CallReinforcements(), could be called on in LoadUnitSave() below
+    {
+        //string loadWoundShieldsDebugString = tag + "LoadUnitSave woundShields: " + woundShields.ToString();
+        if (IsVillain())
+        {
+            woundShields = 1;
+        }
+        else
+        {
+            List<int> possibleWoundShieldValues = MissionSpecifics.GetWoundShieldValues().ToList();
+            int[] woundShieldFrequencyMapping = new int[possibleWoundShieldValues.Count];  // By default each index should be initialized to 0
+            foreach (GameObject unitObject in GameObject.FindGameObjectsWithTag(tag))
+            {
+                Unit unit = unitObject.GetComponent<Unit>();
+                if (unit != this && unit.woundShields >= 0)
+                {
+                    //loadWoundShieldsDebugString += "   " + unit.tag + " from " + unit.GetZone().name + " with woundShields: " + unit.woundShields;
+                    woundShieldFrequencyMapping[unit.woundShields]++;
+                }
+            }
+            int leastOccurencesOfSameWoundShieldNumber = woundShieldFrequencyMapping.Min();
+            //loadWoundShieldsDebugString += "\nleastOccurencesOfSameWoundShieldNumber: " + leastOccurencesOfSameWoundShieldNumber.ToString();
+            for (int i = 0; i < woundShieldFrequencyMapping.Length; i++)
+            {
+                //loadWoundShieldsDebugString += "    woundShieldFrequencyMapping[" + i.ToString() + "]: " + woundShieldFrequencyMapping[i].ToString();
+                if (woundShieldFrequencyMapping[i] > leastOccurencesOfSameWoundShieldNumber)
+                {
+                    possibleWoundShieldValues.Remove(i);
+                    //loadWoundShieldsDebugString += " is greater than leastOccurences, so removing it from list.";
+                }
+            }
+            woundShields = possibleWoundShieldValues[random.Next(possibleWoundShieldValues.Count)];
+            //woundShields = possibleWoundShieldValues[random.Next(possibleWoundShieldValues.Count)];
+
+            //loadWoundShieldsDebugString += "    possibleWoundShieldValues list: { ";
+            //foreach (int woundShieldValue in possibleWoundShieldValues)
+            //{
+            //    loadWoundShieldsDebugString += woundShieldValue + ", ";
+            //}
+            //loadWoundShieldsDebugString += "}";
+        }
+        //loadWoundShieldsDebugString += "    final woundShields: " + woundShields.ToString();
+        //Debug.Log(loadWoundShieldsDebugString);
+        ShowWoundShields();
+    }
+
+    public void LoadUnitSave(UnitSave unitSave)  // Called from ZoneInfo.LoadZoneSave()
+    {
+        ModifyLifePoints(unitSave.lifePoints - lifePoints);
+        isHeroAlly = unitSave.isHeroAlly;
+        lifePoints = unitSave.lifePoints;
+        HideWoundShields();
+        //string loadWoundShieldsDebugString = tag + "LoadUnitSave woundShields: " + woundShields.ToString();
+        if (!isHeroAlly && unitSave.woundShields < 0)  // if still -1, set this unit's woundShields
+        {
+            if (IsVillain())
+            {
+                woundShields = 1;
+            }
+            else
+            {
+                List<int> possibleWoundShieldValues = MissionSpecifics.GetWoundShieldValues().ToList();
+                int[] woundShieldFrequencyMapping = new int[possibleWoundShieldValues.Count];  // By default each index should be initialized to 0
+                foreach (GameObject unitObject in GameObject.FindGameObjectsWithTag(tag))
+                {
+                    Unit unit = unitObject.GetComponent<Unit>();
+                    if (unit != this && unit.woundShields >= 0)
+                    {
+                        //loadWoundShieldsDebugString += "   " + unit.tag + " from " + unit.GetZone().name + " with woundShields: " + unit.woundShields;
+                        woundShieldFrequencyMapping[unit.woundShields]++;
+                    }
+                }
+                int leastOccurencesOfSameWoundShieldNumber = woundShieldFrequencyMapping.Min();
+                //loadWoundShieldsDebugString += "\nleastOccurencesOfSameWoundShieldNumber: " + leastOccurencesOfSameWoundShieldNumber.ToString();
+                for (int i = 0; i < woundShieldFrequencyMapping.Length; i++)
+                {
+                    //loadWoundShieldsDebugString += "    woundShieldFrequencyMapping[" + i.ToString() + "]: " + woundShieldFrequencyMapping[i].ToString();
+                    if (woundShieldFrequencyMapping[i] > leastOccurencesOfSameWoundShieldNumber)
+                    {
+                        possibleWoundShieldValues.Remove(i);
+                        //loadWoundShieldsDebugString += " is greater than leastOccurences, so removing it from list.";
+                    }
+                }
+                woundShields = possibleWoundShieldValues[random.Next(possibleWoundShieldValues.Count)];
+                //woundShields = possibleWoundShieldValues[random.Next(possibleWoundShieldValues.Count)];
+
+                //loadWoundShieldsDebugString += "    possibleWoundShieldValues list: { ";
+                //foreach (int woundShieldValue in possibleWoundShieldValues)
+                //{
+                //    loadWoundShieldsDebugString += woundShieldValue + ", ";
+                //}
+                //loadWoundShieldsDebugString += "}";
+            }
+        }
+        else
+        {
+            woundShields = unitSave.woundShields;
+        }
+        //loadWoundShieldsDebugString += "    final woundShields: " + woundShields.ToString();
+        //Debug.Log(loadWoundShieldsDebugString);
+        ShowWoundShields();
+    }
+
     public UnitSave ToJSON()
     {
         return new UnitSave(this);
@@ -1769,11 +2008,13 @@ public class UnitSave
     public string tag;
     public bool isHeroAlly;
     public int lifePoints;
+    public int woundShields;
 
     public UnitSave(Unit unit)
     {
         tag = unit.tag;
         isHeroAlly = unit.isHeroAlly;
         lifePoints = unit.lifePoints;
+        woundShields = unit.woundShields;
     }
 }
