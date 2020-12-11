@@ -105,7 +105,8 @@
                 {
                     "tag": "UZI",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         },
@@ -118,7 +119,8 @@
                 {
                     "tag": "CROWBAR",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         },
@@ -131,7 +133,8 @@
                 {
                     "tag": "SHOTGUN",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         },
@@ -151,7 +154,8 @@
                 {
                     "tag": "SHOTGUN",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         },
@@ -164,7 +168,8 @@
                 {
                     "tag": "CROWBAR",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         },
@@ -212,7 +217,8 @@
                 {
                     "tag": "CROWBAR",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         },
@@ -239,7 +245,8 @@
                 {
                     "tag": "CHAINS",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         },
@@ -252,7 +259,8 @@
                 {
                     "tag": "CHAINS",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         },
@@ -265,7 +273,8 @@
                 {
                     "tag": "UZI",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         },
@@ -278,7 +287,8 @@
                 {
                     "tag": "OTTERPOP",
                     "isHeroAlly": false,
-                    "lifePoints": 4
+                    "lifePoints": 4,
+                    "woundShields": -1
                 }
             ]
         },
@@ -305,7 +315,8 @@
                 {
                     "tag": "UZI",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         },
@@ -332,7 +343,8 @@
                 {
                     "tag": "CHAINS",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         },
@@ -380,7 +392,8 @@
                 {
                     "tag": "UZI",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         },
@@ -393,7 +406,8 @@
                 {
                     "tag": "CROWBAR",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         },
@@ -413,7 +427,8 @@
                 {
                     "tag": "SHOTGUN",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         }

@@ -63,7 +63,8 @@
                 {
                     "tag": "CROWBAR",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         },
@@ -132,17 +133,20 @@
                 {
                     "tag": "CROWBAR",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 },
                 {
                     "tag": "CHAINS",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 },
                 {
                     "tag": "SKULLFACE",
                     "isHeroAlly": false,
-                    "lifePoints": 4
+                    "lifePoints": 4,
+                    "woundShields": -1
                 }
             ]
         },
@@ -162,17 +166,20 @@
                 {
                     "tag": "CHAINS",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 },
                 {
                     "tag": "SWATRIFLE",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 },
                 {
                     "tag": "BYSTANDER",
                     "isHeroAlly": true,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         },
@@ -185,7 +192,8 @@
                 {
                     "tag": "BYSTANDER",
                     "isHeroAlly": true,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         },
@@ -212,7 +220,8 @@
                 {
                     "tag": "SWATRIFLE",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         },
@@ -225,7 +234,8 @@
                 {
                     "tag": "SHOTGUN",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         },
@@ -287,7 +297,8 @@
                 {
                     "tag": "BYSTANDER",
                     "isHeroAlly": true,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         },
@@ -300,12 +311,14 @@
                 {
                     "tag": "CHAINS",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 },
                 {
                     "tag": "MUDMAN",
                     "isHeroAlly": false,
-                    "lifePoints": 7
+                    "lifePoints": 7,
+                    "woundShields": -1
                 }
             ]
         },
@@ -318,12 +331,14 @@
                 {
                     "tag": "SHOTGUN",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 },
                 {
                     "tag": "SWATRIFLE",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         },
@@ -364,7 +379,8 @@
                 {
                     "tag": "SHOTGUN",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         },
@@ -398,7 +414,8 @@
                 {
                     "tag": "CROWBAR",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         },
@@ -425,7 +442,8 @@
                 {
                     "tag": "CHAINS",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         },
@@ -438,7 +456,8 @@
                 {
                     "tag": "CROWBAR",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         },
@@ -451,7 +470,8 @@
                 {
                     "tag": "BYSTANDER",
                     "isHeroAlly": true,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         },
@@ -464,12 +484,14 @@
                 {
                     "tag": "SHOTGUN",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 },
                 {
                     "tag": "SWATRIFLE",
                     "isHeroAlly": false,
-                    "lifePoints": 1
+                    "lifePoints": 1,
+                    "woundShields": -1
                 }
             ]
         }

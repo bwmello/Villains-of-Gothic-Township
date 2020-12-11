@@ -192,6 +192,20 @@ public class Animate : MonoBehaviour
         //}
     }
 
+    public Vector3 GetFurtherPointOnLine(Vector3 start, Vector3 end, float buffer = .6f)
+    {
+        Vector3 furthestPoint = new Vector3(end.x, end.y, end.z);
+        if (start.x != end.x)
+        {
+            furthestPoint.x += start.x < end.x ? buffer : -buffer;
+        }
+        if (start.y != end.y)
+        {
+            furthestPoint.y += start.y < end.y ? buffer : -buffer;
+        }
+        return furthestPoint;
+    }
+
     public float PostionCameraBeforeCameraMove(Vector3 origin, Vector3 destination)  // Only used for Unit.AnimateMovementPath()
     {
         float secondsToDelayBeforeCameraMove = 0;
@@ -300,6 +314,7 @@ public class Animate : MonoBehaviour
         Vector3 pointAlongDirection = target.transform.position + (directionOnly * .07f);  // the point along this vector you are requesting  // * float is the distance along this direction
         StartCoroutine(ShowImpact(pointAlongDirection, 3f));
         Vector3 targetFurthestPoint = GetPointFurthestFromOrigin(attacker.transform.position, target.transform.position, targetZoneInfo.transform.position);
+        targetFurthestPoint = GetFurtherPointOnLine(attacker.transform.position, targetFurthestPoint);
         yield return StartCoroutine(MoveCameraUntilOnscreen(attacker.transform.position, targetFurthestPoint));
 
         List<GameObject> wounds = new List<GameObject>();
@@ -389,6 +404,7 @@ public class Animate : MonoBehaviour
         target.GetComponent<ObjectShake>().StartShaking();
         StartCoroutine(ShowBulletPath(attacker.transform.position, target.transform.position, 3f));
         Vector3 targetFurthestPoint = GetPointFurthestFromOrigin(attacker.transform.position, target.transform.position, targetZoneInfo.transform.position);
+        targetFurthestPoint = GetFurtherPointOnLine(attacker.transform.position, targetFurthestPoint);
         yield return StartCoroutine(MoveCameraUntilOnscreen(attacker.transform.position, targetFurthestPoint));
 
         List<GameObject> wounds = new List<GameObject>();
@@ -441,7 +457,8 @@ public class Animate : MonoBehaviour
     {
         GameObject grenade = Instantiate(grenadePrefab, transform);
         grenade.transform.position = origin;
-        StartCoroutine(MoveCameraUntilOnscreen(origin, destination));
+        Vector3 slightlyFurtherDestination = GetFurtherPointOnLine(origin, destination);
+        StartCoroutine(MoveCameraUntilOnscreen(origin, slightlyFurtherDestination));
         yield return StartCoroutine(MoveObjectOverTime(new List<GameObject>() { grenade }, origin, destination));
         ShowExplosion(grenade.transform.position);
         Destroy(grenade);

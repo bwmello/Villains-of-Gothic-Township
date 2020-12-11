@@ -1943,56 +1943,12 @@ public class Unit : MonoBehaviour
         ModifyLifePoints(unitSave.lifePoints - lifePoints);
         isHeroAlly = unitSave.isHeroAlly;
         lifePoints = unitSave.lifePoints;
-        HideWoundShields();
-        //string loadWoundShieldsDebugString = tag + "LoadUnitSave woundShields: " + woundShields.ToString();
+        //HideWoundShields();
         if (!isHeroAlly && unitSave.woundShields < 0)  // if still -1, set this unit's woundShields
         {
-            if (IsVillain())
-            {
-                woundShields = 1;
-            }
-            else
-            {
-                List<int> possibleWoundShieldValues = MissionSpecifics.GetWoundShieldValues().ToList();
-                int[] woundShieldFrequencyMapping = new int[possibleWoundShieldValues.Count];  // By default each index should be initialized to 0
-                foreach (GameObject unitObject in GameObject.FindGameObjectsWithTag(tag))
-                {
-                    Unit unit = unitObject.GetComponent<Unit>();
-                    if (unit != this && unit.woundShields >= 0)
-                    {
-                        //loadWoundShieldsDebugString += "   " + unit.tag + " from " + unit.GetZone().name + " with woundShields: " + unit.woundShields;
-                        woundShieldFrequencyMapping[unit.woundShields]++;
-                    }
-                }
-                int leastOccurencesOfSameWoundShieldNumber = woundShieldFrequencyMapping.Min();
-                //loadWoundShieldsDebugString += "\nleastOccurencesOfSameWoundShieldNumber: " + leastOccurencesOfSameWoundShieldNumber.ToString();
-                for (int i = 0; i < woundShieldFrequencyMapping.Length; i++)
-                {
-                    //loadWoundShieldsDebugString += "    woundShieldFrequencyMapping[" + i.ToString() + "]: " + woundShieldFrequencyMapping[i].ToString();
-                    if (woundShieldFrequencyMapping[i] > leastOccurencesOfSameWoundShieldNumber)
-                    {
-                        possibleWoundShieldValues.Remove(i);
-                        //loadWoundShieldsDebugString += " is greater than leastOccurences, so removing it from list.";
-                    }
-                }
-                woundShields = possibleWoundShieldValues[random.Next(possibleWoundShieldValues.Count)];
-                //woundShields = possibleWoundShieldValues[random.Next(possibleWoundShieldValues.Count)];
-
-                //loadWoundShieldsDebugString += "    possibleWoundShieldValues list: { ";
-                //foreach (int woundShieldValue in possibleWoundShieldValues)
-                //{
-                //    loadWoundShieldsDebugString += woundShieldValue + ", ";
-                //}
-                //loadWoundShieldsDebugString += "}";
-            }
+            GenerateWoundShields();
         }
-        else
-        {
-            woundShields = unitSave.woundShields;
-        }
-        //loadWoundShieldsDebugString += "    final woundShields: " + woundShields.ToString();
-        //Debug.Log(loadWoundShieldsDebugString);
-        ShowWoundShields();
+        //ShowWoundShields();  // Only needed with HideWoundShields() above, otherwise called by GenerateWoundShields() if needed
     }
 
     public UnitSave ToJSON()

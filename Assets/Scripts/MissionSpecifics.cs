@@ -152,12 +152,14 @@ public static class MissionSpecifics
         switch (missionName)
         {
             case "ASinkingFeeling":
+                return 0;
                 //return 1;
-                return random.Next(0, 2);  // .5, half of the time 0, the other half of the time 1
+                //return random.Next(0, 2);  // .5, half of the time 0, the other half of the time 1
             case "IceToSeeYou":
                 return 0;
             case "AFewBadApples":
-                return random.Next(0, 2);  // .5, half of the time 0, the other half of the time 1
+                return 0;
+                //return random.Next(0, 2);  // .5, half of the time 0, the other half of the time 1
         }
         return 0;
     }
@@ -474,7 +476,8 @@ public static class MissionSpecifics
                         {
                             Unit barnInfo = barn.GetComponent<Unit>();
                             Unit superBarnInfo = Object.Instantiate(superbarnPrefab, barn.transform.parent).GetComponent<Unit>();
-                            superBarnInfo.GetComponent<Unit>().ModifyLifePoints(barnInfo.lifePoints - barnInfo.lifePointsMax);  // Do not reset SuperBarn's life points to 6 if Barn was damaged.
+                            superBarnInfo.ModifyLifePoints(barnInfo.lifePoints - barnInfo.lifePointsMax);  // Do not reset SuperBarn's life points to 6 if Barn was damaged.
+                            superBarnInfo.GenerateWoundShields();
                             Object.DestroyImmediate(barn);
                             int barnRiverIndex = scenarioMap.villainRiver.IndexOf("BARN");
                             scenarioMap.villainRiver[barnRiverIndex] = "SUPERBARN";
@@ -611,7 +614,8 @@ public static class MissionSpecifics
         if (totalSuccesses >= requiredSuccesses)
         {
             //yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, unitZoneInfo.GetBomb().transform.position));  // Move camera to bomb being armed  // Not much difference between bomb's position and bomb zone's position
-            yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, unitZoneInfo.transform.position));  // Move camera to zone of bomb being armed
+            Vector3 furtherPoint = scenarioMap.animate.GetFurtherPointOnLine(mainCamera.transform.position, unitZoneInfo.transform.position);
+            yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, furtherPoint));  // Move camera to zone of bomb being armed
             unitZoneInfo.PrimeBomb();
             yield return new WaitForSecondsRealtime(2);
             SetActionsWeightTable();
@@ -672,7 +676,8 @@ public static class MissionSpecifics
             {
                 unitZoneInfo.RemoveComputer();
                 //yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, chosenBombZone.GetBomb().transform.position));  // Move camera to bomb being armed  // Not much difference between bomb's position and bomb zone's position
-                yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, chosenBombZone.transform.position));  // Move camera to zone of bomb being armed
+                Vector3 furtherPoint = scenarioMap.animate.GetFurtherPointOnLine(mainCamera.transform.position, chosenBombZone.transform.position);
+                yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, furtherPoint));  // Move camera to zone of bomb being armed
                 chosenBombZone.PrimeBomb();
                 yield return new WaitForSecondsRealtime(2);
                 //unitTurn.targetedZone = chosenBombZone.transform.gameObject;  // Only useful for DEBUG statement at end of PerformAction()
@@ -820,7 +825,8 @@ public static class MissionSpecifics
                         break;
                     }
                 }
-                yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, zoneToCryo.transform.position));
+                Vector3 furtherPoint = scenarioMap.animate.GetFurtherPointOnLine(mainCamera.transform.position, zoneToCryo.transform.position);
+                yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, furtherPoint));
                 yield return new WaitForSecondsRealtime(1);
                 yield return scenarioMap.animate.StartCoroutine(zoneToCryo.GetComponent<ZoneInfo>().AddEnvironTokens(new EnvironTokenSave("Cryogenic", 1, false, true)));
                 yield return new WaitForSecondsRealtime(2);

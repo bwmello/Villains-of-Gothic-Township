@@ -9,11 +9,11 @@
         },
         {
             "heroName": "2ndHero",
-            "zoneID": 24
+            "zoneID": 5
         },
         {
             "heroName": "3rdHero",
-            "zoneID": 5
+            "zoneID": 24
         }
     ],
     "utilityBelt": {
