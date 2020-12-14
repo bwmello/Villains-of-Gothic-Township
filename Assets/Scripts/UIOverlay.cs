@@ -21,6 +21,7 @@ public class UIOverlay : MonoBehaviour
     public GameObject utilityBelt;
     public GameObject openMenuButton;
     public GameObject menuPanel;
+    public GameObject helpPanel;
     public GameObject reportBugPanel;
     public GameObject continueAfterAttackButton;  // Not really used as Animate.PauseUntilPlayerPushesContinue refers to the button directly
     public GameObject endSetupButton;
@@ -158,6 +159,19 @@ public class UIOverlay : MonoBehaviour
         ShowUIOverlay();
         Camera.main.GetComponent<PanAndZoom>().controlCamera = true;
         menuPanel.SetActive(false);
+    }
+
+    public void OpenHelp()
+    {
+        menuPanel.SetActive(false);  // Don't call CloseMenu(), let bugReportPanel EnablePlayerUI()
+        helpPanel.SetActive(true);
+    }
+
+    public void CloseHelp()
+    {
+        helpPanel.SetActive(false);
+        ShowUIOverlay();
+        Camera.main.GetComponent<PanAndZoom>().controlCamera = true;
     }
 
     public void ReportBugButtonClicked()
