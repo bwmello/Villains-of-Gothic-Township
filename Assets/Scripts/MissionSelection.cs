@@ -24,6 +24,10 @@ public class MissionSelection : MonoBehaviour
                 PlayerPrefs.DeleteKey(missionName);
                 transform.Find("ContinueButton").gameObject.GetComponent<Button>().interactable = false;
             }
+            else
+            {
+                SceneHandler.isFirstTimePlaying = false;
+            }
         }
     }
 

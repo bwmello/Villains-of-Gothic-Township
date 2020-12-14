@@ -6,6 +6,12 @@ public class MissionMenu : MonoBehaviour
 {
     public GameObject spotlightPrefab;
 
+
+    public void Awake()
+    {
+        SceneHandler.isFirstTimePlaying = true;
+    }
+
     // Start is called before the first frame update
     private IEnumerator Start()
     {

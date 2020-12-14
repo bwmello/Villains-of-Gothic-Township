@@ -90,6 +90,11 @@ public class ScenarioMap : MonoBehaviour
         MissionSpecifics.currentPhase = "Setup";
         UIOverlay.GetComponent<UIOverlay>().InitializeSetupUIOverlay();
         UIOverlay.GetComponent<UIOverlay>().ShowSetupUIOverlay();
+        if (SceneHandler.isFirstTimePlaying)
+        {
+            UIOverlay.GetComponent<UIOverlay>().OpenMenu();  // OpenMenu first for prep work: Disabling player control of camera and disabling of other buttons and such
+            UIOverlay.GetComponent<UIOverlay>().OpenHelp();
+        }
     }
 
     public void StartFirstTurn()  // called from UIOverlay when Start Game button clicked
