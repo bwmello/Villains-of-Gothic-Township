@@ -9,18 +9,15 @@ public static class UnitIntel
     public static int bonusMovePointsRemaining;
 
     // Non-action behavior weight (actions accounted for in MissionSpecifics.cs)
-    public static double terrainDangerWeight = -50;  // * terrainDanger
     public static double terrainDangeringFriendlies = -10;  // * terrainDanger * quantity of friendly units.  Chance of unit dying is 2/3 per terrainDanger
     public static double provokingCounterAttackWeight = -20;  // / defense, the less chance you have of dying to 2 yellow counterAttack dice
     public static double increaseTerrainDifficultyWeight = 10;
     public static double additionalTargetsForAdditionalAttacksWeight = 3;
+    //public static double breakingThroughWallWeight = 10;  // TODO To encourage units to break through walls because it's cool
     public static double[] bonusMovePointWeight = new double[] { 0, -15, -30, -45 };  // Accessed by UnitIntel.bonusMovePointWeight[movePointsUsed - unit.movePoints], so bonusMovePointWeight[0] = 0
     public static double[] partialMoveWeight = new double[] { .25, .0625 };  // * actionWeight. Accessed by UnitIntel.partialMoveWeight[additional moves required - 1]
-    //public static Dictionary<string, double> partialMoveWeight = new Dictionary<string, double>()
-    //{
-    //    { "MELEE", .1 }
-    //};
-    //public static double breakingThroughWallWeight = 10;  // To encourage Superbarn to break through walls just because it's cool
+    public static double[] terrainDangerWeightFactor = new double[] { 1, .25, .1, .01, .001, .0001, .00001, .000001, .0000001, .00000001, .000000001, .0000000001, .00000000001, .000000000001 };  // * actionWeight
+    //public static double terrainDangerWeight = -50;  // * terrainDanger
 
     // Helpers for activating units during villain turn
     public static Queue<GameObject> unitsToActivateLast = new Queue<GameObject>();  // Needed for when a unit's turn negatively impacts other units activating the same turn. Ex: Crowbars in IceToSeeYou activating computers blocking not yet activated Crowbars

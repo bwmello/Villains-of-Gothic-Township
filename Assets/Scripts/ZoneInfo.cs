@@ -319,7 +319,7 @@ public class ZoneInfo : MonoBehaviour
         {
             if (!unitsInfo[i].IsActive())
             {
-                Destroy(unitsInfo[i].gameObject);
+                DestroyImmediate(unitsInfo[i].gameObject);  // Just Destroy has faded units sticking around too long, preventing them from coming back as reinforcements
             }
         }
     }

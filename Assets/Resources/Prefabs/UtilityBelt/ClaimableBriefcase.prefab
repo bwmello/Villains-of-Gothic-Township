@@ -12,11 +12,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: ClaimableBriefcase
       objectReference: {fileID: 0}
-    - target: {fileID: 924307058113817702, guid: ad3c75f7ac0934d378d79264a8c90ec8,
-        type: 3}
-      propertyPath: m_Material
-      value: 
-      objectReference: {fileID: 0}
     - target: {fileID: 1662563106853226568, guid: ad3c75f7ac0934d378d79264a8c90ec8,
         type: 3}
       propertyPath: m_Sprite

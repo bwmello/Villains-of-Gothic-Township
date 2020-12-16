@@ -9,7 +9,7 @@ public class MissionMenu : MonoBehaviour
 
     public void Awake()
     {
-        SceneHandler.isFirstTimePlaying = true;
+        SceneHandler.isFirstTimePlaying = true;  // Set to false by individual MissionSelection scripts
     }
 
     // Start is called before the first frame update
