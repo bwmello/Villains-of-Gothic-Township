@@ -25,6 +25,8 @@ public class ZoneInfo : MonoBehaviour
     public GameObject bombPrefab;
     public GameObject primedBombPrefab;
     public GameObject briefcasePrefab;
+    public GameObject jammerPrefab;
+    public GameObject activeJammerPrefab;
     public GameObject gasPrefab;
     public GameObject flamePrefab;
     public GameObject smokePrefab;
@@ -518,54 +520,6 @@ public class ZoneInfo : MonoBehaviour
         return childrenWithTag;
     }
 
-    public void PrimeBomb()
-    {
-        Transform tokensRow = transform.Find("TokensRow");
-        try
-        {
-            Transform bomb = tokensRow.Find("Bomb");
-            bomb.GetComponent<CanvasGroup>().alpha = (float).2;  // Still exists to be primed by someone else
-            bomb.tag = "Untagged";
-            //Destroy(tokensRow.Find("Bomb"));  // When Destroy() or DestroyImmediate(), throws error: Can't remove RectTransform because Image (Script), Image (Script), Image (Script) depends on it
-            GameObject primedBomb = Instantiate(primedBombPrefab, tokensRow);
-            primedBomb.transform.position = bomb.position;
-        }
-        catch (NullReferenceException err)
-        {
-            Debug.LogError("ERROR! Tried to prime a bomb in " + transform.name + " without a bomb there. Error details: " + err.ToString());
-        }
-    }
-
-    public GameObject GetBomb()
-    {
-        Transform tokensRow = transform.Find("TokensRow");
-        GameObject bomb = null;
-        try
-        {
-            bomb = tokensRow.Find("Bomb").gameObject;
-        }
-        catch (NullReferenceException err)
-        {
-            Debug.LogError("ERROR! Tried to get a bomb in " + transform.name + " without a bomb there. Error details: " + err.ToString());
-        }
-        return bomb;
-    }
-
-    public void RemoveComputer()
-    {
-        Transform tokensRow = transform.Find("TokensRow");
-        try
-        {
-            Transform computer = tokensRow.Find("Computer");
-            computer.GetComponent<CanvasGroup>().alpha = (float).2;
-            computer.tag = "Untagged";
-        }
-        catch (NullReferenceException err)
-        {
-            Debug.LogError("ERROR! Tried to remove a computer in " + transform.name + " without a computer there. Error details: " + err.ToString());
-        }
-    }
-
     public void SetIsClickableForHeroesAndAllies(bool shouldMakeClickable)  // This also makes inactive heroes/units clickable, but does that really matter?
     {
         foreach (Unit unit in GetComponentsInChildren<Unit>())
@@ -674,8 +628,9 @@ public class ZoneInfo : MonoBehaviour
         transform.Find("DropZone").gameObject.SetActive(false);
     }
 
-    public void AddObjectiveToken(string tokenTag)
+    public void AddObjectiveToken(string tokenTag, bool isFaded = false)
     {
+        //Debug.Log("zoneInfoPanel " + id + "  AddObjectiveToken(" + tokenTag + ")");
         GameObject objectiveTokenPrefab = null;
         switch (tokenTag)
         {
@@ -691,11 +646,21 @@ public class ZoneInfo : MonoBehaviour
             case "PrimedBomb":
                 objectiveTokenPrefab = primedBombPrefab;
                 break;
+            case "Jammer":
+                objectiveTokenPrefab = jammerPrefab;
+                break;
+            case "ActiveJammer":
+                objectiveTokenPrefab = activeJammerPrefab;
+                break;
         }
         if (objectiveTokenPrefab)
         {
             Transform tokensRow = transform.Find("TokensRow");
             GameObject objectiveToken = Instantiate(objectiveTokenPrefab, tokensRow);
+            if (isFaded)
+            {
+                objectiveToken.GetComponent<CanvasGroup>().alpha = (float).2;
+            }
             objectiveToken.GetComponent<Token>().ConfigureClickability();
             ReorganizeTokens();
         }
@@ -915,38 +880,16 @@ public class ZoneInfo : MonoBehaviour
         EmptyOutZone();
         Transform tokensRow = transform.Find("TokensRow");
         //string debugString = "LoadZoneSave for " + gameObject.name + "\ntokensAndHeroesTags: { ";
-        foreach (string tokenOrHeroTag in zoneSave.tokensAndHeroesTags)
+        foreach (string tokenTag in zoneSave.tokensAndHeroesTags)
         {
+            AddObjectiveToken(tokenTag);
             //debugString += tokenOrHeroTag + ", ";
-            switch (tokenOrHeroTag)
-            {
-                case "Computer":
-                    Instantiate(computerPrefab, tokensRow);
-                    break;
-                case "Bomb":
-                    Instantiate(bombPrefab, tokensRow);
-                    break;
-                case "PrimedBomb":
-                    Instantiate(primedBombPrefab, tokensRow);
-                    break;
-            }
         }
         //debugString += "}\nfadedTokensTags: { ";
         foreach (string fadedTokenTag in zoneSave.fadedTokensTags)
         {
+            AddObjectiveToken(fadedTokenTag, true);  // true will fade the added objective token
             //debugString += fadedTokenTag + ", ";
-            switch (fadedTokenTag)
-            {
-                case "Computer":
-                    Instantiate(computerPrefab, tokensRow).GetComponent<CanvasGroup>().alpha = (float).2;
-                    break;
-                case "Bomb":
-                    Instantiate(bombPrefab, tokensRow).GetComponent<CanvasGroup>().alpha = (float).2;
-                    break;
-                case "PrimedBomb":
-                    Instantiate(primedBombPrefab, tokensRow).GetComponent<CanvasGroup>().alpha = (float).2;
-                    break;
-            }
         }
         //debugString += "}\nenvironTokens: { ";
         foreach (EnvironTokenSave environTokenSave in zoneSave.environTokens)

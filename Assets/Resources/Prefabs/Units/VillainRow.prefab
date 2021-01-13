@@ -849,13 +849,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 208ef6e8bb7534f498190648a5fd2080, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  berserkDie: {fileID: 3977603957081343019, guid: d58eb93d5ddbb4ba8a58a52718e7f90a,
+    type: 3}
   fadedAlpha: 0.2
   isHeroAlly: 0
   lifePoints: 1
   lifePointsMax: 1
   defense: 0
   woundShields: -1
-  reinforcementCost: 1
+  reinforcementCost: -1
   ignoreRangedWounds: 0
   protectedByAllies: 0
   sacrifice: 0
@@ -870,6 +872,8 @@ MonoBehaviour:
   wallBreaker: 0
   martialArtsSuccesses: 0
   reach: 0
+  berserk: 0
+  sneakAttack: 0
   electricity: 0
   shackle: 0
   circularStrike: 0

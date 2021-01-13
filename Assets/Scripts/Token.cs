@@ -13,7 +13,7 @@ public class Token : MonoBehaviour  // Should be called ObjectiveToken as there 
 
     void Start()
     {
-        if (gameObject.CompareTag("PrimedBomb"))
+        if (transform.Find("BlinkingLight"))
         {
             InvokeRepeating(nameof(Blink), Random.Range(1f, 3.5f), 2f);
         }
@@ -62,14 +62,14 @@ public class Token : MonoBehaviour  // Should be called ObjectiveToken as there 
 
     void Blink()
     {
-        GameObject redLight = transform.Find("RedLight").gameObject;
-        if (IsActive() && !redLight.activeSelf)
+        GameObject blinkingLight = transform.Find("BlinkingLight").gameObject;
+        if (IsActive() && !blinkingLight.activeSelf)
         {
-            redLight.SetActive(true);
+            blinkingLight.SetActive(true);
         }
         else
         {
-            redLight.SetActive(false);
+            blinkingLight.SetActive(false);
         }
     }
 }

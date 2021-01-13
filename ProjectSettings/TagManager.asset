@@ -40,6 +40,11 @@ TagManager:
   - DRONEGRABBER
   - ScenarioMap
   - Briefcase
+  - PRISONER
+  - OLLYGATOR
+  - LIVEFIRE
+  - Jammer
+  - ActiveJammer
   layers:
   - Default
   - TransparentFX

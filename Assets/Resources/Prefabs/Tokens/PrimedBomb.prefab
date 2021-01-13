@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 7752890720709804678}
   - component: {fileID: 2927161141091340053}
   m_Layer: 5
-  m_Name: RedLight
+  m_Name: BlinkingLight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

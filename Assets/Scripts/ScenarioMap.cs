@@ -46,6 +46,8 @@ public class ScenarioMap : MonoBehaviour
     public GameObject bombPrefab;  // These prefabs are here just to be used by MissionSpecifics
     public GameObject primedBombPrefab;
     public GameObject briefcasePrefab;
+    public GameObject jammerPrefab;
+    public GameObject activeJammerPrefab;
 
 
     void Awake()

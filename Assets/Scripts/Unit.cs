@@ -10,6 +10,7 @@ using Shapes2D;  // for changing color to blue if isHeroAlly
 public class Unit : MonoBehaviour
 {
     readonly System.Random random = new System.Random();
+    public GameObject berserkDie;
     private Animate animate;
     public float fadedAlpha = .3f;  // Public so can be used by ZoneInfo.cs when terrain danger increases
     public bool isHeroAlly = false;
@@ -31,15 +32,16 @@ public class Unit : MonoBehaviour
     public int ignoreTerrainDifficulty = 0;
     public int ignoreElevation = 0;  // TODO Also ignores this many wounds caused by a fall
     public int ignoreSize = 0;
-    public int ignoreMenace = 0;  // TODO implment for DRONEs
+    public int ignoreMenace = 0;
     public int wallBreaker = 0;
 
     public int martialArtsSuccesses = 0;
-    public int reach = 0;  // TODO Reach (MUDMAN and BIRDMAN's Gang) Melee attacks can target heroes/miniatures this far away with LoS
-    // public int berserk = 0;  // Berserk (OLLYGATOR) If lifePoints <= lifePointsMax/2, add this many white dice to each attack
+    public int reach = 0;
+    public int berserk = 0;
+    public int sneakAttack = 0;
     public int electricity = 0;  // TODO implement for GUARD
     public int shackle = 0;  // TODO (MUDMAN) Instead of melee damage (still show wounds (or proxy) for overcoming defense) inflict this many shackle, reducing all target's successes by [shackle] until they perform complex MANIPULATION vs [shackle] to remove it
-    public int circularStrike = 0;  // TODO for CHAINS, if hero removed after MELEE with another hero in that zone, popup prompt saying up to this many additional successes carry over
+    public int circularStrike = 0;
     public int counterAttack = 0;  // (Ignore, player resolved) if hero moves into space with SHOTGUN, reminder that after melee attack against SHOTGUN is resolved, SHOTGUN gets free melee attack vs hero with number of yellow dice = counterattack
 
     public int marksmanSuccesses = 0;
@@ -59,7 +61,7 @@ public class Unit : MonoBehaviour
     // public int blast = 0;  // Blast (OTTERPOP) auto manipulation to trigger this level of explosion in unit's area and adjacent area with LoS
     //public int moveCommand = 0;  // Tactician (SKULLFACE, POLIKILLIAN) auto thought to grant ally free move + [moveCommand]. Takes up action, so seems dumb.
 
-    // Remainder Harmless, Reduced Mobility, Attraction, Shackle, Hacking, Gas Immunity, Misfortune, Horror, Regeneration, Fly, Impenetrable Defense, Untouchable, Burst, Luck, Flame, Toxic Gas, Poison, Body Guard, Investigation, Sneak Attack, Imaginary Friend
+    // Remainder Harmless, Reduced Mobility, Attraction, Shackle, Hacking, Gas Immunity, Misfortune, Horror, Regeneration, Fly, Impenetrable Defense, Untouchable, Burst, Luck, Flame, Toxic Gas, Poison, Body Guard, Investigation, Imaginary Friend
 
 
     [Serializable]
@@ -321,7 +323,7 @@ public class Unit : MonoBehaviour
             Dictionary<GameObject, MovementPath> possibleFinalDestinations = GetPossibleDestinations(currentZone);
             if (!possibleFinalDestinations.ContainsKey(chosenAction.finalDestinationZone))  // If moving to chosenAction.finalDestinationZone is no longer possible (due to performed action)
             {
-                if (MissionSpecifics.actionsWeightTable.ContainsKey("GUARD"))
+                if (MissionSpecifics.actionsWeightTable.ContainsKey("GUARD") && menace > 0)
                 {
                     double mostValuableFinalDestinationWeight = 0;
                     foreach (GameObject possibleFinalDestinationZone in possibleFinalDestinations.Keys)
@@ -429,7 +431,7 @@ public class Unit : MonoBehaviour
                             currentFinalDestinationWeight += UnitIntel.bonusMovePointWeight[possibleFinalDestinations[possibleFinalDestinationZone].movementSpent - movePoints];
                         }
 
-                        if (MissionSpecifics.actionsWeightTable.ContainsKey("GUARD"))
+                        if (MissionSpecifics.actionsWeightTable.ContainsKey("GUARD") && menace > 0)
                         {
                             ZoneInfo possibleFinalDestinationZoneInfo = possibleFinalDestinationZone.GetComponent<ZoneInfo>();
                             foreach (MissionSpecifics.ActionWeight guardable in MissionSpecifics.actionsWeightTable["GUARD"])
@@ -727,6 +729,7 @@ public class Unit : MonoBehaviour
         {
             ZoneInfo possibleZoneInfo = possibleZone.GetComponent<ZoneInfo>();
             int actionZoneHindrance = possibleZoneInfo.GetCurrentHindrance(gameObject);
+            int applicableActionZoneHindrance = actionZoneHindrance > ignoreMenace ? actionZoneHindrance - ignoreMenace : 0;
             int availableRerolls = possibleZoneInfo.GetSupportRerolls(gameObject);
             double bonusMovePointWeight = 0;
             double guardZoneWeight = 0;
@@ -750,7 +753,7 @@ public class Unit : MonoBehaviour
                             possibleBonusMovePointWeight = UnitIntel.bonusMovePointWeight[possibleDestinationsAndPaths[possibleFinalDestinationZone].movementSpent - movePoints];
                         }
 
-                        if (MissionSpecifics.actionsWeightTable.ContainsKey("GUARD"))
+                        if (MissionSpecifics.actionsWeightTable.ContainsKey("GUARD") && menace > 0)
                         {
                             foreach (MissionSpecifics.ActionWeight guardable in MissionSpecifics.actionsWeightTable["GUARD"])
                             {
@@ -780,7 +783,7 @@ public class Unit : MonoBehaviour
                 {
                     bonusMovePointWeight = UnitIntel.bonusMovePointWeight[possibleDestinationsAndPaths[possibleZone].movementSpent - movePoints];
                 }
-                if (MissionSpecifics.actionsWeightTable.ContainsKey("GUARD"))
+                if (MissionSpecifics.actionsWeightTable.ContainsKey("GUARD") && menace > 0)
                 {
                     foreach (MissionSpecifics.ActionWeight guardable in MissionSpecifics.actionsWeightTable["GUARD"])
                     {
@@ -802,184 +805,220 @@ public class Unit : MonoBehaviour
                 switch (actionProficiency.actionType)
                 {
                     case "MELEE":
-                        List<GameObject> meleeTargetableZones = possibleZoneInfo.GetZonesWithTargetsWithinLinesOfSight(reach);
-                        if (meleeTargetableZones.Count > 0)
+                        if (MissionSpecifics.actionsWeightTable.ContainsKey("MELEE"))
                         {
-                            double averageWounds = GetAverageSuccesses(actionProficiency.proficiencyDice, availableRerolls) + martialArtsSuccesses;
-                            averageWounds *= actionProficiency.actionMultiplier;
-                            if (frosty)  // Account for increasing difficult terrain of targets's zone
+                            List<GameObject> meleeTargetableZones = possibleZoneInfo.GetZonesWithTargetsWithinLinesOfSight(reach);
+                            if (meleeTargetableZones.Count > 0)
                             {
-                                actionWeight += UnitIntel.increaseTerrainDifficultyWeight;  // Only counted if there is a target
-                            }
-
-                            List<MissionSpecifics.ActionWeight> highPriorityTargets = new List<MissionSpecifics.ActionWeight>();
-                            for (int i = 2; i < MissionSpecifics.actionsWeightTable["MELEE"].Count; i++)
-                            {
-                                highPriorityTargets.Add(MissionSpecifics.actionsWeightTable["MELEE"][i]);
-                            }
-
-                            List<(GameObject, double)> priorityTargetsAndWeights = new List<(GameObject, double)>();
-                            foreach (GameObject targetableZone in meleeTargetableZones)
-                            {
-                                ZoneInfo targetableZoneInfo = targetableZone.GetComponent<ZoneInfo>();
-                                foreach (GameObject hero in targetableZoneInfo.GetTargetableHeroes())
+                                if (frosty)  // Account for increasing difficult terrain of targets's zone
                                 {
-                                    double targetHeroWeight = averageWounds * MissionSpecifics.actionsWeightTable["MELEE"][0].weightFactor + actionWeight;
-                                    if (hero.GetComponent<Hero>().canCounterMeleeAttacks)
-                                    {
-                                        targetHeroWeight -= UnitIntel.provokingCounterAttackWeight / defense;
-                                    }
-                                    priorityTargetsAndWeights.Add((hero, targetHeroWeight));
+                                    actionWeight += UnitIntel.increaseTerrainDifficultyWeight;  // Only counted if there is a target
                                 }
-                                foreach (GameObject heroAlly in targetableZoneInfo.GetTargetableHeroAllies())
+
+                                List<GameObject> attackDicePool = new List<GameObject>(actionProficiency.proficiencyDice);
+                                if (berserk > 0 && lifePointsMax / (float)lifePoints <= (float)lifePointsMax / 2f)
                                 {
-                                    bool isHighPriorityTarget = false;
-                                    foreach (MissionSpecifics.ActionWeight highPriorityTarget in highPriorityTargets)
+                                    for (int i = 0; i < berserk; i++) {
+                                        attackDicePool.Add(berserkDie);
+                                    }
+                                }
+
+                                List<MissionSpecifics.ActionWeight> highPriorityTargets = new List<MissionSpecifics.ActionWeight>();
+                                for (int i = 2; i < MissionSpecifics.actionsWeightTable["MELEE"].Count; i++)
+                                {
+                                    highPriorityTargets.Add(MissionSpecifics.actionsWeightTable["MELEE"][i]);
+                                }
+
+                                List<(GameObject, double)> priorityTargetsAndWeights = new List<(GameObject, double)>();
+                                foreach (GameObject targetableZone in meleeTargetableZones)
+                                {
+                                    ZoneInfo targetableZoneInfo = targetableZone.GetComponent<ZoneInfo>();
+                                    double averageWounds = GetAverageSuccesses(attackDicePool, availableRerolls) + martialArtsSuccesses;
+                                    if (sneakAttack > 0 && targetableZoneInfo.GetCurrentHindrance(gameObject) <= 0)
                                     {
-                                        if (heroAlly.CompareTag(highPriorityTarget.targetType))
+                                        averageWounds += sneakAttack;
+                                    }
+                                    if (averageWounds > 0)
+                                    {
+                                        averageWounds *= actionProficiency.actionMultiplier;
+                                    }
+                                    else
+                                    {
+                                        averageWounds += actionProficiency.actionMultiplier / 2;  // Can't inflict negative wounds, so just try to get this to a low positive number
+                                    }
+
+                                    foreach (GameObject hero in targetableZoneInfo.GetTargetableHeroes())
+                                    {
+                                        double targetHeroWeight = averageWounds * MissionSpecifics.actionsWeightTable["MELEE"][0].weightFactor + actionWeight;
+                                        if (hero.GetComponent<Hero>().canCounterMeleeAttacks)
                                         {
-                                            isHighPriorityTarget = true;
-                                            priorityTargetsAndWeights.Add((heroAlly, averageWounds * highPriorityTarget.weightFactor + actionWeight));
-                                            break;
+                                            targetHeroWeight -= UnitIntel.provokingCounterAttackWeight / defense + woundShields;
+                                        }
+                                        priorityTargetsAndWeights.Add((hero, targetHeroWeight));
+                                    }
+                                    foreach (GameObject heroAlly in targetableZoneInfo.GetTargetableHeroAllies())
+                                    {
+                                        bool isHighPriorityTarget = false;
+                                        foreach (MissionSpecifics.ActionWeight highPriorityTarget in highPriorityTargets)
+                                        {
+                                            if (heroAlly.CompareTag(highPriorityTarget.targetType))
+                                            {
+                                                isHighPriorityTarget = true;
+                                                priorityTargetsAndWeights.Add((heroAlly, averageWounds * highPriorityTarget.weightFactor + actionWeight));
+                                                break;
+                                            }
+                                        }
+                                        if (!isHighPriorityTarget)
+                                        {
+                                            priorityTargetsAndWeights.Add((heroAlly, averageWounds * MissionSpecifics.actionsWeightTable["MELEE"][1].weightFactor + actionWeight));
                                         }
                                     }
-                                    if (!isHighPriorityTarget)
+                                }
+                                priorityTargetsAndWeights.Sort((x, y) => y.Item2.CompareTo(x.Item2));  // Sorts by most valuable weight
+
+                                actionWeight = priorityTargetsAndWeights[0].Item2;
+                                if (priorityTargetsAndWeights.Count > 1 && circularStrike > 0)
+                                {
+                                    actionWeight += UnitIntel.additionalTargetsForAdditionalAttacksWeight;
+                                }
+                                else if (priorityTargetsAndWeights.Count == 1 && actionProficiency.actionMultiplier > 1)
+                                {
+                                    actionWeight -= actionProficiency.actionMultiplier * UnitIntel.additionalTargetsForAdditionalAttacksWeight;  // Wounds from additional attacks not guaranteed
+                                }
+                                actionWeight = actionWeight >= 0 ? actionWeight * finalActionWeightFactor : actionWeight / finalActionWeightFactor;  // if actionWeight is negative, divide by finalActionWeightFactor instead of multiplying
+
+                                //string priorityTargetsDebugString = "PriorityTargetsDebugString for unit " + gameObject.name;
+                                //foreach ((GameObject, double) priorityTargetAndWeight in priorityTargetsAndWeights)  // Doesn't include change to actionWeight above
+                                //{
+                                //    priorityTargetsDebugString += "    Targeting " + priorityTargetAndWeight.Item1.name + " with weight: " + priorityTargetAndWeight.Item2.ToString();
+                                //}
+                                //Debug.Log(priorityTargetsDebugString);
+
+                                if (actionWeight > inactiveWeight)
+                                {
+                                    List<GameObject> priorityTargets = priorityTargetsAndWeights.Select(x => x.Item1).ToList();
+                                    if (priorityTargetsAndWeights[0].Item1.TryGetComponent<Hero>(out var tempHeroComponent))  // tempHeroComponent isn't used, but no other way to use TryGetComponent
                                     {
-                                        priorityTargetsAndWeights.Add((heroAlly, averageWounds * MissionSpecifics.actionsWeightTable["MELEE"][1].weightFactor + actionWeight));
+                                        allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["MELEE"][0], actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, priorityTargets));  // TargetZone not really needed with priorityTargets list
                                     }
+                                    else
+                                    {
+                                        allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["MELEE"][1], actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, priorityTargets));
+                                    }
+                                    zoneAddedToAllPossibleActions = true;
                                 }
-                            }
-                            priorityTargetsAndWeights.Sort((x, y) => y.Item2.CompareTo(x.Item2));  // Sorts by most valuable weight
-
-                            actionWeight = priorityTargetsAndWeights[0].Item2;
-                            if (priorityTargetsAndWeights.Count > 1 && circularStrike > 0)
-                            {
-                                actionWeight += UnitIntel.additionalTargetsForAdditionalAttacksWeight;
-                            }
-                            else if (priorityTargetsAndWeights.Count == 1 && actionProficiency.actionMultiplier > 1)
-                            {
-                                actionWeight -= actionProficiency.actionMultiplier * UnitIntel.additionalTargetsForAdditionalAttacksWeight;  // Wounds from additional attacks not guaranteed
-                            }
-                            actionWeight = actionWeight >= 0 ? actionWeight * finalActionWeightFactor : actionWeight / finalActionWeightFactor;  // if actionWeight is negative, divide by finalActionWeightFactor instead of multiplying
-
-                            //string priorityTargetsDebugString = "PriorityTargetsDebugString for unit " + gameObject.name;
-                            //foreach ((GameObject, double) priorityTargetAndWeight in priorityTargetsAndWeights)  // Doesn't include change to actionWeight above
-                            //{
-                            //    priorityTargetsDebugString += "    Targeting " + priorityTargetAndWeight.Item1.name + " with weight: " + priorityTargetAndWeight.Item2.ToString();
-                            //}
-                            //Debug.Log(priorityTargetsDebugString);
-
-                            if (actionWeight > inactiveWeight)
-                            {
-                                List<GameObject> priorityTargets = priorityTargetsAndWeights.Select(x => x.Item1).ToList();
-                                if (priorityTargetsAndWeights[0].Item1.TryGetComponent<Hero>(out var tempHeroComponent))  // tempHeroComponent isn't used, but no other way to use TryGetComponent
-                                {
-                                    allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["MELEE"][0], actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, priorityTargets));  // TargetZone not really needed with priorityTargets list
-                                }
-                                else
-                                {
-                                    allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["MELEE"][1], actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, priorityTargets));
-                                }
-                                zoneAddedToAllPossibleActions = true;
                             }
                         }
                         break;
                     case "RANGED":
-                        List<GameObject> rangedTargetableZones = possibleZoneInfo.GetZonesWithTargetsWithinLinesOfSight();
-                        if (rangedTargetableZones.Count > 0)
+                        if (MissionSpecifics.actionsWeightTable.ContainsKey("RANGED"))
                         {
-                            if (frosty)  // Account for increasing difficult terrain of targets's zone
+                            List<GameObject> rangedTargetableZones = possibleZoneInfo.GetZonesWithTargetsWithinLinesOfSight();
+                            if (rangedTargetableZones.Count > 0)
                             {
-                                actionWeight += UnitIntel.increaseTerrainDifficultyWeight;  // Only counted if there is a target
-                            }
-
-                            List<MissionSpecifics.ActionWeight> highPriorityTargets = new List<MissionSpecifics.ActionWeight>();
-                            for (int i = 2; i < MissionSpecifics.actionsWeightTable["RANGED"].Count; i++)
-                            {
-                                highPriorityTargets.Add(MissionSpecifics.actionsWeightTable["RANGED"][i]);
-                            }
-
-                            List<(GameObject, double)> priorityTargetsAndWeights = new List<(GameObject, double)>();
-                            foreach (GameObject targetableZone in rangedTargetableZones)
-                            {
-                                ZoneInfo targetableZoneInfo = targetableZone.GetComponent<ZoneInfo>();
-                                List<GameObject> dicePool = new List<GameObject>(actionProficiency.proficiencyDice);
-                                if (possibleZoneInfo.elevation > targetableZoneInfo.elevation)
+                                if (frosty)  // Account for increasing difficult terrain of targets's zone
                                 {
-                                    dicePool.Add(possibleZoneInfo.environmentalDie);
-                                }
-                                if (pointBlankRerolls > 0 && targetableZone == possibleZoneInfo.gameObject)
-                                {
-                                    availableRerolls += pointBlankRerolls;
-                                }
-                                //Debug.Log("!!!Trying to get smokeHindrance for " + tag + " from zone " + possibleZoneInfo.name + " to zone " + targetableZone.name);
-                                int smokeHindrance = possibleZoneInfo.GetSmokeBetweenZones(targetableZone);
-
-                                double averageWounds = GetAverageSuccesses(dicePool, availableRerolls) + marksmanSuccesses - actionZoneHindrance - smokeHindrance;
-                                //Debug.Log("!!!GetPossibleActions for zone " + possibleZone.name + ",  averageWounds " + averageWounds.ToString() + "  GetAverageSuccesses(dicePool, rerolls=" + availableRerolls.ToString() + ") " + GetAverageSuccesses(dicePool, availableRerolls).ToString() + "  + marksmanSuccesses - actionZoneHindrance " + actionZoneHindrance.ToString());
-                                if (averageWounds > 0)
-                                {
-                                    averageWounds *= actionProficiency.actionMultiplier;
-                                }
-                                else
-                                {
-                                    averageWounds += actionProficiency.actionMultiplier / 2;  // Can't inflict negative wounds, so just try to get this to a low positive number
+                                    actionWeight += UnitIntel.increaseTerrainDifficultyWeight;  // Only counted if there is a target
                                 }
 
-                                foreach (GameObject hero in targetableZoneInfo.GetTargetableHeroes())
+                                List<MissionSpecifics.ActionWeight> highPriorityTargets = new List<MissionSpecifics.ActionWeight>();
+                                for (int i = 2; i < MissionSpecifics.actionsWeightTable["RANGED"].Count; i++)
                                 {
-                                    double targetHeroWeight = averageWounds * MissionSpecifics.actionsWeightTable["RANGED"][0].weightFactor + actionWeight;
-                                    if (hero.GetComponent<Hero>().canCounterRangedAttacks)
+                                    highPriorityTargets.Add(MissionSpecifics.actionsWeightTable["RANGED"][i]);
+                                }
+
+                                List<(GameObject, double)> priorityTargetsAndWeights = new List<(GameObject, double)>();
+                                foreach (GameObject targetableZone in rangedTargetableZones)
+                                {
+                                    ZoneInfo targetableZoneInfo = targetableZone.GetComponent<ZoneInfo>();
+
+                                    List<GameObject> attackDicePool = new List<GameObject>(actionProficiency.proficiencyDice);
+                                    if (berserk > 0 && lifePointsMax / (float)lifePoints <= (float)lifePointsMax / 2f)
                                     {
-                                        targetHeroWeight -= UnitIntel.provokingCounterAttackWeight / defense;
-                                    }
-                                    priorityTargetsAndWeights.Add((hero, targetHeroWeight));
-                                }
-                                foreach (GameObject heroAlly in targetableZoneInfo.GetTargetableHeroAllies())
-                                {
-                                    bool isHighPriorityTarget = false;
-                                    foreach (MissionSpecifics.ActionWeight highPriorityTarget in highPriorityTargets)
-                                    {
-                                        if (heroAlly.CompareTag(highPriorityTarget.targetType))
+                                        for (int i = 0; i < berserk; i++)
                                         {
-                                            isHighPriorityTarget = true;
-                                            priorityTargetsAndWeights.Add((heroAlly, averageWounds * highPriorityTarget.weightFactor + actionWeight));
-                                            break;
+                                            attackDicePool.Add(berserkDie);
                                         }
                                     }
-                                    if (!isHighPriorityTarget)
+                                    if (possibleZoneInfo.elevation > targetableZoneInfo.elevation)
                                     {
-                                        priorityTargetsAndWeights.Add((heroAlly, averageWounds * MissionSpecifics.actionsWeightTable["RANGED"][1].weightFactor + actionWeight));
+                                        attackDicePool.Add(possibleZoneInfo.environmentalDie);
+                                    }
+                                    if (pointBlankRerolls > 0 && targetableZone == possibleZoneInfo.gameObject)
+                                    {
+                                        availableRerolls += pointBlankRerolls;
+                                    }
+
+                                    int smokeHindrance = possibleZoneInfo.GetSmokeBetweenZones(targetableZone);
+                                    double averageWounds = GetAverageSuccesses(attackDicePool, availableRerolls) + marksmanSuccesses - applicableActionZoneHindrance - smokeHindrance;
+                                    if (sneakAttack > 0 && targetableZoneInfo.GetCurrentHindrance(gameObject) <= 0)
+                                    {
+                                        averageWounds += sneakAttack;
+                                    }
+                                    if (averageWounds > 0)
+                                    {
+                                        averageWounds *= actionProficiency.actionMultiplier;
+                                    }
+                                    else
+                                    {
+                                        averageWounds += actionProficiency.actionMultiplier / 2;  // Can't inflict negative wounds, so just try to get this to a low positive number
+                                    }
+
+                                    foreach (GameObject hero in targetableZoneInfo.GetTargetableHeroes())
+                                    {
+                                        double targetHeroWeight = averageWounds * MissionSpecifics.actionsWeightTable["RANGED"][0].weightFactor + actionWeight;
+                                        if (hero.GetComponent<Hero>().canCounterRangedAttacks)
+                                        {
+                                            targetHeroWeight -= UnitIntel.provokingCounterAttackWeight / defense;
+                                        }
+                                        priorityTargetsAndWeights.Add((hero, targetHeroWeight));
+                                    }
+                                    foreach (GameObject heroAlly in targetableZoneInfo.GetTargetableHeroAllies())
+                                    {
+                                        bool isHighPriorityTarget = false;
+                                        foreach (MissionSpecifics.ActionWeight highPriorityTarget in highPriorityTargets)
+                                        {
+                                            if (heroAlly.CompareTag(highPriorityTarget.targetType))
+                                            {
+                                                isHighPriorityTarget = true;
+                                                priorityTargetsAndWeights.Add((heroAlly, averageWounds * highPriorityTarget.weightFactor + actionWeight));
+                                                break;
+                                            }
+                                        }
+                                        if (!isHighPriorityTarget)
+                                        {
+                                            priorityTargetsAndWeights.Add((heroAlly, averageWounds * MissionSpecifics.actionsWeightTable["RANGED"][1].weightFactor + actionWeight));
+                                        }
                                     }
                                 }
-                            }
-                            priorityTargetsAndWeights.Sort((x, y) => y.Item2.CompareTo(x.Item2));  // Sorts by most valuable weight
+                                priorityTargetsAndWeights.Sort((x, y) => y.Item2.CompareTo(x.Item2));  // Sorts by most valuable weight
 
-                            actionWeight = priorityTargetsAndWeights[0].Item2;
-                            if (priorityTargetsAndWeights.Count > 1 && burstCarryOver > 0)
-                            {
-                                actionWeight += UnitIntel.additionalTargetsForAdditionalAttacksWeight;
-                            }
-                            else if (priorityTargetsAndWeights.Count == 1 && actionProficiency.actionMultiplier > 1)
-                            {
-                                actionWeight -= actionProficiency.actionMultiplier * UnitIntel.additionalTargetsForAdditionalAttacksWeight;  // Wounds from additional attacks not guaranteed
-                            }
-                            //Debug.Log("Ranged attack for " + tag + " in " + GetZone().name + ", moving to " + possibleZone.name + ", actionWeight before terrainDanger accounted for: " + actionWeight.ToString() + ", actionWeight * finalActionWeightFactor: " + (actionWeight * finalActionWeightFactor).ToString() + "  vs inactiveWeight: " + inactiveWeight.ToString());
-                            actionWeight = actionWeight >= 0 ? actionWeight * finalActionWeightFactor : actionWeight / finalActionWeightFactor;  // if actionWeight is negative, divide by finalActionWeightFactor instead of multiplying
+                                actionWeight = priorityTargetsAndWeights[0].Item2;
+                                if (priorityTargetsAndWeights.Count > 1 && burstCarryOver > 0)
+                                {
+                                    actionWeight += UnitIntel.additionalTargetsForAdditionalAttacksWeight;
+                                }
+                                else if (priorityTargetsAndWeights.Count == 1 && actionProficiency.actionMultiplier > 1)
+                                {
+                                    actionWeight -= actionProficiency.actionMultiplier * UnitIntel.additionalTargetsForAdditionalAttacksWeight;  // Wounds from additional attacks not guaranteed
+                                }
+                                //Debug.Log("Ranged attack for " + tag + " in " + GetZone().name + ", moving to " + possibleZone.name + ", actionWeight before terrainDanger accounted for: " + actionWeight.ToString() + ", actionWeight * finalActionWeightFactor: " + (actionWeight * finalActionWeightFactor).ToString() + "  vs inactiveWeight: " + inactiveWeight.ToString());
+                                actionWeight = actionWeight >= 0 ? actionWeight * finalActionWeightFactor : actionWeight / finalActionWeightFactor;  // if actionWeight is negative, divide by finalActionWeightFactor instead of multiplying
 
-                            if (actionWeight > inactiveWeight)
-                            {
-                                //Debug.Log("!!!!!!Ranged attack for " + tag + " in " + GetZone().name + ", moving to " + possibleZone.name + ",  finalActionWeight: " + actionWeight.ToString() + " vs inactiveWeight: " + inactiveWeight.ToString());
-                                List<GameObject> priorityTargets = priorityTargetsAndWeights.Select(x => x.Item1).ToList();
-                                if (priorityTargetsAndWeights[0].Item1.TryGetComponent<Hero>(out var tempHeroComponent))  // tempHeroComponent isn't used, but no other way to use TryGetComponent
+                                if (actionWeight > inactiveWeight)
                                 {
-                                    allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["RANGED"][0], actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, priorityTargets));  // TargetZone not really needed with priorityTargets list
+                                    //Debug.Log("!!!!!!Ranged attack for " + tag + " in " + GetZone().name + ", moving to " + possibleZone.name + ",  finalActionWeight: " + actionWeight.ToString() + " vs inactiveWeight: " + inactiveWeight.ToString());
+                                    List<GameObject> priorityTargets = priorityTargetsAndWeights.Select(x => x.Item1).ToList();
+                                    if (priorityTargetsAndWeights[0].Item1.TryGetComponent<Hero>(out var tempHeroComponent))  // tempHeroComponent isn't used, but no other way to use TryGetComponent
+                                    {
+                                        allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["RANGED"][0], actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, priorityTargets));  // TargetZone not really needed with priorityTargets list
+                                    }
+                                    else
+                                    {
+                                        allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["RANGED"][1], actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, priorityTargets));
+                                    }
+                                    zoneAddedToAllPossibleActions = true;
                                 }
-                                else
-                                {
-                                    allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["RANGED"][1], actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, priorityTargets));
-                                }
-                                zoneAddedToAllPossibleActions = true;
                             }
                         }
                         break;
@@ -1007,7 +1046,7 @@ public class Unit : MonoBehaviour
                                             {
                                                 Debug.LogError("ERROR! Unit " + gameObject.name + " in " + possibleZoneInfo.gameObject.name + " isn't able to GetSightLineWithZone with " + grenadeTargetZone.name);
                                             }
-                                            int requiredSuccesses = lineOfSight.IndexOf(grenadeTargetZone) + actionZoneHindrance;
+                                            int requiredSuccesses = lineOfSight.IndexOf(grenadeTargetZone) + applicableActionZoneHindrance;
                                             double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
                                             actionWeight += averageAutoWounds * manipulatable.weightFactor * chanceOfSuccess;
                                             //Debug.Log("!!!Weighing grenade throw, actionWeight " + actionWeight.ToString() + " += " + averageAutoWounds.ToString() + " * " + manipulatable.Item3.ToString() + " * " + chanceOfSuccess.ToString());
@@ -1028,7 +1067,7 @@ public class Unit : MonoBehaviour
                                 }
                                 else if (possibleZoneInfo.HasObjectiveToken(manipulatable.targetType))
                                 {
-                                    int requiredSuccesses = manipulatable.requiredSuccesses + actionZoneHindrance - (manipulatable.targetType == "Bomb" ? munitionSpecialist : 0);
+                                    int requiredSuccesses = manipulatable.requiredSuccesses + applicableActionZoneHindrance - (manipulatable.targetType == "Bomb" ? munitionSpecialist : 0);
                                     double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
                                     actionWeight += chanceOfSuccess * manipulatable.weightFactor;
                                     actionWeight = actionWeight >= 0 ? actionWeight * finalActionWeightFactor : actionWeight / finalActionWeightFactor;  // if actionWeight is negative, divide by finalActionWeightFactor instead of multiplying
@@ -1049,7 +1088,7 @@ public class Unit : MonoBehaviour
                             {
                                 if (possibleZoneInfo.HasObjectiveToken(thoughtable.targetType))
                                 {
-                                    int requiredSuccesses = thoughtable.requiredSuccesses + actionZoneHindrance;
+                                    int requiredSuccesses = thoughtable.requiredSuccesses + applicableActionZoneHindrance;
                                     double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
                                     actionWeight += chanceOfSuccess * thoughtable.weightFactor;
                                     actionWeight = actionWeight >= 0 ? actionWeight * finalActionWeightFactor : actionWeight / finalActionWeightFactor;  // if actionWeight is negative, divide by finalActionWeightFactor instead of multiplying
@@ -1119,7 +1158,7 @@ public class Unit : MonoBehaviour
     public double GetInactiveWeight()  // Weight from standing still and just guarding
     {
         double standingStillWeight = 0;
-        if (MissionSpecifics.actionsWeightTable.ContainsKey("GUARD"))
+        if (MissionSpecifics.actionsWeightTable.ContainsKey("GUARD") && menace > 0)
         {
             ZoneInfo unitZoneInfo = GetZone().GetComponent<ZoneInfo>();
             foreach (MissionSpecifics.ActionWeight guardable in MissionSpecifics.actionsWeightTable["GUARD"])
@@ -1302,7 +1341,8 @@ public class Unit : MonoBehaviour
         int requiredSuccesses;
         GameObject currentZone = GetZone();
         ZoneInfo currentZoneInfo = currentZone.GetComponent<ZoneInfo>();
-        int currentZoneHindrance = currentZoneInfo.GetCurrentHindrance(gameObject);
+        int currentZoneHindrance = currentZoneInfo.GetCurrentHindrance(gameObject);  // TODO should be recalculated between attacks if unit/hero wounded out in currentZone during ranged attacks (shoot down target in own square for better second attack)
+        int applicableCurrentZoneHindrance = currentZoneHindrance > ignoreMenace ? currentZoneHindrance - ignoreMenace : 0;
         int availableRerolls = currentZoneInfo.GetSupportRerolls(gameObject);
 
         if (!animate.IsPointOnScreen(transform.position, 0))
@@ -1367,7 +1407,20 @@ public class Unit : MonoBehaviour
                         ZoneInfo targetZoneInfo = targetZone.GetComponent<ZoneInfo>();
                         int totalZoneEnemiesBeforeAttack = targetZoneInfo.GetTargetableHeroesCount() + targetZoneInfo.GetTargetableHeroesAlliesCount();
 
-                        actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls);
+                        List<GameObject> attackDicePool = new List<GameObject>(unitTurn.actionProficiency.proficiencyDice);
+                        if (berserk > 0 && lifePointsMax / (float)lifePoints <= (float)lifePointsMax / 2f)
+                        {
+                            for (int ii = 0; ii < berserk; ii++)
+                            {
+                                attackDicePool.Add(berserkDie);
+                            }
+                        }
+
+                        actionSuccesses = RollAndReroll(attackDicePool, availableRerolls);
+                        if (sneakAttack > 0 && targetZoneInfo.GetCurrentHindrance(gameObject) <= 0)
+                        {
+                            actionSuccesses += sneakAttack;
+                        }
                         if (actionSuccesses > 0)
                         {
                             actionSuccesses += martialArtsSuccesses;
@@ -1527,10 +1580,17 @@ public class Unit : MonoBehaviour
                             ZoneInfo targetZoneInfo = targetZone.GetComponent<ZoneInfo>();
                             int totalZoneEnemiesBeforeAttack = targetZoneInfo.GetTargetableHeroesCount() + targetZoneInfo.GetTargetableHeroesAlliesCount();
 
-                            List<GameObject> dicePool = new List<GameObject>(unitTurn.actionProficiency.proficiencyDice);
+                            List<GameObject> attackDicePool = new List<GameObject>(unitTurn.actionProficiency.proficiencyDice);
+                            if (berserk > 0 && lifePointsMax / (float)lifePoints <= (float)lifePointsMax / 2f)
+                            {
+                                for (int ii = 0; ii < berserk; ii++)
+                                {
+                                    attackDicePool.Add(berserkDie);
+                                }
+                            }
                             if (currentZoneInfo.elevation > targetZone.GetComponent<ZoneInfo>().elevation)
                             {
-                                dicePool.Add(currentZoneInfo.environmentalDie);
+                                attackDicePool.Add(currentZoneInfo.environmentalDie);
                             }
 
                             if (currentZone == unitTurn.targetedZone)
@@ -1539,12 +1599,16 @@ public class Unit : MonoBehaviour
                             }
                             int smokeHindrance = currentZoneInfo.GetSmokeBetweenZones(targetZone);
 
-                            actionSuccesses = RollAndReroll(dicePool, availableRerolls);
+                            actionSuccesses = RollAndReroll(attackDicePool, availableRerolls);
+                            if (sneakAttack > 0 && targetZoneInfo.GetCurrentHindrance(gameObject) <= 0)
+                            {
+                                actionSuccesses += sneakAttack;
+                            }
                             if (actionSuccesses > 0)
                             {
                                 actionSuccesses += marksmanSuccesses;
                             }
-                            actionSuccesses -= currentZoneHindrance + smokeHindrance;
+                            actionSuccesses -= applicableCurrentZoneHindrance + smokeHindrance;
                             if (actionSuccesses < 0)
                             {
                                 actionSuccesses = 0;
@@ -1659,7 +1723,7 @@ public class Unit : MonoBehaviour
                     {
                         List<GameObject> lineOfSight = new List<GameObject>() { GetZone() };
                         lineOfSight.AddRange(currentZoneInfo.GetSightLineWithZone(unitTurn.targetedZone));
-                        requiredSuccesses = lineOfSight.IndexOf(unitTurn.targetedZone) + currentZoneHindrance;
+                        requiredSuccesses = lineOfSight.IndexOf(unitTurn.targetedZone) + applicableCurrentZoneHindrance;
                         actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls + MissionSpecifics.GetAttackRollBonus(), requiredSuccesses);
                         GameObject targetedZone;
                         if (actionSuccesses >= requiredSuccesses)
@@ -1678,13 +1742,13 @@ public class Unit : MonoBehaviour
                 }
                 else
                 {
-                    requiredSuccesses = unitTurn.missionSpecificAction.requiredSuccesses + currentZoneHindrance - (unitTurn.missionSpecificAction.targetType == "Bomb" ? munitionSpecialist : 0);
+                    requiredSuccesses = unitTurn.missionSpecificAction.requiredSuccesses + applicableCurrentZoneHindrance - (unitTurn.missionSpecificAction.targetType == "Bomb" ? munitionSpecialist : 0);
                     actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls, requiredSuccesses);
                     yield return StartCoroutine(unitTurn.missionSpecificAction.actionCallback(gameObject, null, actionSuccesses, requiredSuccesses));
                 }
                 break;
             case "THOUGHT":
-                requiredSuccesses = unitTurn.missionSpecificAction.requiredSuccesses + currentZoneHindrance;
+                requiredSuccesses = unitTurn.missionSpecificAction.requiredSuccesses + applicableCurrentZoneHindrance;
                 actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls, requiredSuccesses);
                 yield return StartCoroutine(unitTurn.missionSpecificAction.actionCallback(gameObject, null, actionSuccesses, requiredSuccesses));
                 break;

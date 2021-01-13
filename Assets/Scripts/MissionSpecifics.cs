@@ -15,10 +15,7 @@ public static class MissionSpecifics
     public static string currentPhase = "Setup";  // "Setup", "Villain", "VillainAttack", "Hero", "GameOver"
 
     public static List<ActionWeight> initialAttackWeightTable = new List<ActionWeight>() { new ActionWeight("Hero", 0, 10, null), new ActionWeight("HeroAlly", 0, 3, null) };  // 10 * averageTotalWounds vs heroes, 3 * averageTotalWounds vs heroAllies
-    public static Dictionary<string, List<ActionWeight>> actionsWeightTable = new Dictionary<string, List<ActionWeight>>() {
-        { "MELEE", new List<ActionWeight>(initialAttackWeightTable) },
-        { "RANGED", new List<ActionWeight>(initialAttackWeightTable) }
-    };
+    public static Dictionary<string, List<ActionWeight>> actionsWeightTable = new Dictionary<string, List<ActionWeight>>() {};
 
     public delegate IEnumerator ActionCallback(GameObject unit, GameObject target, int totalSuccesses, int requiredSuccesses);
     public struct ActionWeight
@@ -45,9 +42,15 @@ public static class MissionSpecifics
         int totalBombs;
         int totalPrimedBombs;
         int totalComputers;
+        int totalJammers;
+        int totalActiveJammers;
+
         switch (missionName)  // Each nonconstant key (ex: "THOUGHT") should be wiped each time and only added back in if conditions are still met
         {
             case "ASinkingFeeling":
+                actionsWeightTable["MELEE"] = new List<ActionWeight>(initialAttackWeightTable);
+                actionsWeightTable["RANGED"] = new List<ActionWeight>(initialAttackWeightTable);
+
                 totalBombs = GetTotalActiveTokens(new List<string>() { "Bomb" });
                 totalPrimedBombs = GetTotalActiveTokens(new List<string>() { "PrimedBomb" });
                 totalComputers = GetTotalActiveTokens(new List<string>() { "Computer" });
@@ -79,6 +82,9 @@ public static class MissionSpecifics
                 }
                 break;
             case "IceToSeeYou":
+                actionsWeightTable["MELEE"] = new List<ActionWeight>(initialAttackWeightTable);
+                actionsWeightTable["RANGED"] = new List<ActionWeight>(initialAttackWeightTable);
+
                 totalBombs = GetTotalActiveTokens(new List<string>() { "Bomb" });
                 totalComputers = GetTotalActiveTokens(new List<string>() { "Computer" });
 
@@ -114,6 +120,38 @@ public static class MissionSpecifics
                     }
                 }
                 break;
+            case "JamAndSeek":
+                if (currentRound >= 2)  // Gives 2 passive villain turns before turning aggressive
+                {
+                    actionsWeightTable["MELEE"] = new List<ActionWeight>(initialAttackWeightTable);
+                    actionsWeightTable["RANGED"] = new List<ActionWeight>(initialAttackWeightTable);
+                }
+                //else  // This has units trying to attack with errors, as "MELEE"/"RANGED" will exist in the list, they'll just be empty lists
+                //{
+                //    actionsWeightTable["MELEE"] = new List<ActionWeight>();
+                //    actionsWeightTable["RANGED"] = new List<ActionWeight>();
+                //}
+
+                totalJammers = GetTotalActiveTokens(new List<string>() { "Jammer" });
+                totalActiveJammers = GetTotalActiveTokens(new List<string>() { "ActiveJammer" });
+
+                actionsWeightTable["MANIPULATION"] = new List<ActionWeight>();
+                if (totalJammers > 0)
+                {
+                    actionsWeightTable["MANIPULATION"].Add(new ActionWeight("Jammer", 2, 100, ActivateJammer));  // 100 * chanceOfSuccess, 
+                }
+
+                actionsWeightTable["GUARD"] = new List<ActionWeight>();
+                if (totalActiveJammers > 0)
+                {
+                    actionsWeightTable["GUARD"].Add(new ActionWeight("ActiveJammer", 0, 20, null));  // Flat weight bonus for hindering heroes attempting to disable objectives
+                }
+                if (totalJammers > 0)
+                {
+                    actionsWeightTable["GUARD"].Add(new ActionWeight("Jammer", 0, 15, null));
+                }
+                // Maybe GUARD each other to prevent interrogation, but don't guard BYSTANDERs (if menace > 0)
+                break;
         }
     }
 
@@ -127,6 +165,8 @@ public static class MissionSpecifics
                 return 8;
             case "AFewBadApples":
                 return 6;
+            case "JamAndSeek":
+                return 7;
         }
         return -1;
     }
@@ -141,6 +181,8 @@ public static class MissionSpecifics
                 return 2;
             case "AFewBadApples":
                 return 3;
+            case "JamAndSeek":
+                return 2;
         }
         return 0;
     }
@@ -160,6 +202,8 @@ public static class MissionSpecifics
             case "AFewBadApples":
                 return 0;
                 //return random.Next(0, 2);  // .5, half of the time 0, the other half of the time 1
+            case "JamAndSeek":
+                return 0;
         }
         return 0;
     }
@@ -207,8 +251,7 @@ public static class MissionSpecifics
                 case "IceToSeeYou":
                     GameObject tokenZone = button.gameObject.GetComponent<Token>().GetZone();
                     Object.DestroyImmediate(button.gameObject);
-                    Object.Instantiate(scenarioMap.primedBombPrefab, tokenZone.transform.Find("TokensRow"));
-                    tokenZone.GetComponent<ZoneInfo>().ReorganizeTokens();
+                    tokenZone.GetComponent<ZoneInfo>().AddObjectiveToken("PrimedBomb");
                     return;
                 default:
                     break;
@@ -247,11 +290,10 @@ public static class MissionSpecifics
                 case "IceToSeeYou":
                     GameObject tokenZone = button.gameObject.GetComponent<Token>().GetZone();
                     Object.DestroyImmediate(button.gameObject);
-                    Object.Instantiate(scenarioMap.bombPrefab, tokenZone.transform.Find("TokensRow"));
-                    tokenZone.GetComponent<ZoneInfo>().ReorganizeTokens();
+                    tokenZone.GetComponent<ZoneInfo>().AddObjectiveToken("Bomb");
                     return;
                 default:
-                    button.transform.Find("RedLight").gameObject.SetActive(false);
+                    button.transform.Find("BlinkingLight").gameObject.SetActive(false);  // Turns off blinking light and is faded/unfaded below
                     break;
             }
         }
@@ -278,6 +320,17 @@ public static class MissionSpecifics
                     }
                     break;  // Allow Computer token to be faded/unfaded below
                 default:
+                    break;
+            }
+        }
+        //else if (button.CompareTag("Jammer"))
+        //{ }
+        else if (button.CompareTag("ActiveJammer"))
+        {
+            switch (missionName)
+            {
+                default:
+                    button.transform.Find("BlinkingLight").gameObject.SetActive(false);  // Turns off blinking light and is faded/unfaded below
                     break;
             }
         }
@@ -613,10 +666,10 @@ public static class MissionSpecifics
 
         if (totalSuccesses >= requiredSuccesses)
         {
-            //yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, unitZoneInfo.GetBomb().transform.position));  // Move camera to bomb being armed  // Not much difference between bomb's position and bomb zone's position
             Vector3 furtherPoint = scenarioMap.animate.GetFurtherPointOnLine(mainCamera.transform.position, unitZoneInfo.transform.position);
             yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, furtherPoint));  // Move camera to zone of bomb being armed
-            unitZoneInfo.PrimeBomb();
+            unitZoneInfo.RemoveObjectiveToken("Bomb");
+            unitZoneInfo.AddObjectiveToken("PrimedBomb");
             yield return new WaitForSecondsRealtime(2);
             SetActionsWeightTable();
         }
@@ -674,11 +727,10 @@ public static class MissionSpecifics
             }
             if (chosenBombZone != null)
             {
-                unitZoneInfo.RemoveComputer();
-                //yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, chosenBombZone.GetBomb().transform.position));  // Move camera to bomb being armed  // Not much difference between bomb's position and bomb zone's position
+                unitZoneInfo.RemoveObjectiveToken("Computer");
                 Vector3 furtherPoint = scenarioMap.animate.GetFurtherPointOnLine(mainCamera.transform.position, chosenBombZone.transform.position);
                 yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, furtherPoint));  // Move camera to zone of bomb being armed
-                chosenBombZone.PrimeBomb();
+                chosenBombZone.AddObjectiveToken("PrimedBomb");
                 yield return new WaitForSecondsRealtime(2);
                 //unitTurn.targetedZone = chosenBombZone.transform.gameObject;  // Only useful for DEBUG statement at end of PerformAction()
             }
@@ -831,7 +883,7 @@ public static class MissionSpecifics
                 yield return scenarioMap.animate.StartCoroutine(zoneToCryo.GetComponent<ZoneInfo>().AddEnvironTokens(new EnvironTokenSave("Cryogenic", 1, false, true)));
                 yield return new WaitForSecondsRealtime(2);
             }
-            unitZoneInfo.RemoveComputer();
+            unitZoneInfo.RemoveObjectiveToken("Computer");
             SetActionsWeightTable();
         }
         Object.Destroy(successContainer);
@@ -870,8 +922,51 @@ public static class MissionSpecifics
 
         if (totalSuccesses >= requiredSuccesses)
         {
-            unitZoneInfo.RemoveComputer();
+            unitZoneInfo.RemoveObjectiveToken("Computer");
             yield return new WaitForSecondsRealtime(2);
+        }
+        Object.Destroy(successContainer);
+        yield return 0;
+    }
+
+    /* ActionCallbacks specific to "JamAndSeek" mission */
+    public static IEnumerator ActivateJammer(GameObject unit, GameObject target, int totalSuccesses, int requiredSuccesses)
+    {
+        ZoneInfo unitZoneInfo = unit.GetComponent<Unit>().GetZone().GetComponent<ZoneInfo>();
+        // Animate success vs failure UI
+        GameObject successContainer = Object.Instantiate(unitZoneInfo.successVsFailurePrefab, scenarioMap.animationContainer.transform);
+        successContainer.transform.position = unit.transform.TransformPoint(new Vector3(0, 12, 0));
+
+        successContainer.GetComponent<RectTransform>().sizeDelta = new Vector2(requiredSuccesses * 10, successContainer.GetComponent<RectTransform>().rect.height);
+        Transform successContainerText = successContainer.transform.GetChild(0);
+        successContainerText.GetComponent<RectTransform>().sizeDelta = new Vector2(requiredSuccesses * 10, successContainerText.GetComponent<RectTransform>().rect.height);
+        string successContainerBlanks = "_";
+        for (int i = 1; i < requiredSuccesses; i++)
+        {
+            successContainerBlanks += " _";
+        }
+        successContainerText.GetComponent<TMP_Text>().text = successContainerBlanks;
+
+        for (int i = -1; i < (totalSuccesses >= 0 ? totalSuccesses : 0); i++)
+        {
+            yield return new WaitForSecondsRealtime(1);
+            if (i == requiredSuccesses - 1)  // Otherwise there can be more results (checks/x's) displayed than requiredSuccesses
+            {
+                break;
+            }
+            GameObject successOrFailurePrefab = i + 1 < totalSuccesses ? unitZoneInfo.successPrefab : unitZoneInfo.failurePrefab;
+            GameObject successOrFailureMarker = Object.Instantiate(successOrFailurePrefab, successContainer.transform);
+        }
+        yield return new WaitForSecondsRealtime(1);
+
+        if (totalSuccesses >= requiredSuccesses)
+        {
+            Vector3 furtherPoint = scenarioMap.animate.GetFurtherPointOnLine(mainCamera.transform.position, unitZoneInfo.transform.position);
+            yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, furtherPoint));  // Move camera to zone of bomb being armed
+            unitZoneInfo.RemoveObjectiveToken("Jammer");
+            unitZoneInfo.AddObjectiveToken("ActiveJammer");
+            yield return new WaitForSecondsRealtime(2);
+            SetActionsWeightTable();
         }
         Object.Destroy(successContainer);
         yield return 0;

@@ -55,6 +55,7 @@
     "brokenWalls": [],
     "zones": [
         {
+            "id": 0,
             "isSpawnZone": true,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -69,6 +70,7 @@
             ]
         },
         {
+            "id": 1,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -76,6 +78,7 @@
             "units": []
         },
         {
+            "id": 2,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -83,6 +86,7 @@
             "units": []
         },
         {
+            "id": 3,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -90,6 +94,7 @@
             "units": []
         },
         {
+            "id": 4,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -97,6 +102,7 @@
             "units": []
         },
         {
+            "id": 5,
             "isSpawnZone": true,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -104,6 +110,7 @@
             "units": []
         },
         {
+            "id": 6,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -111,6 +118,7 @@
             "units": []
         },
         {
+            "id": 7,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -118,6 +126,7 @@
             "units": []
         },
         {
+            "id": 8,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -125,6 +134,7 @@
             "units": []
         },
         {
+            "id": 9,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [ "Computer" ],
             "fadedTokensTags": [],
@@ -151,6 +161,7 @@
             ]
         },
         {
+            "id": 10,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -158,6 +169,7 @@
             "units": []
         },
         {
+            "id": 11,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [ "Computer" ],
             "fadedTokensTags": [],
@@ -184,6 +196,7 @@
             ]
         },
         {
+            "id": 12,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -198,6 +211,7 @@
             ]
         },
         {
+            "id": 13,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -205,6 +219,7 @@
             "units": []
         },
         {
+            "id": 14,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -212,6 +227,7 @@
             "units": []
         },
         {
+            "id": 15,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -226,6 +242,7 @@
             ]
         },
         {
+            "id": 16,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -240,6 +257,7 @@
             ]
         },
         {
+            "id": 17,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -247,6 +265,7 @@
             "units": []
         },
         {
+            "id": 18,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -254,6 +273,7 @@
             "units": []
         },
         {
+            "id": 19,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -261,6 +281,7 @@
             "units": []
         },
         {
+            "id": 20,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -268,6 +289,7 @@
             "units": []
         },
         {
+            "id": 21,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -275,6 +297,7 @@
             "units": []
         },
         {
+            "id": 22,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -282,6 +305,7 @@
             "units": []
         },
         {
+            "id": 23,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -289,6 +313,7 @@
             "units": []
         },
         {
+            "id": 24,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -303,6 +328,7 @@
             ]
         },
         {
+            "id": 25,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [ "Computer" ],
             "fadedTokensTags": [],
@@ -323,6 +349,7 @@
             ]
         },
         {
+            "id": 26,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -343,6 +370,7 @@
             ]
         },
         {
+            "id": 27,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -350,6 +378,7 @@
             "units": []
         },
         {
+            "id": 28,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -357,6 +386,7 @@
             "units": []
         },
         {
+            "id": 29,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -364,6 +394,7 @@
             "units": []
         },
         {
+            "id": 30,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -371,6 +402,7 @@
             "units": []
         },
         {
+            "id": 31,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -385,6 +417,7 @@
             ]
         },
         {
+            "id": 32,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -392,6 +425,7 @@
             "units": []
         },
         {
+            "id": 33,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -399,6 +433,7 @@
             "units": []
         },
         {
+            "id": 34,
             "isSpawnZone": true,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -406,6 +441,7 @@
             "units": []
         },
         {
+            "id": 35,
             "isSpawnZone": true,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -420,6 +456,7 @@
             ]
         },
         {
+            "id": 36,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -427,6 +464,7 @@
             "units": []
         },
         {
+            "id": 37,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -434,6 +472,7 @@
             "units": []
         },
         {
+            "id": 38,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -448,6 +487,7 @@
             ]
         },
         {
+            "id": 39,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [ "Computer" ],
             "fadedTokensTags": [],
@@ -462,6 +502,7 @@
             ]
         },
         {
+            "id": 40,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [],
             "fadedTokensTags": [],
@@ -476,6 +517,7 @@
             ]
         },
         {
+            "id": 41,
             "isSpawnZone": false,
             "tokensAndHeroesTags": [ "Computer" ],
             "fadedTokensTags": [],
