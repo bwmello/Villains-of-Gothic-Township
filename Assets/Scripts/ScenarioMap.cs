@@ -200,24 +200,37 @@ public class ScenarioMap : MonoBehaviour
 
     IEnumerator ActivateRiverTiles()
     {
-        int totalActivations = 2;
+        int totalTileActivations = 2;  // Number of tiles left to activate
         List<Unit.UnitPossibleAction> predeterminedActivations = MissionSpecifics.GetPredeterminedActivations();
         if (predeterminedActivations != null)
         {
+            List<string> unitTypesActivated = new List<string>();
             foreach (Unit.UnitPossibleAction unitAction in predeterminedActivations)
             {
                 yield return unitAction.myUnit.ActivateUnitWithPredeterminedAction(unitAction);
+
                 villainRiver.Remove(unitAction.myUnit.tag);
                 villainRiver.Add(unitAction.myUnit.tag);
-                totalActivations -= 1;
+                if (!unitTypesActivated.Contains(unitAction.myUnit.tag))  // If a new type of unit is being activated, a new tile is being activated
+                {
+                    unitTypesActivated.Add(unitAction.myUnit.tag);
+                    totalTileActivations -= 1;
+                    yield return StartCoroutine(MissionSpecifics.VillainTileActivated());  // JamAndSeek uses CallReinforcements, so wait for whatever it's going to do
+                }
+
+                if (MissionSpecifics.IsGameOver(currentRound))
+                {
+                    totalTileActivations = 0;
+                    yield break;  // Skip to IsGameOver evaluation at end of Villain turn
+                }
             }
         }
-        for (int i = 0; i < totalActivations; i++)
+        for (int i = 0; i < totalTileActivations; i++)  // Will error if predeterminedActivations > totalActivations
         {
             (string unitTypeToActivate, GameObject[] unitsToActivate) = GetVillainTileToActivate(i);
             if (unitTypeToActivate == "REINFORCEMENT")
             {
-                yield return StartCoroutine(CallReinforcements());
+                yield return StartCoroutine(CallReinforcements(MissionSpecifics.GetReinforcementPoints()));
             }
             else
             {
@@ -226,6 +239,8 @@ public class ScenarioMap : MonoBehaviour
 
             villainRiver.Remove(unitTypeToActivate);
             villainRiver.Add(unitTypeToActivate);
+            yield return StartCoroutine(MissionSpecifics.VillainTileActivated());  // JamAndSeek uses CallReinforcements, so wait for whatever it's going to do
+
             if (MissionSpecifics.IsGameOver(currentRound))
             {
                 yield break;  // Skip to IsGameOver evaluation at end of Villain turn
@@ -418,10 +433,10 @@ public class ScenarioMap : MonoBehaviour
         return -1;
     }
 
-    IEnumerator CallReinforcements()
+    public IEnumerator CallReinforcements(int reinforcementPointsRemaining)
     {
         List<Tuple<UnitPool, double, GameObject>> reinforcementsAvailable = GetAvailableReinforcements();
-        int reinforcementPointsRemaining = reinforcementPoints;
+        //int reinforcementPointsRemaining = reinforcementPoints;
         int i = 0;
         while (reinforcementPoints > 0 && i < reinforcementsAvailable.Count)
         {

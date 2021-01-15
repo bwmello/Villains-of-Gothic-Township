@@ -121,16 +121,13 @@ public static class MissionSpecifics
                 }
                 break;
             case "JamAndSeek":
-                if (currentRound >= 2)  // Gives 2 passive villain turns before turning aggressive
+                actionsWeightTable["MELEE"] = new List<ActionWeight>();
+                actionsWeightTable["RANGED"] = new List<ActionWeight>();
+                if (currentRound >= GetFinalPassiveRound())  // Gives a few passive villain turns before turning aggressive
                 {
                     actionsWeightTable["MELEE"] = new List<ActionWeight>(initialAttackWeightTable);
                     actionsWeightTable["RANGED"] = new List<ActionWeight>(initialAttackWeightTable);
                 }
-                //else  // This has units trying to attack with errors, as "MELEE"/"RANGED" will exist in the list, they'll just be empty lists
-                //{
-                //    actionsWeightTable["MELEE"] = new List<ActionWeight>();
-                //    actionsWeightTable["RANGED"] = new List<ActionWeight>();
-                //}
 
                 totalJammers = GetTotalActiveTokens(new List<string>() { "Jammer" });
                 totalActiveJammers = GetTotalActiveTokens(new List<string>() { "ActiveJammer" });
@@ -171,6 +168,16 @@ public static class MissionSpecifics
         return -1;
     }
 
+    public static int GetFinalPassiveRound()  // For JamAndSeek, where the villain spends the first few rounds in a Passive mode
+    {
+        switch (missionName)
+        {
+            case "JamAndSeek":
+                return 2;
+        }
+        return 0;
+    }
+
     public static int GetBonusMovePointsPerRound()  // For adjusting difficulty of the game.
     {
         switch (missionName)
@@ -182,7 +189,25 @@ public static class MissionSpecifics
             case "AFewBadApples":
                 return 3;
             case "JamAndSeek":
+                if (currentRound <= GetFinalPassiveRound())
+                {
+                    return 1;
+                }
                 return 2;
+        }
+        return 0;
+    }
+
+    public static int GetUniversalIgnoreSizeHindrance()  // For JamAndSeek's passive mode
+    {
+        switch (missionName)
+        {
+            case "JamAndSeek":
+                if (currentRound <= GetFinalPassiveRound())
+                {
+                    return 100;  // Basically ignore all size hindrance when moving
+                }
+                break;
         }
         return 0;
     }
@@ -250,7 +275,7 @@ public static class MissionSpecifics
             {
                 case "IceToSeeYou":
                     GameObject tokenZone = button.gameObject.GetComponent<Token>().GetZone();
-                    Object.DestroyImmediate(button.gameObject);
+                    GameObject.DestroyImmediate(button.gameObject);
                     tokenZone.GetComponent<ZoneInfo>().AddObjectiveToken("PrimedBomb");
                     return;
                 default:
@@ -497,6 +522,44 @@ public static class MissionSpecifics
         }
     }
 
+    public static IEnumerator VillainTileActivated()
+    {
+        switch (missionName)
+        {
+            case "JamAndSeek":
+                if (currentRound <= GetFinalPassiveRound())
+                {
+                    int[] redDieValues = new int[] { 0, 1, 1, 2, 2, 3 };
+                    yield return scenarioMap.animate.StartCoroutine(scenarioMap.CallReinforcements(redDieValues[random.Next(redDieValues.Length)]));
+                }
+                break;
+        }
+        yield return 0;
+    }
+
+    public static int GetReinforcementPoints()
+    {
+        switch (missionName)
+        {
+            case "ASinkingFeeling":
+                return 5;
+            //return 1;
+            //return random.Next(0, 2);  // .5, half of the time 0, the other half of the time 1
+            case "IceToSeeYou":
+                return 3;
+            case "AFewBadApples":
+                return 5;
+            //return random.Next(0, 2);  // .5, half of the time 0, the other half of the time 1
+            case "JamAndSeek":
+                if (currentRound <= GetFinalPassiveRound())
+                {
+
+                }
+                return 2;
+        }
+        return 0;
+    }
+
     public static double GetReinforcementWeight()
     {
         double weight = 0;
@@ -528,10 +591,10 @@ public static class MissionSpecifics
                         if (superbarnPrefab != null)
                         {
                             Unit barnInfo = barn.GetComponent<Unit>();
-                            Unit superBarnInfo = Object.Instantiate(superbarnPrefab, barn.transform.parent).GetComponent<Unit>();
+                            Unit superBarnInfo = GameObject.Instantiate(superbarnPrefab, barn.transform.parent).GetComponent<Unit>();
                             superBarnInfo.ModifyLifePoints(barnInfo.lifePoints - barnInfo.lifePointsMax);  // Do not reset SuperBarn's life points to 6 if Barn was damaged.
                             superBarnInfo.GenerateWoundShields();
-                            Object.DestroyImmediate(barn);
+                            GameObject.DestroyImmediate(barn);
                             int barnRiverIndex = scenarioMap.villainRiver.IndexOf("BARN");
                             scenarioMap.villainRiver[barnRiverIndex] = "SUPERBARN";
                         }
@@ -548,7 +611,7 @@ public static class MissionSpecifics
                     superBarnInfo.ModifyLifePoints(-2);
                     if (superBarnInfo.lifePoints < 1)
                     {
-                        Object.Destroy(superBarn);
+                        GameObject.Destroy(superBarn);
                     }
                 }
                 break;
@@ -639,7 +702,7 @@ public static class MissionSpecifics
     {
         ZoneInfo unitZoneInfo = unit.GetComponent<Unit>().GetZone().GetComponent<ZoneInfo>();
         // Animate success vs failure UI
-        GameObject successContainer = Object.Instantiate(unitZoneInfo.successVsFailurePrefab, scenarioMap.animationContainer.transform);
+        GameObject successContainer = GameObject.Instantiate(unitZoneInfo.successVsFailurePrefab, scenarioMap.animationContainer.transform);
         successContainer.transform.position = unit.transform.TransformPoint(new Vector3(0, 12, 0));
 
         successContainer.GetComponent<RectTransform>().sizeDelta = new Vector2(requiredSuccesses * 10, successContainer.GetComponent<RectTransform>().rect.height);
@@ -660,7 +723,7 @@ public static class MissionSpecifics
                 break;
             }
             GameObject successOrFailurePrefab = i + 1 < totalSuccesses ? unitZoneInfo.successPrefab : unitZoneInfo.failurePrefab;
-            GameObject successOrFailureMarker = Object.Instantiate(successOrFailurePrefab, successContainer.transform);
+            GameObject successOrFailureMarker = GameObject.Instantiate(successOrFailurePrefab, successContainer.transform);
         }
         yield return new WaitForSecondsRealtime(1);
 
@@ -673,7 +736,7 @@ public static class MissionSpecifics
             yield return new WaitForSecondsRealtime(2);
             SetActionsWeightTable();
         }
-        Object.Destroy(successContainer);
+        GameObject.Destroy(successContainer);
         yield return 0;
     }
 
@@ -681,7 +744,7 @@ public static class MissionSpecifics
     {
         ZoneInfo unitZoneInfo = unit.GetComponent<Unit>().GetZone().GetComponent<ZoneInfo>();
         // Animate success vs failure UI
-        GameObject successContainer = Object.Instantiate(unitZoneInfo.successVsFailurePrefab, scenarioMap.animationContainer.transform);
+        GameObject successContainer = GameObject.Instantiate(unitZoneInfo.successVsFailurePrefab, scenarioMap.animationContainer.transform);
         successContainer.transform.position = unit.transform.TransformPoint(new Vector3(0, 12, 0));
 
         successContainer.GetComponent<RectTransform>().sizeDelta = new Vector2(requiredSuccesses * 10, successContainer.GetComponent<RectTransform>().rect.height);
@@ -702,7 +765,7 @@ public static class MissionSpecifics
                 break;
             }
             GameObject successOrFailurePrefab = i + 1 < totalSuccesses ? unitZoneInfo.successPrefab : unitZoneInfo.failurePrefab;
-            GameObject successOrFailureMarker = Object.Instantiate(successOrFailurePrefab, successContainer.transform);
+            GameObject successOrFailureMarker = GameObject.Instantiate(successOrFailurePrefab, successContainer.transform);
         }
         yield return new WaitForSecondsRealtime(1);
 
@@ -740,7 +803,7 @@ public static class MissionSpecifics
             }
             SetActionsWeightTable();
         }
-        Object.Destroy(successContainer);
+        GameObject.Destroy(successContainer);
         yield return 0;
     }
 
@@ -750,7 +813,7 @@ public static class MissionSpecifics
     {
         ZoneInfo unitZoneInfo = unit.GetComponent<Unit>().GetZone().GetComponent<ZoneInfo>();
         // Animate success vs failure UI
-        GameObject successContainer = Object.Instantiate(unitZoneInfo.successVsFailurePrefab, scenarioMap.animationContainer.transform);
+        GameObject successContainer = GameObject.Instantiate(unitZoneInfo.successVsFailurePrefab, scenarioMap.animationContainer.transform);
         successContainer.transform.position = unit.transform.TransformPoint(new Vector3(0, 12, 0));
 
         successContainer.GetComponent<RectTransform>().sizeDelta = new Vector2(requiredSuccesses * 10, successContainer.GetComponent<RectTransform>().rect.height);
@@ -771,7 +834,7 @@ public static class MissionSpecifics
                 break;
             }
             GameObject successOrFailurePrefab = i + 1 < totalSuccesses ? unitZoneInfo.successPrefab : unitZoneInfo.failurePrefab;
-            GameObject successOrFailureMarker = Object.Instantiate(successOrFailurePrefab, successContainer.transform);
+            GameObject successOrFailureMarker = GameObject.Instantiate(successOrFailurePrefab, successContainer.transform);
         }
         yield return new WaitForSecondsRealtime(1);
 
@@ -886,7 +949,7 @@ public static class MissionSpecifics
             unitZoneInfo.RemoveObjectiveToken("Computer");
             SetActionsWeightTable();
         }
-        Object.Destroy(successContainer);
+        GameObject.Destroy(successContainer);
         yield return 0;
     }
 
@@ -895,7 +958,7 @@ public static class MissionSpecifics
     {
         ZoneInfo unitZoneInfo = unit.GetComponent<Unit>().GetZone().GetComponent<ZoneInfo>();
         // Animate success vs failure UI
-        GameObject successContainer = Object.Instantiate(unitZoneInfo.successVsFailurePrefab, scenarioMap.animationContainer.transform);
+        GameObject successContainer = GameObject.Instantiate(unitZoneInfo.successVsFailurePrefab, scenarioMap.animationContainer.transform);
         successContainer.transform.position = unit.transform.TransformPoint(new Vector3(0, 12, 0));
 
         successContainer.GetComponent<RectTransform>().sizeDelta = new Vector2(requiredSuccesses * 10, successContainer.GetComponent<RectTransform>().rect.height);
@@ -916,7 +979,7 @@ public static class MissionSpecifics
                 break;
             }
             GameObject successOrFailurePrefab = i + 1 < totalSuccesses ? unitZoneInfo.successPrefab : unitZoneInfo.failurePrefab;
-            GameObject successOrFailureMarker = Object.Instantiate(successOrFailurePrefab, successContainer.transform);
+            GameObject successOrFailureMarker = GameObject.Instantiate(successOrFailurePrefab, successContainer.transform);
         }
         yield return new WaitForSecondsRealtime(1);
 
@@ -925,7 +988,7 @@ public static class MissionSpecifics
             unitZoneInfo.RemoveObjectiveToken("Computer");
             yield return new WaitForSecondsRealtime(2);
         }
-        Object.Destroy(successContainer);
+        GameObject.Destroy(successContainer);
         yield return 0;
     }
 
@@ -934,7 +997,7 @@ public static class MissionSpecifics
     {
         ZoneInfo unitZoneInfo = unit.GetComponent<Unit>().GetZone().GetComponent<ZoneInfo>();
         // Animate success vs failure UI
-        GameObject successContainer = Object.Instantiate(unitZoneInfo.successVsFailurePrefab, scenarioMap.animationContainer.transform);
+        GameObject successContainer = GameObject.Instantiate(unitZoneInfo.successVsFailurePrefab, scenarioMap.animationContainer.transform);
         successContainer.transform.position = unit.transform.TransformPoint(new Vector3(0, 12, 0));
 
         successContainer.GetComponent<RectTransform>().sizeDelta = new Vector2(requiredSuccesses * 10, successContainer.GetComponent<RectTransform>().rect.height);
@@ -955,7 +1018,7 @@ public static class MissionSpecifics
                 break;
             }
             GameObject successOrFailurePrefab = i + 1 < totalSuccesses ? unitZoneInfo.successPrefab : unitZoneInfo.failurePrefab;
-            GameObject successOrFailureMarker = Object.Instantiate(successOrFailurePrefab, successContainer.transform);
+            GameObject successOrFailureMarker = GameObject.Instantiate(successOrFailurePrefab, successContainer.transform);
         }
         yield return new WaitForSecondsRealtime(1);
 
@@ -968,7 +1031,7 @@ public static class MissionSpecifics
             yield return new WaitForSecondsRealtime(2);
             SetActionsWeightTable();
         }
-        Object.Destroy(successContainer);
+        GameObject.Destroy(successContainer);
         yield return 0;
     }
 }

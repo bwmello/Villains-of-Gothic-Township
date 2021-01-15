@@ -552,7 +552,8 @@ public class Unit : MonoBehaviour
                 terrainDifficultyCost += potentialZoneInfo.GetQuantityOfEnvironTokensWithTag("Frost") + potentialZoneInfo.GetQuantityOfEnvironTokensWithTag("Cryogenic");
             }
             int sizeCost = currentZoneInfo.GetCurrentHindrance(transform.gameObject, true);
-            sizeCost = sizeCost >= ignoreSize ? sizeCost - ignoreSize : 0;
+            int totalIgnoreSize = ignoreSize + MissionSpecifics.GetUniversalIgnoreSizeHindrance();
+            sizeCost = sizeCost >= totalIgnoreSize ? sizeCost - totalIgnoreSize : 0;
             int elevationCost = 0;
             if (currentZoneInfo.steeplyAdjacentZones.Contains(potentialZone))
             {
@@ -805,7 +806,7 @@ public class Unit : MonoBehaviour
                 switch (actionProficiency.actionType)
                 {
                     case "MELEE":
-                        if (MissionSpecifics.actionsWeightTable.ContainsKey("MELEE"))
+                        if (MissionSpecifics.actionsWeightTable.ContainsKey("MELEE") && MissionSpecifics.actionsWeightTable["MELEE"].Count > 0)
                         {
                             List<GameObject> meleeTargetableZones = possibleZoneInfo.GetZonesWithTargetsWithinLinesOfSight(reach);
                             if (meleeTargetableZones.Count > 0)
@@ -911,7 +912,7 @@ public class Unit : MonoBehaviour
                         }
                         break;
                     case "RANGED":
-                        if (MissionSpecifics.actionsWeightTable.ContainsKey("RANGED"))
+                        if (MissionSpecifics.actionsWeightTable.ContainsKey("RANGED") && MissionSpecifics.actionsWeightTable["RANGED"].Count > 0)
                         {
                             List<GameObject> rangedTargetableZones = possibleZoneInfo.GetZonesWithTargetsWithinLinesOfSight();
                             if (rangedTargetableZones.Count > 0)
