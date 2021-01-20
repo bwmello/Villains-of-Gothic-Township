@@ -17,6 +17,7 @@
         }
     ],
     "utilityBelt": {
+        "draggableTools": [ "Smoke", "WallBreak", "Gas", "Interrogate" ],
         "claimableTokens": [
             {
                 "tokenType": "Computer",

@@ -109,6 +109,8 @@ public class ScenarioMap : MonoBehaviour
         else
         {
             MissionSpecifics.currentPhase = "Hero";  // StartHeroTurn() actually not called here as it also advances the currentRound and the clock
+            MissionSpecifics.SetActionsWeightTable();  // Copied from StartHeroTurn()
+            UnitIntel.ResetPerRoundResources();
             EnablePlayerUI();  // UIOverlay starts disabled so it doesn't flash on the screen when villains go first
         }
     }
@@ -176,6 +178,7 @@ public class ScenarioMap : MonoBehaviour
     {
         MissionSpecifics.currentPhase = "Villain";
         DisablePlayerUI();  // Disable all UI so Villain turn isn't interrupted
+        yield return StartCoroutine(MissionSpecifics.VillainTurnStarted());
 
         if (MissionSpecifics.IsGameOver(currentRound))
         {
@@ -215,7 +218,7 @@ public class ScenarioMap : MonoBehaviour
                 {
                     unitTypesActivated.Add(unitAction.myUnit.tag);
                     totalTileActivations -= 1;
-                    yield return StartCoroutine(MissionSpecifics.VillainTileActivated());  // JamAndSeek uses CallReinforcements, so wait for whatever it's going to do
+                    yield return StartCoroutine(MissionSpecifics.CharacterTileActivated());  // JamAndSeek uses CallReinforcements, so wait for whatever it's going to do
                 }
 
                 if (MissionSpecifics.IsGameOver(currentRound))
@@ -239,7 +242,10 @@ public class ScenarioMap : MonoBehaviour
 
             villainRiver.Remove(unitTypeToActivate);
             villainRiver.Add(unitTypeToActivate);
-            yield return StartCoroutine(MissionSpecifics.VillainTileActivated());  // JamAndSeek uses CallReinforcements, so wait for whatever it's going to do
+            if (unitTypeToActivate != "REINFORCEMENT")
+            {
+                yield return StartCoroutine(MissionSpecifics.CharacterTileActivated());  // JamAndSeek uses CallReinforcements, so wait for whatever it's going to do
+            }
 
             if (MissionSpecifics.IsGameOver(currentRound))
             {
@@ -309,6 +315,9 @@ public class ScenarioMap : MonoBehaviour
             {
                 heroObject.GetComponent<Hero>().RestReset();
             }
+
+            MissionSpecifics.SetActionsWeightTable();  // In case game loaded and then enemy unit forced to flee on hero's turn like in JamAndSeek mission
+            UnitIntel.ResetPerRoundResources();
 
             // Re-Enable all the UI buttons which were disabled at EndHeroTurn()
             EnablePlayerUI();
@@ -456,7 +465,7 @@ public class ScenarioMap : MonoBehaviour
                 yield return new WaitForSecondsRealtime(1);
                 GameObject spawnedUnit = Instantiate(reinforcementsAvailable[i].Item1.unit, availableUnitSlot.transform);  // spawn Unit
                 spawnedUnit.GetComponent<Unit>().GenerateWoundShields();
-                yield return new WaitForSecondsRealtime(1);
+                yield return new WaitForSecondsRealtime(2);
                 Debug.Log("CallReinforcements() spawning " + reinforcementsAvailable[i].Item1.unit.tag + " at " + reinforcementsAvailable[i].Item3.name);
             }
             reinforcementPointsRemaining -= numToReinforce * unitInfo.reinforcementCost;
@@ -481,8 +490,6 @@ public class ScenarioMap : MonoBehaviour
                     int inReserve = unitPool.total - GameObject.FindGameObjectsWithTag(unitPool.unit.tag).Length;
                     if (inReserve > 0)
                     {
-                        double highestSpawnActionWeight = 0;
-                        GameObject chosenSpawnZone = null;
                         Boolean activateableThisTurn = false;
                         for (int i = 0; i < 4; i++)
                         {
@@ -492,27 +499,13 @@ public class ScenarioMap : MonoBehaviour
                                 break;
                             }
                         }
-                        foreach (GameObject spawnZone in spawnZones)
-                        {
-                            GameObject availableUnitSlot = spawnZone.GetComponent<ZoneInfo>().GetAvailableUnitSlot();
-                            GameObject tempUnit = Instantiate(unitPool.unit, availableUnitSlot.transform);
-                            double currentSpawnActionWeight = tempUnit.GetComponent<Unit>().GetMostValuableActionWeight();
-                            DestroyImmediate(tempUnit);
-                            if (currentSpawnActionWeight > highestSpawnActionWeight)
-                            {
-                                chosenSpawnZone = spawnZone;
-                                highestSpawnActionWeight = currentSpawnActionWeight;
-                            }
-                        }
-                        if (chosenSpawnZone == null)  // If can't decide between spawnZones, randomly pick one
-                        {
-                            chosenSpawnZone = spawnZones[random.Next(spawnZones.Count)];
-                        }
+
+                        (GameObject, double) bestSpawnZoneAndWeight = ChooseBestUnitPlacement(unitPool.unit, spawnZones);
                         if (!activateableThisTurn)
                         {
-                            highestSpawnActionWeight *= .9;  // Only 90% as valuable if Unit can't be activated this turn
+                            bestSpawnZoneAndWeight.Item2 *= .9;  // Only 90% as valuable if Unit can't be activated this turn
                         }
-                        reinforcementsAvailable.Add(new Tuple<UnitPool, double, GameObject>(new UnitPool(unitPool.unit, inReserve), highestSpawnActionWeight, chosenSpawnZone));
+                        reinforcementsAvailable.Add(new Tuple<UnitPool, double, GameObject>(new UnitPool(unitPool.unit, inReserve), bestSpawnZoneAndWeight.Item2, bestSpawnZoneAndWeight.Item1));
                     }
                 }
             }
@@ -528,6 +521,26 @@ public class ScenarioMap : MonoBehaviour
         Debug.Log(reinforcementsAvailableDebugString + "]");
 
         return reinforcementsAvailable;
+    }
+
+    public (GameObject, double) ChooseBestUnitPlacement(GameObject unitPrefab, List<GameObject> possibleZones)
+    {
+        GameObject bestZone = null;
+        double bestZoneActionWeight = -1000;
+        foreach (GameObject possibleZone in possibleZones)
+        {
+            GameObject availableUnitSlot = possibleZone.GetComponent<ZoneInfo>().GetAvailableUnitSlot();
+            GameObject tempUnit = Instantiate(unitPrefab, availableUnitSlot.transform);
+            double currentZoneActionWeight = tempUnit.GetComponent<Unit>().GetMostValuableActionWeight();
+            DestroyImmediate(tempUnit);
+            if (currentZoneActionWeight > bestZoneActionWeight)
+            {
+                bestZone = possibleZone;
+                bestZoneActionWeight = currentZoneActionWeight;
+            }
+        }
+
+        return (bestZone, bestZoneActionWeight);
     }
 
     void DissipateEnvironTokens(bool isHeroTurn)

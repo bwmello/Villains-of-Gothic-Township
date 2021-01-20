@@ -17,6 +17,7 @@
         }
     ],
     "utilityBelt": {
+        "draggableTools": [ "Smoke", "WallBreak", "Gas" ],
         "claimableTokens": []
     },
     "villainRiver": [ "UZI", "CHAINS", "PISTOLS", "REINFORCEMENT", "CROWBAR", "SHOTGUN", "BARN" ],

@@ -9,6 +9,7 @@
         }
     ],
     "utilityBelt": {
+        "draggableTools": [ "Smoke", "WallBreak", "Gas" ],
         "claimableTokens": []
     },
     "villainRiver": [ "CROWBAR", "SHOTGUN", "OTTERPOP", "REINFORCEMENT", "UZI", "CHAINS", "OTTERPOP" ],

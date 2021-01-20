@@ -43,6 +43,7 @@ public class Draggable : MonoBehaviour
                 case "Smoke":
                 case "Gas":
                 case "WallBreak":
+                case "Interrogate":
                 case "AllySetup":
                     parentOnDragStart = transform.parent;
                     transform.SetParent(GetComponentInParent<UIOverlay>().uiAnimationContainer.transform);  // So you can't drag it behind other UIOverlay draggables
@@ -91,6 +92,17 @@ public class Draggable : MonoBehaviour
                         if (targetWallRubble)
                         {
                             targetWallRubble.WallRubblePlaced();
+                        }
+                        if (parentOnDragStart)
+                        {
+                            transform.SetParent(parentOnDragStart);
+                        }
+                        break;
+                    case "Interrogate":
+                        Unit interrogatedUnit = dropZone.GetComponent<Unit>();  // Not really needed since Unit type is checked during OnColisionEnter2D, so could do MissionSpecifics.UnitInterrogated(dropZone) directly
+                        if (interrogatedUnit)
+                        {
+                            StartCoroutine(MissionSpecifics.UnitInterrogated(interrogatedUnit.gameObject));
                         }
                         if (parentOnDragStart)
                         {
@@ -155,7 +167,7 @@ public class Draggable : MonoBehaviour
                         }
                         break;
                 }
-                if (new List<string>() { "Smoke", "Gas", "WallBreak", "AllySetup" }.Contains(draggableType))
+                if (new List<string>() { "Smoke", "Gas", "WallBreak", "Interrogate", "AllySetup" }.Contains(draggableType))
                 {
                     transform.position = positionOnDragStart;  // Return to position on UIOverlay
                 }
@@ -182,6 +194,15 @@ public class Draggable : MonoBehaviour
             GameObject wallBreak = collision.transform.parent.gameObject;
             if (wallBreak && wallBreak.TryGetComponent<WallRubble>(out var tempWallRubble)) {
                 dropZone = wallBreak;
+            }
+        }
+        else if (draggableType == "Interrogate")
+        {
+            //GameObject interrogationTarget = collision.transform.parent.gameObject;
+            GameObject interrogationTarget = collision.transform.gameObject;  // For some reason collides with boxcollider on main Unit parent instead of dropZone child
+            if (interrogationTarget && interrogationTarget.TryGetComponent<Unit>(out var tempUnit))
+            {
+                dropZone = interrogationTarget;
             }
         }
         else  // Smoke, Gas, Hero, Ally, Unit
@@ -218,6 +239,10 @@ public class Draggable : MonoBehaviour
             {
                 dropZone.GetComponent<WallRubble>().EnableDropZone();
             }
+            else if (draggableType == "Interrogate")
+            {
+                dropZone.GetComponent<Unit>().EnableDropZone();
+            }
             else  // Smoke, Gas, Hero, Ally, Unit
             {
                 dropZone.GetComponent<ZoneInfo>().EnableDropZone();
@@ -232,6 +257,10 @@ public class Draggable : MonoBehaviour
             if (draggableType == "WallBreak")
             {
                 dropZone.GetComponent<WallRubble>().DisableDropZone();
+            }
+            else if (draggableType == "Interrogate")
+            {
+                dropZone.GetComponent<Unit>().DisableDropZone();
             }
             else  // Smoke, Gas, Hero, Ally
             {
@@ -250,6 +279,9 @@ public class Draggable : MonoBehaviour
                 return new List<GameObject>(GameObject.FindGameObjectsWithTag("ZoneInfoPanel"));
             case "WallBreak":
                 return new List<GameObject>(GameObject.FindGameObjectsWithTag("WallRubble"));
+            case "Interrogate":
+                return MissionSpecifics.GetInterrogationTargets();
+                //return new List<GameObject>(GameObject.FindGameObjectsWithTag("WallRubble"));
             case "Hero":
                 List<GameObject> heroDropZones = new List<GameObject>(GameObject.FindGameObjectsWithTag("ZoneInfoPanel"));
                 heroDropZones.Remove(gameObject.GetComponent<Hero>().GetZone());

@@ -39,6 +39,8 @@ public static class MissionSpecifics
 
     public static void SetActionsWeightTable()
     {
+        actionsWeightTable = new Dictionary<string, List<ActionWeight>>() { };
+
         int totalBombs;
         int totalPrimedBombs;
         int totalComputers;
@@ -173,7 +175,7 @@ public static class MissionSpecifics
         switch (missionName)
         {
             case "JamAndSeek":
-                return 2;
+                return 3;
         }
         return 0;
     }
@@ -444,6 +446,13 @@ public static class MissionSpecifics
                     return true;
                 }
                 break;
+            case "JamAndSeek":
+                int totalJammersRemaining = GetTotalActiveTokens(new List<string>() { "Jammer", "ActiveJammer" });
+                if (currentRound >= GetFinalRound() || totalJammersRemaining <= 0)  // end of hero turn 7 or all jammers are neutralized
+                {
+                    return true;
+                }
+                break;
             default:
                 break;
         }
@@ -489,6 +498,13 @@ public static class MissionSpecifics
                     return true;
                 }
                 break;
+            case "JamAndSeek":
+                int totalActiveJammersRemaining = GetTotalActiveTokens(new List<string>() { "ActiveJammer" });
+                if (totalActiveJammersRemaining <= 0)
+                {
+                    return true;
+                }
+                break;
             default:
                 break;
         }
@@ -522,7 +538,75 @@ public static class MissionSpecifics
         }
     }
 
-    public static IEnumerator VillainTileActivated()
+    public static IEnumerator VillainTurnStarted()  // Called by ScenarioMap.StartVillainTurn() before game over check
+    {
+        switch (missionName)
+        {
+            case "JamAndSeek":
+                if (currentRound == GetFinalPassiveRound())
+                {
+                    GameObject ollygatorEntranceZone = null;
+                    foreach (GameObject zone in GameObject.FindGameObjectsWithTag("ZoneInfoPanel"))
+                    {
+                        if (zone.GetComponent<ZoneInfo>().id == 34)
+                        {
+                            ollygatorEntranceZone = zone;
+                            break;
+                        }
+                    }
+                    GameObject ollygatorUnitSlot = ollygatorEntranceZone.GetComponent<ZoneInfo>().GetAvailableUnitSlot();
+                    if (!scenarioMap.animate.IsPointOnScreen(ollygatorUnitSlot.transform.position, .01f))  // Reinforcements typically spawned on edges/corners of map, so greatly reduce buffer to prevent slight camera jumps
+                    {
+                        scenarioMap.animate.mainCamera.transform.position = new Vector3(ollygatorUnitSlot.transform.position.x, ollygatorUnitSlot.transform.position.y, scenarioMap.animate.mainCamera.transform.position.z);
+                    }
+                    yield return new WaitForSecondsRealtime(1);
+                    GameObject ollygator = GameObject.Instantiate(scenarioMap.unitPrefabsMasterDict["OLLYGATOR"], ollygatorUnitSlot.transform);
+                    scenarioMap.villainRiver.Insert(0, "OLLYGATOR");  // Insert Ollygator's tile at head of river
+                    ollygator.GetComponent<Unit>().GenerateWoundShields();
+                    yield return new WaitForSecondsRealtime(2);
+
+                    GameObject livefirePrefab = scenarioMap.unitPrefabsMasterDict["LIVEFIRE"];
+                    GameObject[] bystanders = GameObject.FindGameObjectsWithTag("BYSTANDER");
+                    List<GameObject> bystanderZones = new List<GameObject>();
+                    foreach (GameObject bystander in bystanders)
+                    {
+                        Unit bystanderUnitInfo = bystander.GetComponent<Unit>();
+                        if (bystanderUnitInfo.IsActive())  // Although they couldn't really be inactive at any point during JamAndSeek mission
+                        {
+                            bystanderZones.Add(bystanderUnitInfo.GetZone());
+                        }
+                    }
+                    GameObject livefireEntranceZone = scenarioMap.ChooseBestUnitPlacement(livefirePrefab, bystanderZones).Item1;
+                    GameObject livefireUnitSlot = null;
+                    foreach (Unit entranceZoneUnit in livefireEntranceZone.GetComponent<ZoneInfo>().GetUnitsInfo())
+                    {
+                        if (entranceZoneUnit.CompareTag("BYSTANDER"))
+                        {
+                            livefireUnitSlot = entranceZoneUnit.GetUnitSlot();
+                            break;
+                        }
+                    }
+                    if (!scenarioMap.animate.IsPointOnScreen(livefireUnitSlot.transform.position, .01f))  // Reinforcements typically spawned on edges/corners of map, so greatly reduce buffer to prevent slight camera jumps
+                    {
+                        scenarioMap.animate.mainCamera.transform.position = new Vector3(livefireUnitSlot.transform.position.x, livefireUnitSlot.transform.position.y, scenarioMap.animate.mainCamera.transform.position.z);
+                    }
+                    yield return new WaitForSecondsRealtime(1);
+                    for (int i = bystanders.Length - 1; i >= 0; i--)  // Remove all BYSTANDERS from board and river
+                    {
+                        GameObject.DestroyImmediate(bystanders[i]);
+                    }
+                    scenarioMap.villainRiver.Remove("BYSTANDER");
+                    GameObject livefire = GameObject.Instantiate(livefirePrefab, livefireUnitSlot.transform);
+                    scenarioMap.villainRiver.Add("LIVEFIRE");  // Add Livefire's tile to end of river
+                    livefire.GetComponent<Unit>().GenerateWoundShields();
+                    yield return new WaitForSecondsRealtime(2);
+                }
+                break;
+        }
+        yield return 0;
+    }
+
+    public static IEnumerator CharacterTileActivated()  // Doesn't count REINFORCEMENT
     {
         switch (missionName)
         {
@@ -551,9 +635,17 @@ public static class MissionSpecifics
                 return 5;
             //return random.Next(0, 2);  // .5, half of the time 0, the other half of the time 1
             case "JamAndSeek":
-                if (currentRound <= GetFinalPassiveRound())
+                UtilityBelt utilityBelt = scenarioMap.UIOverlay.GetComponent<UIOverlay>().utilityBelt.GetComponent<UtilityBelt>();  // Pretty terrible chain of calls just to get claimableTokens
+                foreach (GameObject claimableTokenObject in utilityBelt.claimableTokens)  // Activate first unclaimed claimableInformation token
                 {
-
+                    ClaimableToken claimableToken = claimableTokenObject.GetComponent<ClaimableToken>();
+                    if (claimableToken.tokenType == "Information")
+                    {
+                        if (claimableToken.isClaimed)
+                        {
+                            return 1;
+                        }
+                    }
                 }
                 return 2;
         }
@@ -570,6 +662,19 @@ public static class MissionSpecifics
                 if (superBarn != null)
                 {
                     weight = superBarn.GetComponent<Unit>().GetMostValuableActionWeight();
+                }
+                break;
+            case "JamAndSeek":
+                if (GetReinforcementPoints() == 1)  // Meaning they have a claimableInformation token
+                {
+                    if (currentRound > GetFinalPassiveRound())
+                    {
+                        weight = 100;  // Sure, 100 points for getting rid of an information token
+                    }
+                    else
+                    {
+                        weight = 50;  // You don't get the red reinforcement die if you activate REINFORCEMENTS instead of a character tile, so wait until you're no longer passive to reinforce
+                    }
                 }
                 break;
         }
@@ -615,6 +720,21 @@ public static class MissionSpecifics
                     }
                 }
                 break;
+            case "JamAndSeek":
+                UtilityBelt utilityBelt = scenarioMap.UIOverlay.GetComponent<UIOverlay>().utilityBelt.GetComponent<UtilityBelt>();  // Pretty terrible chain of calls just to get claimableTokens
+                foreach (GameObject claimableTokenObject in utilityBelt.claimableTokens)  // Activate first unclaimed claimableInformation token
+                {
+                    ClaimableToken claimableToken = claimableTokenObject.GetComponent<ClaimableToken>();
+                    if (claimableToken.tokenType == "Information")
+                    {
+                        if (claimableToken.isClaimed)
+                        {
+                            claimableToken.ClaimableTokenClicked();
+                            break;
+                        }
+                    }
+                }
+                break;
         }
         yield return 0;
     }
@@ -647,6 +767,60 @@ public static class MissionSpecifics
             default:
                 break;
         }
+    }
+
+    public static IEnumerator UnitInterrogated(GameObject unit)
+    {
+        UtilityBelt utilityBelt = scenarioMap.UIOverlay.GetComponent<UIOverlay>().utilityBelt.GetComponent<UtilityBelt>();  // Pretty terrible chain of calls just to get claimableTokens
+        switch (missionName)
+        {
+            case "AFewBadApples":
+                // TODO Interrogated SWATRIFLE should be removed from the board, the SWATRIFLE unit pool should be reduced by 1, and the SWATRIFLE claimable token should be made active
+                break;
+            case "JamAndSeek":
+                foreach (GameObject claimableTokenObject in utilityBelt.claimableTokens)  // Activate first unclaimed claimableInformation token
+                {
+                    ClaimableToken claimableToken = claimableTokenObject.GetComponent<ClaimableToken>();
+                    if (claimableToken.tokenType == "Information")
+                    {
+                        if (!claimableToken.isClaimed)
+                        {
+                            claimableToken.ClaimableTokenClicked();
+                            break;
+                        }
+                    }
+                }
+                Unit unitInfo = unit.GetComponent<Unit>();
+                int originalUnitIgnoreSize = unitInfo.ignoreSize;
+                unitInfo.ignoreSize = 100;
+                UnitIntel.bonusMovePointsRemaining = 0;  // Will be reset by UnitIntel at start of villain turn
+                yield return scenarioMap.animate.StartCoroutine(unitInfo.ForceMovement());
+                unitInfo.ignoreSize = originalUnitIgnoreSize;
+                break;
+            default:
+                break;
+        }
+        yield return 0;
+    }
+
+    public static List<GameObject> GetInterrogationTargets()
+    {
+        List<GameObject> interrogationTargets = new List<GameObject>();
+        switch (missionName)
+        {
+            case "AFewBadApples":
+                return new List<GameObject>(GameObject.FindGameObjectsWithTag("SWATRIFLE"));
+            case "JamAndSeek":
+                interrogationTargets.AddRange(GameObject.FindGameObjectsWithTag("PRISONER"));
+                interrogationTargets.AddRange(GameObject.FindGameObjectsWithTag("BYSTANDER"));
+                interrogationTargets.AddRange(GameObject.FindGameObjectsWithTag("UZI"));
+                interrogationTargets.AddRange(GameObject.FindGameObjectsWithTag("SHOTGUN"));
+                interrogationTargets.AddRange(GameObject.FindGameObjectsWithTag("CHAINS"));
+                return interrogationTargets;
+            default:
+                break;
+        }
+        return null;
     }
 
     public static List<Unit.UnitPossibleAction> GetPredeterminedActivations()

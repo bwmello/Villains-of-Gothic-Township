@@ -13,7 +13,25 @@
         }
     ],
     "utilityBelt": {
-        "claimableTokens": []
+        "draggableTools": [ "Smoke", "WallBreak", "Gas", "Interrogate" ],
+        "claimableTokens": [
+            {
+                "tokenType": "Information",
+                "isClaimed": false
+            },
+            {
+                "tokenType": "Information",
+                "isClaimed": false
+            },
+            {
+                "tokenType": "Information",
+                "isClaimed": false
+            },
+            {
+                "tokenType": "Information",
+                "isClaimed": false
+            }
+        ]
     },
     "villainRiver": [ "PRISONER", "BYSTANDER", "UZI", "SHOTGUN", "CHAINS", "REINFORCEMENT" ],
     "unitTagsMasterList": [ "PRISONER", "BYSTANDER", "UZI", "SHOTGUN", "CHAINS", "OLLYGATOR", "LIVEFIRE" ],

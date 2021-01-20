@@ -242,6 +242,16 @@ public class Unit : MonoBehaviour
         }
     }
 
+    public void EnableDropZone()
+    {
+        transform.Find("DropZone").gameObject.SetActive(true);
+    }
+
+    public void DisableDropZone()
+    {
+        transform.Find("DropZone").gameObject.SetActive(false);
+    }
+
     public void ModifyLifePoints(int difference)
     {
         float initialAlpha = this.GetComponent<CanvasGroup>().alpha;
@@ -292,6 +302,11 @@ public class Unit : MonoBehaviour
     public GameObject GetZone()
     {
         return transform.parent.parent.parent.gameObject;  // Grabs ZoneInfoPanel instead of UnitsContainer. If changes in future, only need to change this function.
+    }
+
+    public GameObject GetUnitSlot()
+    {
+        return transform.parent.gameObject;  // Grabs ZoneInfoPanel instead of UnitsContainer. If changes in future, only need to change this function.
     }
 
     public IEnumerator ActivateUnitWithPredeterminedAction(UnitPossibleAction chosenAction)
@@ -358,6 +373,55 @@ public class Unit : MonoBehaviour
         //        yield return StartCoroutine(MoveToken(possibleDestinations[destinationZone]));
         //    }
         //}
+        yield return 0;
+    }
+
+    public IEnumerator ForceMovement()  // Used after Interrogate draggableTool used in JamAndSeek. Forces a move (cannot end in same zone as started in). Up to MissionSpecifics to disable size movement restrictions and bonus move points
+    {
+        GameObject currentZone = GetZone();
+        Dictionary<GameObject, MovementPath> possibleDestinations = GetPossibleDestinations(currentZone);
+        List<UnitPossibleAction> allPossibleUnitActions = GetPossibleActions(possibleDestinations);
+        bool hasMoved = false;
+
+        //string debugString = "ForceMovement for " + transform.tag + " in " + GetZone().name + "   allPossibleUnitActions.Count: " + allPossibleUnitActions.Count.ToString();
+        //foreach (KeyValuePair<GameObject, MovementPath> zoneMove in possibleDestinations)
+        //{
+        //    debugString += "   " + zoneMove.Key.name + " with " + zoneMove.Value.movementSpent.ToString() + " movePoints";
+        //}
+        //debugString += "\n";
+        //foreach (UnitPossibleAction unitPossibleAction in allPossibleUnitActions)
+        //{
+        //    debugString += "   " + unitPossibleAction.actionProficiency.actionType + " in " + unitPossibleAction.actionZone.name + " with weight " + unitPossibleAction.actionWeight.ToString();
+        //}
+        //Debug.Log(debugString);
+
+        if (allPossibleUnitActions != null && allPossibleUnitActions.Count > 0)  // if there's an action with weight > GetInactiveWeight()
+        {
+            UnitPossibleAction chosenAction = null;
+
+            foreach (UnitPossibleAction unitAction in allPossibleUnitActions)
+            {
+                if (unitAction.actionZone != currentZone && (chosenAction == null || unitAction.actionWeight > chosenAction.actionWeight))
+                {
+                    chosenAction = unitAction;
+                }
+            }
+
+            animate.CameraToFixedZoom();   // Placed here because otherwise the camera "jumps" from zoomed in to first unit's move
+            if (currentZone != chosenAction.actionZone)
+            {
+                chosenAction.pathTaken.zones.Add(chosenAction.actionZone);  // Otherwise token is never animated moving the last zone to the destination
+                yield return StartCoroutine(MoveToken(chosenAction.pathTaken));
+                hasMoved = true;
+            }
+        }
+
+        if (!hasMoved)
+        {
+            GameObject lastPossibleDestination = possibleDestinations.Last<KeyValuePair<GameObject, MovementPath>>().Key;
+            yield return StartCoroutine(MoveToken(possibleDestinations[lastPossibleDestination]));
+        }
+
         yield return 0;
     }
 
@@ -726,6 +790,13 @@ public class Unit : MonoBehaviour
     {
         List<UnitPossibleAction> allPossibleActions = new List<UnitPossibleAction>();
 
+        Tuple<GameObject, double> partialMoveZoneAndWeight = new Tuple<GameObject, double>(null, 0);  // TODO maybe expand this to return a list
+        if (!isPartialMove)
+        {
+            partialMoveZoneAndWeight = GetPartialMoveAndWeight(possibleDestinationsAndPaths);
+            //Debug.Log("!!!partialMoveZoneAndWeight zone.name: " + partialMoveZoneAndWeight.Item1.name + "  and weight: " + partialMoveZoneAndWeight.Item2.ToString());
+        }
+
         foreach (GameObject possibleZone in possibleDestinationsAndPaths.Keys)
         {
             ZoneInfo possibleZoneInfo = possibleZone.GetComponent<ZoneInfo>();
@@ -737,7 +808,7 @@ public class Unit : MonoBehaviour
             double finalActionWeightFactor = 1;  // actionWeight = actionWeight >= 0 ? actionWeight * finalActionWeightFactor : actionWeight / finalActionWeightFactor
             GameObject finalDestinationZone = possibleZone;
             MissionSpecifics.ActionWeight defaultGuardAction = new MissionSpecifics.ActionWeight();
-            double inactiveWeight = GetInactiveWeight();
+            //double inactiveWeight = GetInactiveWeight();
             if (GetZone() == possibleZone)
             {
                 foreach (GameObject possibleFinalDestinationZone in possibleDestinationsAndPaths.Keys)
@@ -758,6 +829,7 @@ public class Unit : MonoBehaviour
                         {
                             foreach (MissionSpecifics.ActionWeight guardable in MissionSpecifics.actionsWeightTable["GUARD"])
                             {
+                                //Debug.Log("!!!GetPossibleActions with GetZone() == possibleZone, looking at guardable " + guardable.targetType + "  worth " + guardable.weightFactor.ToString());
                                 if (possibleFinalDestinationZoneInfo.HasObjectiveToken(guardable.targetType))
                                 {
                                     GameObject objectiveToken = possibleFinalDestinationZoneInfo.GetObjectiveToken(guardable.targetType);
@@ -788,6 +860,7 @@ public class Unit : MonoBehaviour
                 {
                     foreach (MissionSpecifics.ActionWeight guardable in MissionSpecifics.actionsWeightTable["GUARD"])
                     {
+                        //Debug.Log("!!!GetPossibleActions, looking at guardable " + guardable.targetType + "  worth " + guardable.weightFactor.ToString());
                         if (possibleZoneInfo.HasObjectiveToken(guardable.targetType))
                         {
                             GameObject objectiveToken = possibleZoneInfo.GetObjectiveToken(guardable.targetType);
@@ -797,7 +870,12 @@ public class Unit : MonoBehaviour
                 }
             }
 
-            double onlyMovingWeight = bonusMovePointWeight + guardZoneWeight;
+            double partialMoveWeight = 0;  // If moving here puts us towards something much more weight valuable in future moves
+            if (partialMoveZoneAndWeight.Item1 == possibleZone && partialMoveZoneAndWeight.Item2 > 0)
+            {
+                partialMoveWeight += partialMoveZoneAndWeight.Item2;
+            }
+            double onlyMovingWeight = bonusMovePointWeight + guardZoneWeight + partialMoveWeight;
             bool zoneAddedToAllPossibleActions = false;
             foreach (ActionProficiency actionProficiency in actionProficiencies)
             {
@@ -895,19 +973,19 @@ public class Unit : MonoBehaviour
                                 //}
                                 //Debug.Log(priorityTargetsDebugString);
 
-                                if (actionWeight > inactiveWeight)
+                                //if (actionWeight > inactiveWeight)
+                                //{
+                                List<GameObject> priorityTargets = priorityTargetsAndWeights.Select(x => x.Item1).ToList();
+                                if (priorityTargetsAndWeights[0].Item1.TryGetComponent<Hero>(out var tempHeroComponent))  // tempHeroComponent isn't used, but no other way to use TryGetComponent
                                 {
-                                    List<GameObject> priorityTargets = priorityTargetsAndWeights.Select(x => x.Item1).ToList();
-                                    if (priorityTargetsAndWeights[0].Item1.TryGetComponent<Hero>(out var tempHeroComponent))  // tempHeroComponent isn't used, but no other way to use TryGetComponent
-                                    {
-                                        allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["MELEE"][0], actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, priorityTargets));  // TargetZone not really needed with priorityTargets list
-                                    }
-                                    else
-                                    {
-                                        allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["MELEE"][1], actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, priorityTargets));
-                                    }
-                                    zoneAddedToAllPossibleActions = true;
+                                    allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["MELEE"][0], actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, priorityTargets));  // TargetZone not really needed with priorityTargets list
                                 }
+                                else
+                                {
+                                    allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["MELEE"][1], actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, priorityTargets));
+                                }
+                                zoneAddedToAllPossibleActions = true;
+                                //}
                             }
                         }
                         break;
@@ -1006,20 +1084,20 @@ public class Unit : MonoBehaviour
                                 //Debug.Log("Ranged attack for " + tag + " in " + GetZone().name + ", moving to " + possibleZone.name + ", actionWeight before terrainDanger accounted for: " + actionWeight.ToString() + ", actionWeight * finalActionWeightFactor: " + (actionWeight * finalActionWeightFactor).ToString() + "  vs inactiveWeight: " + inactiveWeight.ToString());
                                 actionWeight = actionWeight >= 0 ? actionWeight * finalActionWeightFactor : actionWeight / finalActionWeightFactor;  // if actionWeight is negative, divide by finalActionWeightFactor instead of multiplying
 
-                                if (actionWeight > inactiveWeight)
-                                {
+                                //if (actionWeight > inactiveWeight)
+                                //{
                                     //Debug.Log("!!!!!!Ranged attack for " + tag + " in " + GetZone().name + ", moving to " + possibleZone.name + ",  finalActionWeight: " + actionWeight.ToString() + " vs inactiveWeight: " + inactiveWeight.ToString());
-                                    List<GameObject> priorityTargets = priorityTargetsAndWeights.Select(x => x.Item1).ToList();
-                                    if (priorityTargetsAndWeights[0].Item1.TryGetComponent<Hero>(out var tempHeroComponent))  // tempHeroComponent isn't used, but no other way to use TryGetComponent
-                                    {
-                                        allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["RANGED"][0], actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, priorityTargets));  // TargetZone not really needed with priorityTargets list
-                                    }
-                                    else
-                                    {
-                                        allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["RANGED"][1], actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, priorityTargets));
-                                    }
-                                    zoneAddedToAllPossibleActions = true;
+                                List<GameObject> priorityTargets = priorityTargetsAndWeights.Select(x => x.Item1).ToList();
+                                if (priorityTargetsAndWeights[0].Item1.TryGetComponent<Hero>(out var tempHeroComponent))  // tempHeroComponent isn't used, but no other way to use TryGetComponent
+                                {
+                                    allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["RANGED"][0], actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, priorityTargets));  // TargetZone not really needed with priorityTargets list
                                 }
+                                else
+                                {
+                                    allPossibleActions.Add(new UnitPossibleAction(this, MissionSpecifics.actionsWeightTable["RANGED"][1], actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, priorityTargets));
+                                }
+                                zoneAddedToAllPossibleActions = true;
+                                //}
                             }
                         }
                         break;
@@ -1058,11 +1136,11 @@ public class Unit : MonoBehaviour
                                             actionWeight += grenadeTargetZone.GetComponent<ZoneInfo>().GetUnitsInfo().Count * grenade * UnitIntel.terrainDangeringFriendlies;  // UnitIntel.terrainDangeringFriendlies is negative, so this will lower actionWeight
                                             actionWeight = actionWeight >= 0 ? actionWeight * finalActionWeightFactor : actionWeight / finalActionWeightFactor;  // if actionWeight is negative, divide by finalActionWeightFactor instead of multiplying
 
-                                            if (actionWeight > inactiveWeight)
-                                            {
-                                                allPossibleActions.Add(new UnitPossibleAction(this, manipulatable, actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], grenadeTargetZone, null));
-                                                zoneAddedToAllPossibleActions = true;
-                                            }
+                                            //if (actionWeight > inactiveWeight)
+                                            //{
+                                            allPossibleActions.Add(new UnitPossibleAction(this, manipulatable, actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], grenadeTargetZone, null));
+                                            zoneAddedToAllPossibleActions = true;
+                                            //}
                                         }
                                     }
                                 }
@@ -1073,11 +1151,11 @@ public class Unit : MonoBehaviour
                                     actionWeight += chanceOfSuccess * manipulatable.weightFactor;
                                     actionWeight = actionWeight >= 0 ? actionWeight * finalActionWeightFactor : actionWeight / finalActionWeightFactor;  // if actionWeight is negative, divide by finalActionWeightFactor instead of multiplying
 
-                                    if (actionWeight > inactiveWeight)
-                                    {
-                                        allPossibleActions.Add(new UnitPossibleAction(this, manipulatable, actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, null));
-                                        zoneAddedToAllPossibleActions = true;
-                                    }
+                                    //if (actionWeight > inactiveWeight)
+                                    //{
+                                    allPossibleActions.Add(new UnitPossibleAction(this, manipulatable, actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, null));
+                                    zoneAddedToAllPossibleActions = true;
+                                    //}
                                 }
                             }
                         }
@@ -1095,11 +1173,11 @@ public class Unit : MonoBehaviour
                                     actionWeight = actionWeight >= 0 ? actionWeight * finalActionWeightFactor : actionWeight / finalActionWeightFactor;  // if actionWeight is negative, divide by finalActionWeightFactor instead of multiplying
 
                                     //Debug.Log("Possible THOUGHT action for " + gameObject.name + " in " + possibleZone.name + "  with chanceOfSuccess: " + chanceOfSuccess.ToString() + "  onlyMovingWeight: " + onlyMovingWeight.ToString() + "  actionWeight: " + actionWeight.ToString() + " which should be greater than inactiveWeight: " + inactiveWeight.ToString());
-                                    if (actionWeight > inactiveWeight)
-                                    {
-                                        allPossibleActions.Add(new UnitPossibleAction(this, thoughtable, actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, null));
-                                        zoneAddedToAllPossibleActions = true;
-                                    }
+                                    //if (actionWeight > inactiveWeight)
+                                    //{
+                                    allPossibleActions.Add(new UnitPossibleAction(this, thoughtable, actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, null));
+                                    zoneAddedToAllPossibleActions = true;
+                                    //}
                                 }
                             }
                         }
@@ -1108,10 +1186,10 @@ public class Unit : MonoBehaviour
             }
             if (!zoneAddedToAllPossibleActions)
             {
-                if (onlyMovingWeight > inactiveWeight)
-                {
-                    allPossibleActions.Add(new UnitPossibleAction(this, defaultGuardAction, moveActionProficiency, onlyMovingWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, null));
-                }
+                //if (onlyMovingWeight > inactiveWeight)
+                //{
+                allPossibleActions.Add(new UnitPossibleAction(this, defaultGuardAction, moveActionProficiency, onlyMovingWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, null));
+                //}
             }
         }
 
@@ -1175,7 +1253,7 @@ public class Unit : MonoBehaviour
 
     private Tuple<GameObject, double> GetPartialMoveAndWeight(Dictionary<GameObject, MovementPath> reachableDestinations, int iterations = 1)
     {
-        double mostValuableActionWeight = GetInactiveWeight();
+        double mostValuableActionWeight = -1000;  // Any suitably low number will work. Used to be InactiveWeight();, but with things like ForceMovement, I want every option added up
         GameObject chosenDestination = null;
         Dictionary<GameObject, MovementPath> reachableDestinationsWithoutBonusMovePoints = new Dictionary<GameObject, MovementPath>();
 
