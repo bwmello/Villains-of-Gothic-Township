@@ -6,6 +6,17 @@ using TMPro;  // for TMP_Text to edit SuccessVsFailure's successContainer blanks
 using System.Text.RegularExpressions;  // for comparing Zones (by their numbers) in ActivateCryogenicDevice
 
 
+/*
+ * Things About Static Class
+ * 
+ * yield return StartCoroutine
+ * public static IEnumerator staticClassFunction() { yield return aMonoBehaviorClass.StartCoroutine() } will screw up execution unless you got there by a non-static class calling yield return StartCoroutine(staticClassFunction).
+ * Ex: See Interrogate's Draggable.EndDrag() calling Unit.InterrogatedByHeroes() { yield return StartCoroutine(MissionSpecifics.UnitInterrogated(gameObject)); } THEN you can yield return in MissionSpecifics
+ * 
+ * 
+*/
+
+
 public static class MissionSpecifics
 {
     public static string missionName;
@@ -772,10 +783,35 @@ public static class MissionSpecifics
     public static IEnumerator UnitInterrogated(GameObject unit)
     {
         UtilityBelt utilityBelt = scenarioMap.UIOverlay.GetComponent<UIOverlay>().utilityBelt.GetComponent<UtilityBelt>();  // Pretty terrible chain of calls just to get claimableTokens
+        Unit unitInfo = unit.GetComponent<Unit>();
         switch (missionName)
         {
             case "AFewBadApples":
-                // TODO Interrogated SWATRIFLE should be removed from the board, the SWATRIFLE unit pool should be reduced by 1, and the SWATRIFLE claimable token should be made active
+                foreach (GameObject claimableTokenObject in utilityBelt.claimableTokens)  // Activate SwatRifle claimable token if unclaimed (and it should be)
+                {
+                    ClaimableToken claimableToken = claimableTokenObject.GetComponent<ClaimableToken>();
+                    if (claimableToken.tokenType == "SwatRifle")
+                    {
+                        if (!claimableToken.isClaimed)
+                        {
+                            claimableToken.ClaimableTokenClicked();
+                        }
+                        break;
+                    }
+                }
+
+                foreach (ScenarioMap.UnitPool unitPool in scenarioMap.unitsPool)  // Remove one from the SwatRifle unitPool
+                {
+                    if (unitPool.unit.CompareTag(unit.tag))
+                    {
+                        unitPool.total -= 1;
+                        break;
+                    }
+                }
+
+                //unitInfo.ModifyLifePoints(-unitInfo.lifePoints);  // This allows player to reset if mistake, but then are you going to add a UnitResusictated case just for adding 1 back into the unitsPool for the SwatRifles
+                GameObject.Destroy(unit);  // And lastly remove the interrogated SwatRifle, but don't use DestroyImmediate so that Draggable.cs can do cleanup (disabling SwatRifle's dropzone)
+
                 break;
             case "JamAndSeek":
                 foreach (GameObject claimableTokenObject in utilityBelt.claimableTokens)  // Activate first unclaimed claimableInformation token
@@ -790,11 +826,12 @@ public static class MissionSpecifics
                         }
                     }
                 }
-                Unit unitInfo = unit.GetComponent<Unit>();
                 int originalUnitIgnoreSize = unitInfo.ignoreSize;
                 unitInfo.ignoreSize = 100;
                 UnitIntel.bonusMovePointsRemaining = 0;  // Will be reset by UnitIntel at start of villain turn
+                scenarioMap.DisablePlayerUI();
                 yield return scenarioMap.animate.StartCoroutine(unitInfo.ForceMovement());
+                scenarioMap.EnablePlayerUI();
                 unitInfo.ignoreSize = originalUnitIgnoreSize;
                 break;
             default:

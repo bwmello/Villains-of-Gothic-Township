@@ -376,6 +376,12 @@ public class Unit : MonoBehaviour
         yield return 0;
     }
 
+    public IEnumerator InterrogatedByHeroes()
+    {
+        yield return StartCoroutine(MissionSpecifics.UnitInterrogated(gameObject));
+        yield return 0;
+    }
+
     public IEnumerator ForceMovement()  // Used after Interrogate draggableTool used in JamAndSeek. Forces a move (cannot end in same zone as started in). Up to MissionSpecifics to disable size movement restrictions and bonus move points
     {
         GameObject currentZone = GetZone();
@@ -421,7 +427,6 @@ public class Unit : MonoBehaviour
             GameObject lastPossibleDestination = possibleDestinations.Last<KeyValuePair<GameObject, MovementPath>>().Key;
             yield return StartCoroutine(MoveToken(possibleDestinations[lastPossibleDestination]));
         }
-
         yield return 0;
     }
 
@@ -2124,7 +2129,11 @@ public class Unit : MonoBehaviour
         {
             GenerateWoundShields();
         }
-        //ShowWoundShields();  // Only needed with HideWoundShields() above, otherwise called by GenerateWoundShields() if needed
+        else
+        {
+            woundShields = unitSave.woundShields;
+            ShowWoundShields(); // called by GenerateWoundShields() above if needed, so ShowWoundShields() only specified here
+        }
     }
 
     public UnitSave ToJSON()

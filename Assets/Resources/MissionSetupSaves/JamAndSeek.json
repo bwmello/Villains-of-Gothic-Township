@@ -26,10 +26,6 @@
             {
                 "tokenType": "Information",
                 "isClaimed": false
-            },
-            {
-                "tokenType": "Information",
-                "isClaimed": false
             }
         ]
     },

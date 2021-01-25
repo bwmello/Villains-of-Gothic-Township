@@ -102,7 +102,7 @@ public class Draggable : MonoBehaviour
                         Unit interrogatedUnit = dropZone.GetComponent<Unit>();  // Not really needed since Unit type is checked during OnColisionEnter2D, so could do MissionSpecifics.UnitInterrogated(dropZone) directly
                         if (interrogatedUnit)
                         {
-                            StartCoroutine(MissionSpecifics.UnitInterrogated(interrogatedUnit.gameObject));
+                            StartCoroutine(interrogatedUnit.InterrogatedByHeroes());
                         }
                         if (parentOnDragStart)
                         {
@@ -181,7 +181,7 @@ public class Draggable : MonoBehaviour
                 }
             }
             isDragging = false;
-            DisableDropZones();
+            DisableDropZones();  // Sometimes ran after Destroy is called on object with dropzone, so never use DestroyImmediate (like when Interrogate used on SwatRifle in AFewBadApples mission)
             Camera.main.GetComponent<PanAndZoom>().controlCamera = true;
             transform.localScale = new Vector3(1, 1, 1);
         }
@@ -189,45 +189,63 @@ public class Draggable : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (draggableType == "WallBreak")
+        if (isDragging)  // Otherwise draggableTools on utilityBelt fire this function with any activating dropZones
         {
-            GameObject wallBreak = collision.transform.parent.gameObject;
-            if (wallBreak && wallBreak.TryGetComponent<WallRubble>(out var tempWallRubble)) {
-                dropZone = wallBreak;
-            }
-        }
-        else if (draggableType == "Interrogate")
-        {
-            //GameObject interrogationTarget = collision.transform.parent.gameObject;
-            GameObject interrogationTarget = collision.transform.gameObject;  // For some reason collides with boxcollider on main Unit parent instead of dropZone child
-            if (interrogationTarget && interrogationTarget.TryGetComponent<Unit>(out var tempUnit))
+            ContactPoint2D[] contacts = new ContactPoint2D[collision.contactCount];  // collision.transform.gameObject only gets you the parent object, in a unit's case, the BoxCollider (yes, even when disabled) for its dragability. So cycle through the collision contacts until you find a dropZone
+            collision.GetContacts(contacts);  // collision.GetContacts(ContactPoint2d[]) only returns an int (number of contacts inserted into ContactPoint2D[] parameter
+            GameObject dropZoneParent = null;
+            //string contactsDebugString = "OnCollisionEnter2D contactsDebugString:";
+            foreach (ContactPoint2D contact in contacts)
             {
-                dropZone = interrogationTarget;
+                //contactsDebugString += "  " + contact.collider.name;
+                if (contact.collider.name == "DropZone")
+                {
+                    dropZoneParent = contact.collider.transform.parent.gameObject;
+                    //contactsDebugString += "-" + dropZoneParent.name;
+                    break;
+                }
             }
-        }
-        else  // Smoke, Gas, Hero, Ally, Unit
-        {
-            GameObject zoneInfoPanel = collision.transform.parent.gameObject;
-            if (zoneInfoPanel && zoneInfoPanel.TryGetComponent<ZoneInfo>(out var tempZoneInfoPanel))
+            //Debug.Log(contactsDebugString);
+            if (dropZoneParent != null)  // DropZones should never be able to touch (besides overlapping), so should exclude DropZones themselves
             {
-                dropZone = zoneInfoPanel;
+                //Debug.Log("!!!OnCollisionEnter2D from " + gameObject.name + ", dropZoneParent.name: " + dropZoneParent.name);
+                if (draggableType == "WallBreak")
+                {
+                    if (dropZoneParent.TryGetComponent<WallRubble>(out var tempWallRubble))
+                    {
+                        dropZone = dropZoneParent;
+                    }
+                }
+                else if (draggableType == "Interrogate")
+                {
+                    if (dropZoneParent.TryGetComponent<Unit>(out var tempUnit))
+                    {
+                        dropZone = dropZoneParent;
+                    }
+                }
+                else  // Smoke, Gas, Hero, Ally, Unit
+                {
+                    if (dropZoneParent.TryGetComponent<ZoneInfo>(out var tempZoneInfoPanel))
+                    {
+                        dropZone = dropZoneParent;
+                        //Debug.Log("!!!OnCollisionEnter2D, setting dropZone = " + dropZone.name);
+                    }
+                }
             }
         }
-        //string onCollisionEnterDebugString = "!!!" + gameObject.name + " OnCollisionEnter2D with " + collision.gameObject.name + " and collision.transform.parent.gameObject " + collision.transform.parent.gameObject.name + "  with dropZone now set to: ";
-        //onCollisionEnterDebugString += dropZone ? dropZone.name : "null";
-        //Debug.Log(onCollisionEnterDebugString);
     }
 
     private void OnCollisionExit2D(Collision2D collision)
     {
-        //string onCollisionExitDebugString = "!!!" + gameObject.name + " OnCollisionExit2D with " + collision.gameObject.name + " and collision.transform.parent.gameObject " + collision.transform.parent.gameObject.name + "  with dropZone previously: ";
-        //onCollisionExitDebugString += dropZone ? dropZone.name : " null";
-        if (dropZone == collision.transform.parent.gameObject)  // Helps WallBreak dropping be a little more reliable when being dragged over other WallBreak DropZones.
+        if (dropZone != null && isDragging)  // isDragging needed because otherwise draggableTools on utilityBelt fire this function with any deactivating dropZones
         {
-            dropZone = null;
+            if (dropZone.transform == collision.transform || dropZone.transform == collision.transform.parent.transform)  // Whether it's a dropZone child or the collider of a parent draggable
+            {
+                //Debug.Log("!!!OnCollisionExit2D, collision.name " + collision.transform.gameObject.name + "  with dropZone: " + dropZone.name + "  being made null because it's either the collision or the parent of the object collided with");
+                dropZone = null;
+            }
+            // Can't cycle through contacts like OnCollisionEnter2D() because contacts always ends up being empty. So you move a hero onto a Zone's dropZone, but if you nudge it around the dropZone such that it passes over a unit, triggering its OnCollisionExit2D, it sets dropZone to null while it's still being hovered over
         }
-        //onCollisionExitDebugString += dropZone ? "  with dropZone now set to: " + dropZone.name : "  with dropZone now set to: null";
-        //Debug.Log(onCollisionExitDebugString);
     }
 
     private void EnableDropZones()

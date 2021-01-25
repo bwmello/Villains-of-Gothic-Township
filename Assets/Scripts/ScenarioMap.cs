@@ -595,7 +595,7 @@ public class ScenarioMap : MonoBehaviour
         UIOverlay.GetComponent<UIOverlay>().SetClock(currentRound);
 
         villainRiver = new List<string>(scenarioSave.villainRiver);
-        foreach (string enemyName in villainRiver)
+        foreach (string enemyName in villainRiver)  // You can't choose an ally that's working for the villain
         {
             if (potentialAlliesList.Contains(enemyName))
             {
