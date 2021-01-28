@@ -46,6 +46,30 @@ public class UtilityBelt : MonoBehaviour
         claimableTokens = new List<GameObject>();
     }
 
+    public void ConfigureToolAndTokenInteractivity()
+    {
+        bool isInteractive = false;
+        switch (MissionSpecifics.currentPhase)
+        {
+            //case "Setup":
+            case "Hero":
+                isInteractive = true;
+                break;
+            case "Villain":
+                isInteractive = false;
+                break;
+        }
+        foreach (GameObject draggableTool in draggableTools)
+        {
+            draggableTool.GetComponentInChildren<Draggable>().isDraggable = isInteractive;  // draggableTools holds the tool pouch themselves, while the draggable is on the tool icon
+            draggableTool.GetComponentInChildren<CanvasGroup>().alpha = isInteractive ? 1f : .6f;
+        }
+        foreach (GameObject claimableToken in claimableTokens)
+        {
+            claimableToken.GetComponent<ClaimableToken>().SetIsClickable(isInteractive);  // Could also just call claimableToken.GetComponent<ClaimableToken>().ConfigureClickability()
+        }
+    }
+
     public UtilityBeltSave ToJSON()
     {
         return new UtilityBeltSave(this);

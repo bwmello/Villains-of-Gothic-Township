@@ -10,6 +10,7 @@ public class Animate : MonoBehaviour
     public GameObject mainCamera;
     public Camera cameraStuff;
     public GameObject continueButtonUIOverlay;  // Used for PauseUntilPlayerPushesContinue() without having to go through the UIOverlay
+    public GameObject uiAnimationContainer;  // Used for animations with claimableTokens on UIOverlay's utilityBelt
 
     public GameObject woundPrefab;
     public GameObject woundQuestionPrefab;
@@ -92,6 +93,50 @@ public class Animate : MonoBehaviour
         yield return 0;
     }
 
+    public IEnumerator ScaleObjects(List<GameObject> objectsToScale, float scaleStart, float scaleEnd, float scaleTimeCoefficient = .5f, float timeBetweenObjectsScaling = .15f)
+    {
+        foreach (GameObject objectToScale in objectsToScale)
+        {
+            objectToScale.transform.localScale = new Vector3(scaleStart, scaleStart);  // Otherwise objects blink before timeBetweenObjectsFading passes and they start their FadeCanvasGroup coroutine
+        }
+        for (int i = 0; i < objectsToScale.Count; i++)
+        {
+            if (objectsToScale[i] != null)
+            {
+                if (i < objectsToScale.Count)
+                {
+                    StartCoroutine(ScaleTransform(objectsToScale[i].transform, scaleStart, scaleEnd, scaleTimeCoefficient));
+                    yield return new WaitForSecondsRealtime(timeBetweenObjectsScaling);
+                }
+                else
+                {
+                    yield return StartCoroutine(ScaleTransform(objectsToScale[i].transform, scaleStart, scaleEnd, scaleTimeCoefficient));
+                }
+            }
+        }
+        yield return 0;
+    }
+
+    public IEnumerator ScaleTransform(Transform transformToScale, float scaleStart, float scaleEnd, float scaleTimeCoefficient)
+    {
+        float t = 0;
+        while (t < 1f)
+        {
+            t += Time.deltaTime * scaleTimeCoefficient;
+            float sizeScale = Mathf.Lerp(scaleStart, scaleEnd, t);
+            if (transformToScale != null)
+            {
+                transformToScale.localScale = new Vector3(sizeScale, sizeScale);
+            }
+            else
+            {
+                break;
+            }
+            yield return null;
+        }
+        yield return 0;
+    }
+
     public IEnumerator MoveObjectOverTime(List<GameObject> objectsToMove, Vector3 origin, Vector3 destination, float timeCoefficient = 1f)
     {
         float xDistance = Mathf.Abs(origin.x - destination.x);
@@ -145,7 +190,7 @@ public class Animate : MonoBehaviour
     public bool IsPointOnScreen(Vector3 point, float buffer = .1f)
     {
         Vector3 screenPoint = cameraStuff.WorldToViewportPoint(point);
-        if (screenPoint.x > buffer && screenPoint.x < 1 - buffer && screenPoint.y > buffer && screenPoint.y < 1 - buffer)
+        if (screenPoint.x > buffer && screenPoint.x < 1 - buffer && screenPoint.y > (.01f + buffer) && screenPoint.y < 1 - buffer)  // Add .01f to bottom buffer for UtilityBelt, which is now displayed during both hero and villain turns. Not really needed, but may need to change .01f to more significant value in future
         {
             return true;
         }
@@ -475,5 +520,29 @@ public class Animate : MonoBehaviour
     {
         GameObject explosionObject = Instantiate(explosionLoopingPrefab, transform);
         explosionObject.transform.position = targetCoords;
+    }
+
+    public IEnumerator ClaimableTokenTargeted(GameObject claimableToken)
+    {
+        List<GameObject> questionMarks = new List<GameObject>();
+        for (int i = 0; i < 10; i++)
+        {
+            float xLocalPos = UnityEngine.Random.Range(-40f, 40f);  // System.random (which  I'm using everywhere else) only returns an int, or NextDouble() which only returns between 0.0 and 1.0
+            float yLocalPos = UnityEngine.Random.Range(-40f, 40f);
+            questionMarks.Add(Instantiate(woundQuestionPrefab, claimableToken.transform));  // If could be covered up by something on villain turn, instead create as child of uiAnimationContainer
+            questionMarks[i].transform.localPosition = new Vector3(xLocalPos, yLocalPos, 0);
+            questionMarks[i].GetComponent<ObjectShake>().StartShaking();
+        }
+        StartCoroutine(ScaleObjects(questionMarks, 2, 7, .5f, .15f));
+
+        yield return new WaitForSecondsRealtime(3);  // I don't want to yield return ScaleObjects because I don't want to wait for every object to reach its full size
+
+        for (int i = questionMarks.Count - 1; i >= 0; i--)
+        {
+            //questionMarks[i].GetComponent<ObjectShake>().StopShaking();  // Not necessary
+            Destroy(questionMarks[i]);
+        }
+
+        yield return 0;
     }
 }

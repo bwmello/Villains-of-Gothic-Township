@@ -10,6 +10,27 @@ public class ClaimableToken : MonoBehaviour
     public bool isClaimed = false;
 
 
+    public bool isClickable = false;
+    public void SetIsClickable(bool shouldMakeClickable)
+    {
+        //gameObject.GetComponent<Button>().enabled = shouldMakeClickable;
+        gameObject.GetComponent<Button>().interactable = shouldMakeClickable;
+        isClickable = shouldMakeClickable;
+    }
+
+    //public void ConfigureClickability()
+    //{
+    //    switch (MissionSpecifics.currentPhase)
+    //    {
+    //        case "Hero":
+    //            SetIsClickable(true);
+    //            break;
+    //        case "Villain":
+    //            SetIsClickable(false);
+    //            break;
+    //    }
+    //}
+
     public void ClaimableTokenClicked()
     {
         isClaimed = !isClaimed;

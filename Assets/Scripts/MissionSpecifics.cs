@@ -740,6 +740,7 @@ public static class MissionSpecifics
                     {
                         if (claimableToken.isClaimed)
                         {
+                            yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.ClaimableTokenTargeted(claimableTokenObject));
                             claimableToken.ClaimableTokenClicked();
                             break;
                         }
@@ -1004,6 +1005,7 @@ public static class MissionSpecifics
                 unitZoneInfo.RemoveObjectiveToken("Computer");
                 Vector3 furtherPoint = scenarioMap.animate.GetFurtherPointOnLine(mainCamera.transform.position, chosenBombZone.transform.position);
                 yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, furtherPoint));  // Move camera to zone of bomb being armed
+                chosenBombZone.RemoveObjectiveToken("Bomb");
                 chosenBombZone.AddObjectiveToken("PrimedBomb");
                 yield return new WaitForSecondsRealtime(2);
                 //unitTurn.targetedZone = chosenBombZone.transform.gameObject;  // Only useful for DEBUG statement at end of PerformAction()

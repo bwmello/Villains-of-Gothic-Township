@@ -39,7 +39,8 @@ public class UIOverlay : MonoBehaviour
         endSetupButton.SetActive(false);
         setupPanel.SetActive(false);
         roundClock.SetActive(false);
-        utilityBelt.SetActive(false);
+        //utilityBelt.SetActive(false);  // Need to show claimableTokens during villain's turn, so just deactivate utilityBelt interactivity instead  of hiding it
+        utilityBelt.GetComponent<UtilityBelt>().ConfigureToolAndTokenInteractivity();  // So UtilityBelt still shows while in game menu is open, but it seems fine
     }
 
     public void ShowUIOverlay()
@@ -49,10 +50,19 @@ public class UIOverlay : MonoBehaviour
             case "Setup":
                 ShowSetupUIOverlay();
                 break;
+            case "Villain":
+                ShowVillainUIOverlay();  // Doesn't matter whether it's ShowVillainUIOverlay() or ShowHeroUIOverlay() because HideUIOverlay() accomplishes the same thing
+                break;
             case "Hero":
                 ShowHeroUIOverlay();
                 break;
         }
+    }
+
+    public void ShowVillainUIOverlay()
+    {
+        utilityBelt.SetActive(true);
+        utilityBelt.GetComponent<UtilityBelt>().ConfigureToolAndTokenInteractivity();
     }
 
     public void ShowHeroUIOverlay()
@@ -60,6 +70,7 @@ public class UIOverlay : MonoBehaviour
         openMenuButton.SetActive(true);
         roundClock.SetActive(true);
         utilityBelt.SetActive(true);
+        utilityBelt.GetComponent<UtilityBelt>().ConfigureToolAndTokenInteractivity();
     }
 
     public void InitializeSetupUIOverlay()

@@ -130,7 +130,6 @@ public class ScenarioMap : MonoBehaviour
 
     public void ConfigureUnitHeroAndTokenInteractivity()
     {
-        //Debug.Log("!!!ConfigureUnitHeroAndTokenInteractivity() with currentPhase: " + MissionSpecifics.currentPhase);
         foreach (Unit unit in transform.GetComponentsInChildren<Unit>())
         {
             unit.ConfigureClickAndDragability();
@@ -177,6 +176,7 @@ public class ScenarioMap : MonoBehaviour
     IEnumerator StartVillainTurn()
     {
         MissionSpecifics.currentPhase = "Villain";
+        EnablePlayerUI();  // Needed to show UtilityBelt if villain taking first turn. Can't put in StartFirstTurn() either because don't want clock and menu buttons to flash on screen
         DisablePlayerUI();  // Disable all UI so Villain turn isn't interrupted
         yield return StartCoroutine(MissionSpecifics.VillainTurnStarted());
 

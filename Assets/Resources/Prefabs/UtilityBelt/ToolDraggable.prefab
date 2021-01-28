@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 842014468183664548}
   - component: {fileID: 842014468183664547}
   - component: {fileID: 842014468183664550}
+  - component: {fileID: 6814382966274223479}
   m_Layer: 5
   m_Name: ToolDraggable
   m_TagString: Untagged
@@ -184,3 +185,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   draggableType: Gas
+  isDraggable: 1
+  isDragging: 0
+--- !u!225 &6814382966274223479
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 842014468183664575}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
