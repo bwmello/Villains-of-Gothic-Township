@@ -171,6 +171,7 @@ public class Unit : MonoBehaviour
                     SetIsDraggable(false, false);
                 }
                 break;
+            case "HeroAnimation":
             case "Villain":
                 SetIsClickable(false, false);
                 SetIsDraggable(false, false);

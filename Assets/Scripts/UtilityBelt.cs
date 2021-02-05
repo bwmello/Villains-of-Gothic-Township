@@ -55,14 +55,25 @@ public class UtilityBelt : MonoBehaviour
             case "Hero":
                 isInteractive = true;
                 break;
+            case "HeroAnimation":
             case "Villain":
                 isInteractive = false;
                 break;
         }
         foreach (GameObject draggableTool in draggableTools)
         {
-            draggableTool.GetComponentInChildren<Draggable>().isDraggable = isInteractive;  // draggableTools holds the tool pouch themselves, while the draggable is on the tool icon
-            draggableTool.GetComponentInChildren<CanvasGroup>().alpha = isInteractive ? 1f : .6f;
+            Draggable draggability = draggableTool.GetComponentInChildren<Draggable>();  // draggableTools holds the tool pouch themselves, while the draggable is on the tool icon
+            if (draggability)  // Necessarry because if tool was currently being dragged, it's in the UIAnimationContainer instead of the draggableTool/pouch
+            {
+                draggability.isDraggable = isInteractive;
+            }
+            CanvasGroup alphaToFade = draggableTool.GetComponentInChildren<CanvasGroup>();
+            if (alphaToFade)
+            {
+                alphaToFade.alpha = isInteractive ? 1f : .6f;
+            }
+            //draggableTool.GetComponentInChildren<Draggable>().isDraggable = isInteractive;  // draggableTools holds the tool pouch themselves, while the draggable is on the tool icon
+            //draggableTool.GetComponentInChildren<CanvasGroup>().alpha = isInteractive ? 1f : .6f;
         }
         foreach (GameObject claimableToken in claimableTokens)
         {

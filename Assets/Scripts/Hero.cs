@@ -67,6 +67,7 @@ public class Hero : MonoBehaviour
                 SetIsClickable(true, false);
                 SetIsDraggable(true, false);
                 break;
+            case "HeroAnimation":  // An animation occuring on the hero's turn, such as when an enemy is forced to move. Has nothing to do with this hero gameobject
             case "Villain":
                 SetIsClickable(false, false);
                 SetIsDraggable(false, false);

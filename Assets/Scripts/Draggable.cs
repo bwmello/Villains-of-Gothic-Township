@@ -100,13 +100,13 @@ public class Draggable : MonoBehaviour
                         break;
                     case "Interrogate":
                         Unit interrogatedUnit = dropZone.GetComponent<Unit>();  // Not really needed since Unit type is checked during OnColisionEnter2D, so could do MissionSpecifics.UnitInterrogated(dropZone) directly
-                        if (interrogatedUnit)
-                        {
-                            StartCoroutine(interrogatedUnit.InterrogatedByHeroes());
-                        }
                         if (parentOnDragStart)
                         {
                             transform.SetParent(parentOnDragStart);
+                        }
+                        if (interrogatedUnit)
+                        {
+                            StartCoroutine(interrogatedUnit.InterrogatedByHeroes());
                         }
                         break;
                     case "Hero":
@@ -181,6 +181,7 @@ public class Draggable : MonoBehaviour
                 }
             }
             isDragging = false;
+            dropZone = null;
             DisableDropZones();  // Sometimes ran after Destroy is called on object with dropzone, so never use DestroyImmediate (like when Interrogate used on SwatRifle in AFewBadApples mission)
             Camera.main.GetComponent<PanAndZoom>().controlCamera = true;
             transform.localScale = new Vector3(1, 1, 1);

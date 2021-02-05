@@ -34,6 +34,7 @@ public class Token : MonoBehaviour  // Should be called ObjectiveToken as there 
             case "Hero":
                 SetIsClickable(true);
                 break;
+            case "HeroAnimation":
             case "Villain":
                 SetIsClickable(false);
                 break;

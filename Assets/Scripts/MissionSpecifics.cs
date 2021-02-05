@@ -23,7 +23,7 @@ public static class MissionSpecifics
     public static GameObject mainCamera;
     public static ScenarioMap scenarioMap;
     public static int currentRound;
-    public static string currentPhase = "Setup";  // "Setup", "Villain", "VillainAttack", "Hero", "GameOver"
+    public static string currentPhase = "Setup";  // "Setup", "Villain", "VillainAttack", "Hero", "HeroAnimation", "GameOver"
 
     public static List<ActionWeight> initialAttackWeightTable = new List<ActionWeight>() { new ActionWeight("Hero", 0, 10, null), new ActionWeight("HeroAlly", 0, 3, null) };  // 10 * averageTotalWounds vs heroes, 3 * averageTotalWounds vs heroAllies
     public static Dictionary<string, List<ActionWeight>> actionsWeightTable = new Dictionary<string, List<ActionWeight>>() {};
@@ -167,7 +167,7 @@ public static class MissionSpecifics
 
     public static int GetFinalRound()
     {
-        switch (missionName)  // Each nonconstant key (ex: "THOUGHT") should be wiped each time and only added back in if conditions are still met
+        switch (missionName)
         {
             case "ASinkingFeeling":
                 return 7;
@@ -186,9 +186,26 @@ public static class MissionSpecifics
         switch (missionName)
         {
             case "JamAndSeek":
-                return 3;
+                return 2;  // 3 is maximum
         }
         return 0;
+    }
+
+    public static double[] GetRiverActivationWeight()  // Based on villain's energy for mission, reduce weight for activating tiles further down the river (and thus more energy expensive)
+    {
+        double[] bonusMovePointWeight = new double[] { 0, -15, -30, -45 };
+        switch (missionName)
+        {
+            case "IceToSeeYou":
+                return new double[] { 1, .8, .6, .4, .2 };
+            case "JamAndSeek":
+                if (currentRound <= GetFinalPassiveRound())
+                {
+                    return new double[] { 1, .8, .6, .4, .2 };
+                }
+                break;
+        }
+        return new double[] { 1, .9, .8, .7, .6 };  // Only first 3 tiles are looked at right now
     }
 
     public static int GetBonusMovePointsPerRound()  // For adjusting difficulty of the game.
@@ -253,7 +270,7 @@ public static class MissionSpecifics
         //    default:
         //        return new int[] { 0, 1, 2 };
         //}
-        return new int[] { 0, 1, 2 };
+        return new int[] { 0, 1, 2 };  // Can be adjusted like: { 0, 1, 1, 2} to increase frequency of certain values
     }
 
     public static double GetHeroProximityToObjectiveWeightMultiplier(GameObject zone, bool isPartialMove = false)
@@ -830,8 +847,10 @@ public static class MissionSpecifics
                 int originalUnitIgnoreSize = unitInfo.ignoreSize;
                 unitInfo.ignoreSize = 100;
                 UnitIntel.bonusMovePointsRemaining = 0;  // Will be reset by UnitIntel at start of villain turn
+                currentPhase = "HeroAnimation";
                 scenarioMap.DisablePlayerUI();
                 yield return scenarioMap.animate.StartCoroutine(unitInfo.ForceMovement());
+                currentPhase = "Hero";
                 scenarioMap.EnablePlayerUI();
                 unitInfo.ignoreSize = originalUnitIgnoreSize;
                 break;
@@ -849,11 +868,19 @@ public static class MissionSpecifics
             case "AFewBadApples":
                 return new List<GameObject>(GameObject.FindGameObjectsWithTag("SWATRIFLE"));
             case "JamAndSeek":
-                interrogationTargets.AddRange(GameObject.FindGameObjectsWithTag("PRISONER"));
-                interrogationTargets.AddRange(GameObject.FindGameObjectsWithTag("BYSTANDER"));
-                interrogationTargets.AddRange(GameObject.FindGameObjectsWithTag("UZI"));
-                interrogationTargets.AddRange(GameObject.FindGameObjectsWithTag("SHOTGUN"));
-                interrogationTargets.AddRange(GameObject.FindGameObjectsWithTag("CHAINS"));
+                List<GameObject> potentialInterrogationTargets = new List<GameObject>();
+                potentialInterrogationTargets.AddRange(GameObject.FindGameObjectsWithTag("PRISONER"));
+                potentialInterrogationTargets.AddRange(GameObject.FindGameObjectsWithTag("BYSTANDER"));
+                potentialInterrogationTargets.AddRange(GameObject.FindGameObjectsWithTag("UZI"));
+                potentialInterrogationTargets.AddRange(GameObject.FindGameObjectsWithTag("SHOTGUN"));
+                potentialInterrogationTargets.AddRange(GameObject.FindGameObjectsWithTag("CHAINS"));
+                foreach (GameObject potentialInterrogationTarget in potentialInterrogationTargets)
+                {
+                    if (potentialInterrogationTarget.GetComponent<Unit>().IsActive())
+                    {
+                        interrogationTargets.Add(potentialInterrogationTarget);
+                    }
+                }
                 return interrogationTargets;
             default:
                 break;

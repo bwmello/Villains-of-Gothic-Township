@@ -393,6 +393,8 @@ public class ScenarioMap : MonoBehaviour
                 }
             }
 
+            currentWeightOfUnitTurn *= MissionSpecifics.GetRiverActivationWeight()[j];
+
             if (currentWeightOfUnitTurn > totalWeightOfMostValuableUnitTurn)
             {
                 unitsOfTagByWeight = new List<(GameObject, double)>(unitsOfTag);
