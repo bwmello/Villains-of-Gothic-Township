@@ -689,7 +689,7 @@ public class ScenarioSave
 
     public ScenarioSave(ScenarioMap scenarioMap)
     {
-        version = SceneHandler.version;
+        version = SceneHandler.version;  // Checked in MissionSelection.cs on start screen. If versions don't match, those save files can't be continued (user may only select "New")
         missionName = scenarioMap.missionName;
         currentRound = scenarioMap.currentRound;
         reinforcementPoints = scenarioMap.reinforcementPoints;

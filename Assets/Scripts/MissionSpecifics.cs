@@ -186,14 +186,13 @@ public static class MissionSpecifics
         switch (missionName)
         {
             case "JamAndSeek":
-                return 2;  // 3 is maximum
+                return 3;  // 3 is maximum
         }
         return 0;
     }
 
     public static double[] GetRiverActivationWeight()  // Based on villain's energy for mission, reduce weight for activating tiles further down the river (and thus more energy expensive)
     {
-        double[] bonusMovePointWeight = new double[] { 0, -15, -30, -45 };
         switch (missionName)
         {
             case "IceToSeeYou":
@@ -261,6 +260,22 @@ public static class MissionSpecifics
                 return 0;
         }
         return 0;
+    }
+
+    public static double GetRerollThreshold()  // If averageSuccesses - actualSuccesses >= GetRerollThreshold(), completely reroll action  // TODO Implement this in Unit.PerformAction() or both of the Unit.RollAndReroll()
+    {
+        switch (missionName)
+        {
+            case "ASinkingFeeling":
+                return 2.25;
+            case "IceToSeeYou":
+                return 3;
+            case "AFewBadApples":
+                return 2;
+            case "JamAndSeek":
+                return 2.75;
+        }
+        return 100;
     }
 
     public static int[] GetWoundShieldValues()
