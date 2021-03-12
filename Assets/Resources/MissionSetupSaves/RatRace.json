@@ -1,0 +1,500 @@
+{
+    "missionName": "RatRace",
+    "currentRound": 0,
+    "reinforcementPoints": 3,
+    "heroes": [
+        {
+            "heroName": "1stHero",
+            "zoneID": 35
+        },
+        {
+            "heroName": "2ndHero",
+            "zoneID": 5
+        }
+    ],
+    "utilityBelt": {
+        "draggableTools": [ "Smoke", "WallBreak", "Gas" ],
+        "claimableTokens": [
+            {
+                "tokenType": "GasCapsule",
+                "isClaimed": false
+            }
+        ]
+    },
+    "villainRiver": [ "HAZMAT", "CHAINS", "LAZARUS", "REINFORCEMENT", "RATSNATCHER", "SHOTGUN", "PRISONER" ],
+    "unitTagsMasterList": [ "HAZMAT", "CHAINS", "LAZARUS", "RATSNATCHER", "SHOTGUN", "PRISONER" ],
+    "unitsPool": [
+        {
+            "tag": "HAZMAT",
+            "total": 3
+        },
+        {
+            "tag": "CHAINS",
+            "total": 4
+        },
+        {
+            "tag": "SHOTGUN",
+            "total":4
+        },
+        {
+            "tag": "PRISONER",
+            "total": 4
+        }
+    ],
+    "brokenWalls": [],
+    "zones": [
+        {
+            "id": 0,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "SHOTGUN",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                },
+                {
+                    "tag": "HAZMAT",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 1,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 2,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 3,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 4,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 5,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 6,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 7,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 8,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 9,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 10,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "CHAINS",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 11,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "PRISONER",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 12,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 13,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 14,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "SHOTGUN",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 15,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "HAZMAT",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 16,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 17,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 18,
+            "isSpawnZone": true,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 19,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 20,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 21,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "PRISONER",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 22,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 23,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 24,
+            "isSpawnZone": true,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 25,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "CHAINS",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 26,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "LAZARUS",
+                    "isHeroAlly": false,
+                    "lifePoints": 5,
+                    "woundShields": -1
+                },
+                {
+                    "tag": "CHAINS",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 27,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 28,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 29,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "PRISONER",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 30,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "CHAINS",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 31,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 32,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "HAZMAT",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 33,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "SHOTGUN",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 34,
+            "isSpawnZone": true,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 35,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 36,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 37,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 38,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "SHOTGUN",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 39,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 40,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "RATSNATCHER",
+                    "isHeroAlly": false,
+                    "lifePoints": 5,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 41,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "CHAINS",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        }
+    ]
+}

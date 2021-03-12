@@ -27,6 +27,7 @@ public class ZoneInfo : MonoBehaviour
     public GameObject briefcasePrefab;
     public GameObject jammerPrefab;
     public GameObject activeJammerPrefab;
+    public GameObject ratPrefab;
     public GameObject gasPrefab;
     public GameObject flamePrefab;
     public GameObject smokePrefab;
@@ -651,6 +652,9 @@ public class ZoneInfo : MonoBehaviour
                 break;
             case "ActiveJammer":
                 objectiveTokenPrefab = activeJammerPrefab;
+                break;
+            case "Rat":
+                objectiveTokenPrefab = ratPrefab;
                 break;
         }
         if (objectiveTokenPrefab)

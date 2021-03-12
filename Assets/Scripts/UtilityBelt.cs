@@ -18,6 +18,7 @@ public class UtilityBelt : MonoBehaviour
     public GameObject claimableBriefcasePrefab;
     public GameObject claimableRiflePrefab;
     public GameObject claimableInformationPrefab;
+    public GameObject claimableGasCapsulePrefab;
 
 
     public void ClearUtilityBelt()
@@ -144,6 +145,9 @@ public class UtilityBelt : MonoBehaviour
                     break;
                 case "Information":
                     claimableTokenPrefab = claimableInformationPrefab;
+                    break;
+                case "GasCapsule":
+                    claimableTokenPrefab = claimableGasCapsulePrefab;
                     break;
             }
 

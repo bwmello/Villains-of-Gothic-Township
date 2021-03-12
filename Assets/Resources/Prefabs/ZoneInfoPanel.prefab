@@ -166,7 +166,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &9185730025264078121
 Transform:
   m_ObjectHideFlags: 0
@@ -265,6 +265,10 @@ MonoBehaviour:
   jammerPrefab: {fileID: 6390961855045243499, guid: 9b4f8b59cb1d84c859c84be7d6872886,
     type: 3}
   activeJammerPrefab: {fileID: 953632970655867874, guid: ba7fd2ae349fc4bdf8f6bf8b1cc8ad75,
+    type: 3}
+  gasCapsulePrefab: {fileID: 6275186314167771204, guid: aa8e5e1f4d5fa4ac4aab4ab7f118c00b,
+    type: 3}
+  ratPrefab: {fileID: 6866263541080484263, guid: a27858e542c49418f8294bb018411573,
     type: 3}
   gasPrefab: {fileID: 7277206314685628404, guid: e9ebf41599b4240debd66e2d883f0934,
     type: 3}

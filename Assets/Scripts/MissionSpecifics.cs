@@ -25,7 +25,7 @@ public static class MissionSpecifics
     public static int currentRound;
     public static string currentPhase = "Setup";  // "Setup", "Villain", "VillainAttack", "Hero", "HeroAnimation", "GameOver"
 
-    public static List<ActionWeight> initialAttackWeightTable = new List<ActionWeight>() { new ActionWeight("Hero", 0, 10, null), new ActionWeight("HeroAlly", 0, 3, null) };  // 10 * averageTotalWounds vs heroes, 3 * averageTotalWounds vs heroAllies
+    public static List<ActionWeight> initialAttackWeightTable = new List<ActionWeight>() { new ActionWeight("Hero", 0, 10, null, new List<string>()), new ActionWeight("HeroAlly", 0, 3, null, new List<string>()) };  // 10 * averageTotalWounds vs heroes, 3 * averageTotalWounds vs heroAllies
     public static Dictionary<string, List<ActionWeight>> actionsWeightTable = new Dictionary<string, List<ActionWeight>>() {};
 
     public delegate IEnumerator ActionCallback(GameObject unit, GameObject target, int totalSuccesses, int requiredSuccesses);
@@ -35,14 +35,16 @@ public static class MissionSpecifics
         public int requiredSuccesses;
         public double weightFactor;  // Might be per wound or * chanceOfSuccess
         public ActionCallback actionCallback;
+        public List<string> restrictedUnits;  // Either empty and there are no restrictions, or unit's name must be in this list  // Only taken into account for MANIPULATION and THOUGHT actions right now
         public bool activateLast;
 
-        public ActionWeight(string newTargetType, int newRequiredSuccesses, double newWeightFactor, ActionCallback newActionCallback, bool newActivateLast = false)
+        public ActionWeight(string newTargetType, int newRequiredSuccesses, double newWeightFactor, ActionCallback newActionCallback, List<string> newRestrictedUnits, bool newActivateLast = false)
         {
             targetType = newTargetType;
             requiredSuccesses = newRequiredSuccesses;
             weightFactor = newWeightFactor;
             actionCallback = newActionCallback;
+            restrictedUnits = newRestrictedUnits;
             activateLast = newActivateLast;
         }
     }
@@ -71,23 +73,23 @@ public static class MissionSpecifics
                 actionsWeightTable["MANIPULATION"] = new List<ActionWeight>();
                 if (totalBombs > 0)
                 {
-                    actionsWeightTable["MANIPULATION"].Add(new ActionWeight("Bomb", 3, 100, PrimeBombManually));  // 100 * chanceOfSuccess, 
+                    actionsWeightTable["MANIPULATION"].Add(new ActionWeight("Bomb", 3, 100, PrimeBombManually, new List<string>()));  // 100 * chanceOfSuccess, 
                 }
 
                 actionsWeightTable["THOUGHT"] = new List<ActionWeight>();
                 if (totalComputers > 0 && totalBombs > 0)
                 {
-                    actionsWeightTable["THOUGHT"].Add(new ActionWeight("Computer", 3, 100, PrimeBombRemotely));
+                    actionsWeightTable["THOUGHT"].Add(new ActionWeight("Computer", 3, 100, PrimeBombRemotely, new List<string>()));
                 }
 
                 actionsWeightTable["GUARD"] = new List<ActionWeight>();
                 if (totalPrimedBombs > 0)
                 {
-                    actionsWeightTable["GUARD"].Add(new ActionWeight("PrimedBomb", 0, 20, null));  // Flat weight bonus for hindering heroes attempting to disable objectives
+                    actionsWeightTable["GUARD"].Add(new ActionWeight("PrimedBomb", 0, 20, null, new List<string>()));  // Flat weight bonus for hindering heroes attempting to disable objectives
                 }
                 if (totalBombs > 0)
                 {
-                    actionsWeightTable["GUARD"].Add(new ActionWeight("Bomb", 0, 15, null));
+                    actionsWeightTable["GUARD"].Add(new ActionWeight("Bomb", 0, 15, null, new List<string>()));
                     //if (totalComputers > 0)  // Heroes should always be going after bombs, not computers
                     //{
                     //    actionsWeightTable["GUARD"].Add(new ActionWeight("Computer", 0, 5, null));
@@ -101,25 +103,25 @@ public static class MissionSpecifics
                 totalBombs = GetTotalActiveTokens(new List<string>() { "Bomb" });
                 totalComputers = GetTotalActiveTokens(new List<string>() { "Computer" });
 
-                actionsWeightTable["MANIPULATION"] = new List<ActionWeight>() { new ActionWeight("Grenade", 0, 15, null) };  // 15 * averageAutoWounds * chanceOfSuccess - friendlyFire
+                actionsWeightTable["MANIPULATION"] = new List<ActionWeight>() { new ActionWeight("Grenade", 0, 15, null, new List<string>()) };  // 15 * averageAutoWounds * chanceOfSuccess - friendlyFire
 
                 actionsWeightTable["THOUGHT"] = new List<ActionWeight>();
                 if (totalComputers > 0)
                 {
-                    actionsWeightTable["THOUGHT"].Add(new ActionWeight("Computer", 3, 80, ActivateCryogenicDevice, true));  // Assume you cost the hero at least 1 movepoint and auto deal 2/3 of a wound per cryogenic token, 0 weight if would hit anyone except frosty
+                    actionsWeightTable["THOUGHT"].Add(new ActionWeight("Computer", 3, 80, ActivateCryogenicDevice, new List<string>(), true));  // Assume you cost the hero at least 1 movepoint and auto deal 2/3 of a wound per cryogenic token, 0 weight if would hit anyone except frosty
                 }
 
                 actionsWeightTable["GUARD"] = new List<ActionWeight>();
                 if (totalBombs > 0)
                 {
-                    actionsWeightTable["GUARD"].Add(new ActionWeight("Bomb", 0, 20, null));
+                    actionsWeightTable["GUARD"].Add(new ActionWeight("Bomb", 0, 20, null, new List<string>()));
                 }
                 break;
             case "AFewBadApples":
                 actionsWeightTable["MELEE"] = new List<ActionWeight>(initialAttackWeightTable);
                 actionsWeightTable["RANGED"] = new List<ActionWeight>(initialAttackWeightTable);
-                actionsWeightTable["MELEE"].Add(new ActionWeight("BYSTANDER", 0, 20, null));
-                actionsWeightTable["RANGED"].Add(new ActionWeight("BYSTANDER", 0, 20, null));
+                actionsWeightTable["MELEE"].Add(new ActionWeight("BYSTANDER", 0, 20, null, new List<string>()));
+                actionsWeightTable["RANGED"].Add(new ActionWeight("BYSTANDER", 0, 20, null, new List<string>()));
 
                 actionsWeightTable["THOUGHT"] = new List<ActionWeight>();
                 UtilityBelt utilityBelt = scenarioMap.UIOverlay.GetComponent<UIOverlay>().utilityBelt.GetComponent<UtilityBelt>();  // Pretty terrible chain of calls just to get claimableTokens
@@ -129,7 +131,7 @@ public static class MissionSpecifics
                     ClaimableToken claimableToken = claimableTokenObject.GetComponent<ClaimableToken>();
                     if (claimableToken.tokenType == "Computer" && !claimableToken.isClaimed)
                     {
-                        actionsWeightTable["THOUGHT"].Add(new ActionWeight("Computer", 3, 80, DeactivateComputer));
+                        actionsWeightTable["THOUGHT"].Add(new ActionWeight("Computer", 3, 80, DeactivateComputer, new List<string>()));
                     }
                 }
                 break;
@@ -148,20 +150,74 @@ public static class MissionSpecifics
                 actionsWeightTable["MANIPULATION"] = new List<ActionWeight>();
                 if (totalJammers > 0)
                 {
-                    actionsWeightTable["MANIPULATION"].Add(new ActionWeight("Jammer", 2, 100, ActivateJammer));  // 100 * chanceOfSuccess, 
+                    actionsWeightTable["MANIPULATION"].Add(new ActionWeight("Jammer", 2, 100, ActivateJammer, new List<string>()));  // 100 * chanceOfSuccess, 
                 }
 
                 actionsWeightTable["GUARD"] = new List<ActionWeight>();
                 if (totalActiveJammers > 0)
                 {
-                    actionsWeightTable["GUARD"].Add(new ActionWeight("ActiveJammer", 0, 20, null));  // Flat weight bonus for hindering heroes attempting to disable objectives
+                    actionsWeightTable["GUARD"].Add(new ActionWeight("ActiveJammer", 0, 20, null, new List<string>()));  // Flat weight bonus for hindering heroes attempting to disable objectives
                 }
                 if (totalJammers > 0)
                 {
-                    actionsWeightTable["GUARD"].Add(new ActionWeight("Jammer", 0, 15, null));
+                    actionsWeightTable["GUARD"].Add(new ActionWeight("Jammer", 0, 15, null, new List<string>()));
                 }
                 // Maybe GUARD each other to prevent interrogation, but don't guard BYSTANDERs (if menace > 0)
                 break;
+            case "RatRace":
+                actionsWeightTable["MELEE"] = new List<ActionWeight>(initialAttackWeightTable);
+                actionsWeightTable["RANGED"] = new List<ActionWeight>(initialAttackWeightTable);
+
+                actionsWeightTable["MANIPULATION"] = new List<ActionWeight>();
+                actionsWeightTable["MANIPULATION"].Add(new ActionWeight(null, 3, 100, SpreadInfection, new List<string>() { "HAZMAT" }));  // 100 * chanceOfSuccess, 
+
+                actionsWeightTable["THOUGHT"] = new List<ActionWeight>();
+                actionsWeightTable["THOUGHT"].Add(new ActionWeight(null, 3, 100, SpreadInfection, new List<string>() { "RATSNATCHER" }));
+                break;
+        }
+    }
+
+    public static double GetComplexActionWeight(string actionType, ActionWeight actionWeight, GameObject actionZone = null)  // ComplexAction is any MANIPULATION (besides grenade) or THOUGHT action
+    {
+        double weight = actionWeight.weightFactor;
+        switch (missionName)
+        {
+            case "RatRace":
+                if (string.IsNullOrEmpty(actionWeight.targetType))  // No target, as rats can be placed in any zone
+                {
+                    //string ratPlacementWeightDebugString = "GetComplexActionWeight(" + actionType + ", actionWeight, " + actionZone.name + "), initial weight: " + weight.ToString();
+                    ZoneInfo actionZoneInfo = actionZone.GetComponent<ZoneInfo>();  // Will throw if actionZone not passed and I like it that way
+                    foreach (GameObject rat in GameObject.FindGameObjectsWithTag("Rat"))
+                    {
+                        GameObject ratZone = rat.GetComponent<Token>().GetZone();
+                        ZoneInfo ratZoneInfo = ratZone.GetComponent<ZoneInfo>();
+                        if (ratZone == actionZone)
+                        {
+                            weight -= actionWeight.weightFactor / 2;
+                            //ratPlacementWeightDebugString += "\tratZone == actionZone, weight: " + weight.ToString();
+                        }
+                        else if (actionZoneInfo.adjacentZones.Contains(ratZone))
+                        {
+                            weight -= actionWeight.weightFactor / 4;
+                            //ratPlacementWeightDebugString += "\tactionZone.adjacentZones.Contains(" + ratZone.name + "), weight: " + weight.ToString();
+                        }
+                        else if (actionZoneInfo.steeplyAdjacentZones.Contains(ratZone))
+                        {
+                            weight -= actionWeight.weightFactor / 6;
+                            //ratPlacementWeightDebugString += "\tactionZone.steeplyAdjacentZones.Contains(" + ratZone.name + "), weight: " + weight.ToString();
+                        }
+                    }
+                    weight *= GetHeroProximityToObjectiveWeightMultiplier(actionZone, true);
+                    //ratPlacementWeightDebugString += "\tGetHeroProximityToObjectiveWeightMultiplier(actionZone, true): " + GetHeroProximityToObjectiveWeightMultiplier(actionZone, true).ToString() + "), weight: " + weight.ToString();
+                    //Debug.Log(ratPlacementWeightDebugString);
+                    return weight;
+                }
+                else  // just return actionWeight.weightFactor
+                {
+                    return actionWeight.weightFactor;
+                }
+            default:  // just return actionWeight.weightFactor
+                return actionWeight.weightFactor;
         }
     }
 
@@ -176,6 +232,8 @@ public static class MissionSpecifics
             case "AFewBadApples":
                 return 6;
             case "JamAndSeek":
+                return 7;
+            case "RatRace":
                 return 7;
         }
         return -1;
@@ -223,6 +281,8 @@ public static class MissionSpecifics
                     return 1;
                 }
                 return 2;
+            case "RatRace":
+                return 2;
         }
         return 0;
     }
@@ -258,6 +318,8 @@ public static class MissionSpecifics
                 //return random.Next(0, 2);  // .5, half of the time 0, the other half of the time 1
             case "JamAndSeek":
                 return 0;
+            case "RatRace":
+                return 0;
         }
         return 0;
     }
@@ -274,6 +336,8 @@ public static class MissionSpecifics
                 return 2;
             case "JamAndSeek":
                 return 2.75;
+            case "RatRace":
+                return 2.5;
         }
         return 100;
     }
@@ -288,7 +352,7 @@ public static class MissionSpecifics
         return new int[] { 0, 1, 2 };  // Can be adjusted like: { 0, 1, 1, 2} to increase frequency of certain values
     }
 
-    public static double GetHeroProximityToObjectiveWeightMultiplier(GameObject zone, bool isPartialMove = false)
+    public static double GetHeroProximityToObjectiveWeightMultiplier(GameObject zone, bool isPartialMove = false)  // isPartialMove could also be called "inverseWeightMultiplier"
     {
         double weightMultiplier = .1;  // Default if no heroes within 4 moves
         double[] weightBasedOnHeroProximity;
@@ -298,6 +362,7 @@ public static class MissionSpecifics
         }
         else
         {
+            weightMultiplier = 1;  // Default if no heroes within 4 moves
             weightBasedOnHeroProximity = new double[] { .25, .5, .75, .9, 1 };
         }
 
@@ -314,95 +379,91 @@ public static class MissionSpecifics
 
     public static void ObjectiveTokenClicked(Button button)
     {
-        if (button.CompareTag("Bomb"))
+        switch (button.tag)
         {
-            switch (missionName)
-            {
-                case "IceToSeeYou":
-                    GameObject tokenZone = button.gameObject.GetComponent<Token>().GetZone();
-                    GameObject.DestroyImmediate(button.gameObject);
-                    tokenZone.GetComponent<ZoneInfo>().AddObjectiveToken("PrimedBomb");
-                    return;
-                default:
-                    break;
-            }
-        }
-        else if (button.CompareTag("Briefcase"))
-        {
-            switch (missionName)
-            {
-                case "AFewBadApples":
-                    UtilityBelt utilityBelt = scenarioMap.UIOverlay.GetComponent<UIOverlay>().utilityBelt.GetComponent<UtilityBelt>();  // Pretty terrible chain of calls just to get claimableTokens
-                    if (button.GetComponent<Token>().IsActive())
-                    {
-                        foreach (GameObject claimableTokenObject in utilityBelt.claimableTokens)
+            case "Bomb":
+                switch (missionName)
+                {
+                    case "IceToSeeYou":
+                        GameObject tokenZone = button.gameObject.GetComponent<Token>().GetZone();
+                        GameObject.DestroyImmediate(button.gameObject);
+                        tokenZone.GetComponent<ZoneInfo>().AddObjectiveToken("PrimedBomb");
+                        return;
+                    default:
+                        break;
+                }
+                break;
+            case "Briefcase":
+                switch (missionName)
+                {
+                    case "AFewBadApples":
+                        UtilityBelt utilityBelt = scenarioMap.UIOverlay.GetComponent<UIOverlay>().utilityBelt.GetComponent<UtilityBelt>();  // Pretty terrible chain of calls just to get claimableTokens
+                        if (button.GetComponent<Token>().IsActive())
                         {
-                            ClaimableToken claimableToken = claimableTokenObject.GetComponent<ClaimableToken>();
-                            if (claimableToken.tokenType == "Briefcase")
+                            foreach (GameObject claimableTokenObject in utilityBelt.claimableTokens)
                             {
-                                if (!claimableToken.isClaimed)
+                                ClaimableToken claimableToken = claimableTokenObject.GetComponent<ClaimableToken>();
+                                if (claimableToken.tokenType == "Briefcase")
                                 {
-                                    claimableToken.ClaimableTokenClicked();
+                                    if (!claimableToken.isClaimed)
+                                    {
+                                        claimableToken.ClaimableTokenClicked();
+                                    }
+                                    break;
                                 }
-                                break;
                             }
                         }
-                    }
-                    break;  // Allow token to be faded/unfaded below
-                default:
-                    break;
-            }
-        }
-        else if (button.CompareTag("PrimedBomb"))
-        {
-            switch (missionName)
-            {
-                case "IceToSeeYou":
-                    GameObject tokenZone = button.gameObject.GetComponent<Token>().GetZone();
-                    Object.DestroyImmediate(button.gameObject);
-                    tokenZone.GetComponent<ZoneInfo>().AddObjectiveToken("Bomb");
-                    return;
-                default:
-                    button.transform.Find("BlinkingLight").gameObject.SetActive(false);  // Turns off blinking light and is faded/unfaded below
-                    break;
-            }
-        }
-        else if (button.CompareTag("Computer"))
-        {
-            switch (missionName)
-            {
-                case "AFewBadApples":
-                    UtilityBelt utilityBelt = scenarioMap.UIOverlay.GetComponent<UIOverlay>().utilityBelt.GetComponent<UtilityBelt>();  // Pretty terrible chain of calls just to get claimableTokens
-                    if (button.GetComponent<Token>().IsActive())
-                    {
-                        foreach (GameObject claimableTokenObject in utilityBelt.claimableTokens)
+                        break;  // Allow token to be faded/unfaded below
+                    default:
+                        break;
+                }
+                break;
+            case "PrimedBomb":
+                switch (missionName)
+                {
+                    case "IceToSeeYou":
+                        GameObject tokenZone = button.gameObject.GetComponent<Token>().GetZone();
+                        Object.DestroyImmediate(button.gameObject);
+                        tokenZone.GetComponent<ZoneInfo>().AddObjectiveToken("Bomb");
+                        return;
+                    default:
+                        button.transform.Find("BlinkingLight").gameObject.SetActive(false);  // Turns off blinking light and is faded/unfaded below
+                        break;
+                }
+                break;
+            case "Computer":
+                switch (missionName)
+                {
+                    case "AFewBadApples":
+                        UtilityBelt utilityBelt = scenarioMap.UIOverlay.GetComponent<UIOverlay>().utilityBelt.GetComponent<UtilityBelt>();  // Pretty terrible chain of calls just to get claimableTokens
+                        if (button.GetComponent<Token>().IsActive())
                         {
-                            ClaimableToken claimableToken = claimableTokenObject.GetComponent<ClaimableToken>();
-                            if (claimableToken.tokenType == "Computer")
+                            foreach (GameObject claimableTokenObject in utilityBelt.claimableTokens)
                             {
-                                if (!claimableToken.isClaimed)
+                                ClaimableToken claimableToken = claimableTokenObject.GetComponent<ClaimableToken>();
+                                if (claimableToken.tokenType == "Computer")
                                 {
-                                    claimableToken.ClaimableTokenClicked();
+                                    if (!claimableToken.isClaimed)
+                                    {
+                                        claimableToken.ClaimableTokenClicked();
+                                    }
+                                    break;
                                 }
-                                break;
                             }
                         }
-                    }
-                    break;  // Allow Computer token to be faded/unfaded below
-                default:
-                    break;
-            }
-        }
-        //else if (button.CompareTag("Jammer"))
-        //{ }
-        else if (button.CompareTag("ActiveJammer"))
-        {
-            switch (missionName)
-            {
-                default:
-                    button.transform.Find("BlinkingLight").gameObject.SetActive(false);  // Turns off blinking light and is faded/unfaded below
-                    break;
-            }
+                        break;  // Allow Computer token to be faded/unfaded below
+                    default:
+                        break;
+                }
+                break;
+            case "ActiveJammer":
+                switch (missionName)
+                {
+                    default:
+                        button.transform.Find("BlinkingLight").gameObject.SetActive(false);  // Turns off blinking light and is faded/unfaded below
+                        break;
+                }
+                break;
         }
         CanvasGroup buttonCanvas = button.GetComponent<CanvasGroup>();
         if (buttonCanvas.alpha == 1)  // Token was disabled, so remove from board
@@ -496,6 +557,13 @@ public static class MissionSpecifics
                     return true;
                 }
                 break;
+            case "RatRace":
+                int totalRats = GetTotalActiveTokens(new List<string>() { "Rat" });
+                if (currentRound >= GetFinalRound() || totalRats >= 6)  // end of hero turn 7 or 6 active rats
+                {
+                    return true;
+                }
+                break;
             default:
                 break;
         }
@@ -504,6 +572,7 @@ public static class MissionSpecifics
 
     public static bool IsHeroVictory()
     {
+        UtilityBelt utilityBelt = scenarioMap.UIOverlay.GetComponent<UIOverlay>().utilityBelt.GetComponent<UtilityBelt>();  // Pretty terrible chain of calls just to get claimableTokens
         switch (missionName)
         {
             case "ASinkingFeeling":
@@ -522,7 +591,6 @@ public static class MissionSpecifics
                 break;
             case "AFewBadApples":
                 int totalBystandersRemaining = GameObject.FindGameObjectsWithTag("BYSTANDER").Length;
-                UtilityBelt utilityBelt = scenarioMap.UIOverlay.GetComponent<UIOverlay>().utilityBelt.GetComponent<UtilityBelt>();  // Pretty terrible chain of calls just to get claimableTokens
                 int totalClaimedTokens = 0;
                 foreach (GameObject claimableTokenObject in utilityBelt.claimableTokens)
                 {
@@ -544,6 +612,14 @@ public static class MissionSpecifics
             case "JamAndSeek":
                 int totalActiveJammersRemaining = GetTotalActiveTokens(new List<string>() { "ActiveJammer" });
                 if (totalActiveJammersRemaining <= 0)
+                {
+                    return true;
+                }
+                break;
+            case "RatRace":
+                bool gasCapsuleClaimed = utilityBelt.claimableTokens[0].GetComponent<ClaimableToken>().isClaimed;  // bleh, but foreach loop like in AFewBadApples case also bad
+                int totalRats = GetTotalActiveTokens(new List<string>() { "Rat" });
+                if (gasCapsuleClaimed && totalRats < 2)
                 {
                     return true;
                 }
@@ -691,6 +767,8 @@ public static class MissionSpecifics
                     }
                 }
                 return 2;
+            case "RatRace":
+                return 3;
         }
         return 0;
     }
@@ -793,6 +871,24 @@ public static class MissionSpecifics
                     unit.GetComponent<Unit>().GetZone().GetComponent<ZoneInfo>().AddObjectiveToken("Briefcase");
                 }
                 break;
+            case "RatRace":
+                if (unit.CompareTag("LAZARUS") || unit.CompareTag("RATSNATCHER"))
+                {
+                    UtilityBelt utilityBelt = scenarioMap.UIOverlay.GetComponent<UIOverlay>().utilityBelt.GetComponent<UtilityBelt>();  // Pretty terrible chain of calls just to get claimableTokens
+                    foreach (GameObject claimableTokenObject in utilityBelt.claimableTokens)
+                    {
+                        ClaimableToken claimableToken = claimableTokenObject.GetComponent<ClaimableToken>();
+                        if (claimableToken.tokenType == "GasCapsule")
+                        {
+                            if (!claimableToken.isClaimed)
+                            {
+                                claimableToken.ClaimableTokenClicked();
+                            }
+                            break;
+                        }
+                    }
+                }
+                break;
             default:
                 break;
         }
@@ -806,6 +902,37 @@ public static class MissionSpecifics
                 if (unit.CompareTag("MUDMAN") || unit.CompareTag("SKULLFACE"))
                 {
                     unit.GetComponent<Unit>().GetZone().GetComponent<ZoneInfo>().RemoveObjectiveToken("Briefcase");
+                }
+                break;
+            case "RatRace":
+                bool ratsnatcherIsAlive = false;
+                bool lazarusIsAlive = false;
+                try
+                {
+                    ratsnatcherIsAlive = GameObject.FindGameObjectWithTag("RATSNATCHER").GetComponent<Unit>().IsActive();
+                }
+                catch { }
+                try
+                {
+                    lazarusIsAlive = GameObject.FindGameObjectWithTag("LAZARUS").GetComponent<Unit>().IsActive();
+                }
+                catch { }
+
+                if ((unit.CompareTag("LAZARUS") && ratsnatcherIsAlive) || (unit.CompareTag("RATSNATCHER") && lazarusIsAlive))
+                {
+                    UtilityBelt utilityBelt = scenarioMap.UIOverlay.GetComponent<UIOverlay>().utilityBelt.GetComponent<UtilityBelt>();  // Pretty terrible chain of calls just to get claimableTokens
+                    foreach (GameObject claimableTokenObject in utilityBelt.claimableTokens)
+                    {
+                        ClaimableToken claimableToken = claimableTokenObject.GetComponent<ClaimableToken>();
+                        if (claimableToken.tokenType == "GasCapsule")
+                        {
+                            if (claimableToken.isClaimed)
+                            {
+                                claimableToken.ClaimableTokenClicked();
+                            }
+                            break;
+                        }
+                    }
                 }
                 break;
             default:
@@ -928,7 +1055,7 @@ public static class MissionSpecifics
                         };
 
                         List<Unit.UnitPossibleAction> allPossibleUnitActions = otterPop.GetComponent<Unit>().GetPossibleActions(possibleDestinations);
-                        Unit.UnitPossibleAction chosenAction = new Unit.UnitPossibleAction(otterPop.GetComponent<Unit>(), new ActionWeight(null, 0, 0, null), new Unit.ActionProficiency(null, 0, null), 0, zone22, zone22, zone22MovePath, null, null);
+                        Unit.UnitPossibleAction chosenAction = new Unit.UnitPossibleAction(otterPop.GetComponent<Unit>(), new ActionWeight(null, 0, 0, null, null), new Unit.ActionProficiency(null, 0, null), 0, zone22, zone22, zone22MovePath, null, null);
                         foreach (Unit.UnitPossibleAction unitAction in allPossibleUnitActions)
                         {
                             if (chosenAction == null || unitAction.actionWeight > chosenAction.actionWeight)
@@ -1283,6 +1410,49 @@ public static class MissionSpecifics
             yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, furtherPoint));  // Move camera to zone of bomb being armed
             unitZoneInfo.RemoveObjectiveToken("Jammer");
             unitZoneInfo.AddObjectiveToken("ActiveJammer");
+            yield return new WaitForSecondsRealtime(2);
+            SetActionsWeightTable();
+        }
+        GameObject.Destroy(successContainer);
+        yield return 0;
+    }
+
+    /* ActionCallbacks specific to "RatRace" mission */
+    public static IEnumerator SpreadInfection(GameObject unit, GameObject target, int totalSuccesses, int requiredSuccesses)
+    {
+        ZoneInfo unitZoneInfo = unit.GetComponent<Unit>().GetZone().GetComponent<ZoneInfo>();
+        // Animate success vs failure UI
+        GameObject successContainer = GameObject.Instantiate(unitZoneInfo.successVsFailurePrefab, scenarioMap.animationContainer.transform);
+        successContainer.transform.position = unit.transform.TransformPoint(new Vector3(0, 12, 0));
+
+        successContainer.GetComponent<RectTransform>().sizeDelta = new Vector2(requiredSuccesses * 10, successContainer.GetComponent<RectTransform>().rect.height);
+        Transform successContainerText = successContainer.transform.GetChild(0);
+        successContainerText.GetComponent<RectTransform>().sizeDelta = new Vector2(requiredSuccesses * 10, successContainerText.GetComponent<RectTransform>().rect.height);
+        string successContainerBlanks = "_";
+        for (int i = 1; i < requiredSuccesses; i++)
+        {
+            successContainerBlanks += " _";
+        }
+        successContainerText.GetComponent<TMP_Text>().text = successContainerBlanks;
+
+        for (int i = -1; i < (totalSuccesses >= 0 ? totalSuccesses : 0); i++)
+        {
+            yield return new WaitForSecondsRealtime(1);
+            if (i == requiredSuccesses - 1)  // Otherwise there can be more results (checks/x's) displayed than requiredSuccesses
+            {
+                break;
+            }
+            GameObject successOrFailurePrefab = i + 1 < totalSuccesses ? unitZoneInfo.successPrefab : unitZoneInfo.failurePrefab;
+            GameObject successOrFailureMarker = GameObject.Instantiate(successOrFailurePrefab, successContainer.transform);
+        }
+        yield return new WaitForSecondsRealtime(1);
+
+        if (totalSuccesses >= requiredSuccesses)
+        {
+            Vector3 furtherPoint = scenarioMap.animate.GetFurtherPointOnLine(mainCamera.transform.position, unitZoneInfo.transform.position);
+            //yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, furtherPoint));  // Move camera to zone of bomb being armed
+            //unitZoneInfo.RemoveObjectiveToken("Bomb");
+            unitZoneInfo.AddObjectiveToken("Rat");
             yield return new WaitForSecondsRealtime(2);
             SetActionsWeightTable();
         }

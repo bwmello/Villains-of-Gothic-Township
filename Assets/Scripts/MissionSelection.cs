@@ -18,15 +18,23 @@ public class MissionSelection : MonoBehaviour
         }
         else  // Check to make sure it's a valid save file
         {
-            ScenarioSave scenarioSave = JsonUtility.FromJson<ScenarioSave>(File.ReadAllText(Application.persistentDataPath + "/" + PlayerPrefs.GetInt(missionName).ToString() + missionName + ".json"));
-            if (SceneHandler.version != scenarioSave.version)
+            try
+            {
+                ScenarioSave scenarioSave = JsonUtility.FromJson<ScenarioSave>(File.ReadAllText(Application.persistentDataPath + "/" + PlayerPrefs.GetInt(missionName).ToString() + missionName + ".json"));
+                if (SceneHandler.version != scenarioSave.version)
+                {
+                    PlayerPrefs.DeleteKey(missionName);
+                    transform.Find("ContinueButton").gameObject.GetComponent<Button>().interactable = false;
+                }
+                else
+                {
+                    SceneHandler.isFirstTimePlaying = false;
+                }
+            }
+            catch (FileNotFoundException err)  // If you can't find the file for whatever reason
             {
                 PlayerPrefs.DeleteKey(missionName);
                 transform.Find("ContinueButton").gameObject.GetComponent<Button>().interactable = false;
-            }
-            else
-            {
-                SceneHandler.isFirstTimePlaying = false;
             }
         }
     }

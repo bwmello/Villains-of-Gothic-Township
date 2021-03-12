@@ -255,19 +255,24 @@ public class Animate : MonoBehaviour
     {
         float secondsToDelayBeforeCameraMove = 0;
         Vector3 coordsBetweenFocusAndTarget = GetCameraCoordsBetweenFocusAndTarget(origin, destination);
+        //string debugString = "animate.PositionCameraBeforeCameraMove(origin " + origin.ToString() + ",  destination " + destination.ToString() + ")";
         if (!IsPointOnScreen(origin))
         {
             mainCamera.transform.position = coordsBetweenFocusAndTarget;
         }
-        if (IsPointOnScreen(coordsBetweenFocusAndTarget))  // If camera already has a head start on moving unit, add a 1.5 second delay
+        if (IsPointOnScreen(coordsBetweenFocusAndTarget))  // If camera already has a head start on moving unit, add a delay based on the distance
         {
-            secondsToDelayBeforeCameraMove = 1.5f;
+            float xDifference = Math.Abs(origin.x - coordsBetweenFocusAndTarget.x);
+            float yDifference = Math.Abs(origin.y - coordsBetweenFocusAndTarget.y);
+            float greatestCoordDifference = xDifference > yDifference ? xDifference : yDifference;
+            secondsToDelayBeforeCameraMove = greatestCoordDifference / 2f;  // Was flat 1.5 seconds, but too much delay for short jumps
         }
         return secondsToDelayBeforeCameraMove;
     }
 
     public IEnumerator MoveCameraUntilOnscreen(Vector3 origin, Vector3 destination, float timeCoefficient = .3f, float secondsToDelay = 0)  // Pass camera's position as origin if you don't want camera to jump
     {
+        //Debug.Log("!!!VERY BEGINNING OF MoveCameraUntilOnscreen(). origin: " + origin.ToString() + "\tdestination: " + destination.ToString());
         yield return new WaitForSecondsRealtime(secondsToDelay);
         float t = 0;
         Vector3 camStartCoords;
@@ -450,6 +455,8 @@ public class Animate : MonoBehaviour
         StartCoroutine(ShowBulletPath(attacker.transform.position, target.transform.position, 3f));
         Vector3 targetFurthestPoint = GetPointFurthestFromOrigin(attacker.transform.position, target.transform.position, targetZoneInfo.transform.position);
         targetFurthestPoint = GetFurtherPointOnLine(attacker.transform.position, targetFurthestPoint);
+        //Debug.Log("animate.RangedAttack, camera.transform.position.x " + mainCamera.transform.position.x.ToString() + " && mainCamera.transform.position.y " + mainCamera.transform.position.y.ToString());
+        //Debug.Log("!!!animate.RangedAttack, calling MoveCameraUntilOnScreen() with origin (attacker): " + attacker.transform.position.ToString() + "\tdestination (targetFurthestPoint): " + targetFurthestPoint.ToString());
         yield return StartCoroutine(MoveCameraUntilOnscreen(attacker.transform.position, targetFurthestPoint));
 
         List<GameObject> wounds = new List<GameObject>();

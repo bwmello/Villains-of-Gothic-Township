@@ -27,6 +27,7 @@ public class Unit : MonoBehaviour
     public int size = 1;
     public int menace = 1;
     public int supportRerolls = 0;
+    public int luckyRerolls = 0;  // TODO apply to ZoneInfo.IncreaseTerrainDangerTemporarily() to try and roll 
 
     public int movePoints;
     public int ignoreTerrainDifficulty = 0;
@@ -39,7 +40,7 @@ public class Unit : MonoBehaviour
     public int reach = 0;
     public int berserk = 0;
     public int sneakAttack = 0;
-    public int electricity = 0;  // TODO implement for GUARD
+    public int electricity = 0;  // (Ignore, player resolved) applies to GUARD
     public int shackle = 0;  // TODO (MUDMAN) Instead of melee damage (still show wounds (or proxy) for overcoming defense) inflict this many shackle, reducing all target's successes by [shackle] until they perform complex MANIPULATION vs [shackle] to remove it
     public int circularStrike = 0;
     public int counterAttack = 0;  // (Ignore, player resolved) if hero moves into space with SHOTGUN, reminder that after melee attack against SHOTGUN is resolved, SHOTGUN gets free melee attack vs hero with number of yellow dice = counterattack
@@ -1112,56 +1113,61 @@ public class Unit : MonoBehaviour
                         {
                             foreach (MissionSpecifics.ActionWeight manipulatable in MissionSpecifics.actionsWeightTable["MANIPULATION"])
                             {
-                                if (manipulatable.targetType == "Grenade")
+                                if (manipulatable.restrictedUnits.Count == 0 || manipulatable.restrictedUnits.Contains(tag))
                                 {
-                                    if (grenade > 0)
+                                    if (manipulatable.targetType == "Grenade")
                                     {
-                                        GameObject grenadeTargetZone = possibleZoneInfo.GetLineOfSightZoneWithHero();  // TODO expand to return a list so can target closest hero
-                                        if (grenadeTargetZone != null && grenadeTargetZone != possibleZone)  // Don't grenade your own zone
+                                        if (grenade > 0)
                                         {
-                                            List<GameObject> dicePool = new List<GameObject>(actionProficiency.proficiencyDice);
-                                            for (int i = 0; i < grenade; i++)
+                                            GameObject grenadeTargetZone = possibleZoneInfo.GetLineOfSightZoneWithHero();  // TODO expand to return a list so can target closest hero
+                                            if (grenadeTargetZone != null && grenadeTargetZone != possibleZone)  // Don't grenade your own zone
                                             {
-                                                dicePool.Add(possibleZoneInfo.environmentalDie);
-                                            }
-                                            double averageAutoWounds = GetAverageSuccesses(dicePool, availableRerolls);
-                                            List<GameObject> lineOfSight = new List<GameObject>() { GetZone() };
-                                            lineOfSight.AddRange(possibleZoneInfo.GetSightLineWithZone(grenadeTargetZone));
-                                            if (lineOfSight == null)
-                                            {
-                                                Debug.LogError("ERROR! Unit " + gameObject.name + " in " + possibleZoneInfo.gameObject.name + " isn't able to GetSightLineWithZone with " + grenadeTargetZone.name);
-                                            }
-                                            int requiredSuccesses = lineOfSight.IndexOf(grenadeTargetZone) + applicableActionZoneHindrance;
-                                            double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
-                                            actionWeight += averageAutoWounds * manipulatable.weightFactor * chanceOfSuccess;
-                                            //Debug.Log("!!!Weighing grenade throw, actionWeight " + actionWeight.ToString() + " += " + averageAutoWounds.ToString() + " * " + manipulatable.Item3.ToString() + " * " + chanceOfSuccess.ToString());
-                                            if (frosty)  // Account for increasing difficult terrain of hero's zone
-                                            {
-                                                actionWeight += UnitIntel.increaseTerrainDifficultyWeight;
-                                            }
-                                            actionWeight += grenadeTargetZone.GetComponent<ZoneInfo>().GetUnitsInfo().Count * grenade * UnitIntel.terrainDangeringFriendlies;  // UnitIntel.terrainDangeringFriendlies is negative, so this will lower actionWeight
-                                            actionWeight = actionWeight >= 0 ? actionWeight * finalActionWeightFactor : actionWeight / finalActionWeightFactor;  // if actionWeight is negative, divide by finalActionWeightFactor instead of multiplying
+                                                List<GameObject> dicePool = new List<GameObject>(actionProficiency.proficiencyDice);
+                                                for (int i = 0; i < grenade; i++)
+                                                {
+                                                    dicePool.Add(possibleZoneInfo.environmentalDie);
+                                                }
+                                                double averageAutoWounds = GetAverageSuccesses(dicePool, availableRerolls);
+                                                List<GameObject> lineOfSight = new List<GameObject>() { GetZone() };
+                                                lineOfSight.AddRange(possibleZoneInfo.GetSightLineWithZone(grenadeTargetZone));
+                                                if (lineOfSight == null)
+                                                {
+                                                    Debug.LogError("ERROR! Unit " + gameObject.name + " in " + possibleZoneInfo.gameObject.name + " isn't able to GetSightLineWithZone with " + grenadeTargetZone.name);
+                                                }
+                                                int requiredSuccesses = lineOfSight.IndexOf(grenadeTargetZone) + applicableActionZoneHindrance;
+                                                double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
+                                                actionWeight += averageAutoWounds * manipulatable.weightFactor * chanceOfSuccess;
+                                                //Debug.Log("!!!Weighing grenade throw, actionWeight " + actionWeight.ToString() + " += " + averageAutoWounds.ToString() + " * " + manipulatable.Item3.ToString() + " * " + chanceOfSuccess.ToString());
+                                                if (frosty)  // Account for increasing difficult terrain of hero's zone
+                                                {
+                                                    actionWeight += UnitIntel.increaseTerrainDifficultyWeight;
+                                                }
+                                                actionWeight += grenadeTargetZone.GetComponent<ZoneInfo>().GetUnitsInfo().Count * grenade * UnitIntel.terrainDangeringFriendlies;  // UnitIntel.terrainDangeringFriendlies is negative, so this will lower actionWeight
+                                                actionWeight = actionWeight >= 0 ? actionWeight * finalActionWeightFactor : actionWeight / finalActionWeightFactor;  // if actionWeight is negative, divide by finalActionWeightFactor instead of multiplying
 
-                                            //if (actionWeight > inactiveWeight)
-                                            //{
-                                            allPossibleActions.Add(new UnitPossibleAction(this, manipulatable, actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], grenadeTargetZone, null));
-                                            zoneAddedToAllPossibleActions = true;
-                                            //}
+                                                //if (actionWeight > inactiveWeight)
+                                                //{
+                                                allPossibleActions.Add(new UnitPossibleAction(this, manipulatable, actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], grenadeTargetZone, null));
+                                                zoneAddedToAllPossibleActions = true;
+                                                //}
+                                            }
                                         }
                                     }
-                                }
-                                else if (possibleZoneInfo.HasObjectiveToken(manipulatable.targetType))
-                                {
-                                    int requiredSuccesses = manipulatable.requiredSuccesses + applicableActionZoneHindrance - (manipulatable.targetType == "Bomb" ? munitionSpecialist : 0);
-                                    double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
-                                    actionWeight += chanceOfSuccess * manipulatable.weightFactor;
-                                    actionWeight = actionWeight >= 0 ? actionWeight * finalActionWeightFactor : actionWeight / finalActionWeightFactor;  // if actionWeight is negative, divide by finalActionWeightFactor instead of multiplying
+                                    else if (String.IsNullOrEmpty(manipulatable.targetType) || possibleZoneInfo.HasObjectiveToken(manipulatable.targetType))
+                                    {
+                                        int requiredSuccesses = manipulatable.requiredSuccesses + applicableActionZoneHindrance - (manipulatable.targetType == "Bomb" ? munitionSpecialist : 0);
+                                        double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
+                                        double manipulatableWeightFactor = MissionSpecifics.GetComplexActionWeight("MANIPULATION", manipulatable, possibleZone);
+                                        //actionWeight += chanceOfSuccess * manipulatable.weightFactor;
+                                        actionWeight += chanceOfSuccess * manipulatableWeightFactor;
+                                        actionWeight = actionWeight >= 0 ? actionWeight * finalActionWeightFactor : actionWeight / finalActionWeightFactor;  // if actionWeight is negative, divide by finalActionWeightFactor instead of multiplying
 
-                                    //if (actionWeight > inactiveWeight)
-                                    //{
-                                    allPossibleActions.Add(new UnitPossibleAction(this, manipulatable, actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, null));
-                                    zoneAddedToAllPossibleActions = true;
-                                    //}
+                                        //if (actionWeight > inactiveWeight)
+                                        //{
+                                        allPossibleActions.Add(new UnitPossibleAction(this, manipulatable, actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, null));
+                                        zoneAddedToAllPossibleActions = true;
+                                        //}
+                                    }
                                 }
                             }
                         }
@@ -1171,19 +1177,24 @@ public class Unit : MonoBehaviour
                         {
                             foreach (MissionSpecifics.ActionWeight thoughtable in MissionSpecifics.actionsWeightTable["THOUGHT"])
                             {
-                                if (possibleZoneInfo.HasObjectiveToken(thoughtable.targetType))
+                                if (thoughtable.restrictedUnits.Count == 0 || thoughtable.restrictedUnits.Contains(tag))
                                 {
-                                    int requiredSuccesses = thoughtable.requiredSuccesses + applicableActionZoneHindrance;
-                                    double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
-                                    actionWeight += chanceOfSuccess * thoughtable.weightFactor;
-                                    actionWeight = actionWeight >= 0 ? actionWeight * finalActionWeightFactor : actionWeight / finalActionWeightFactor;  // if actionWeight is negative, divide by finalActionWeightFactor instead of multiplying
+                                    if (String.IsNullOrEmpty(thoughtable.targetType) || possibleZoneInfo.HasObjectiveToken(thoughtable.targetType))
+                                    {
+                                        int requiredSuccesses = thoughtable.requiredSuccesses + applicableActionZoneHindrance;
+                                        double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
+                                        double thoughtableWeightFactor = MissionSpecifics.GetComplexActionWeight("THOUGHT", thoughtable, possibleZone);
+                                        //actionWeight += chanceOfSuccess * thoughtable.weightFactor;
+                                        actionWeight += chanceOfSuccess * thoughtableWeightFactor;
+                                        actionWeight = actionWeight >= 0 ? actionWeight * finalActionWeightFactor : actionWeight / finalActionWeightFactor;  // if actionWeight is negative, divide by finalActionWeightFactor instead of multiplying
 
-                                    //Debug.Log("Possible THOUGHT action for " + gameObject.name + " in " + possibleZone.name + "  with chanceOfSuccess: " + chanceOfSuccess.ToString() + "  onlyMovingWeight: " + onlyMovingWeight.ToString() + "  actionWeight: " + actionWeight.ToString() + " which should be greater than inactiveWeight: " + inactiveWeight.ToString());
-                                    //if (actionWeight > inactiveWeight)
-                                    //{
-                                    allPossibleActions.Add(new UnitPossibleAction(this, thoughtable, actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, null));
-                                    zoneAddedToAllPossibleActions = true;
-                                    //}
+                                        //Debug.Log("Possible THOUGHT action for " + gameObject.name + " in " + possibleZone.name + "  with chanceOfSuccess: " + chanceOfSuccess.ToString() + "  onlyMovingWeight: " + onlyMovingWeight.ToString() + "  actionWeight: " + actionWeight.ToString() + " which should be greater than inactiveWeight: " + inactiveWeight.ToString());
+                                        //if (actionWeight > inactiveWeight)
+                                        //{
+                                        allPossibleActions.Add(new UnitPossibleAction(this, thoughtable, actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, null));
+                                        zoneAddedToAllPossibleActions = true;
+                                        //}
+                                    }
                                 }
                             }
                         }
@@ -1342,7 +1353,7 @@ public class Unit : MonoBehaviour
             Vector3 endZoneCoords = movementPath.zones[movementPath.zones.Count - 1].transform.position;
             Vector3 finalCoordinates = animate.GetPointFurthestFromOrigin(transform.position, unitSlotCoords, endZoneCoords);
             float secondsToDelayBeforeCameraMove = animate.PostionCameraBeforeCameraMove(transform.position, finalCoordinates);
-            yield return new WaitForSecondsRealtime(1);  // Pause with camera on unit before move
+            yield return new WaitForSecondsRealtime(1f);  // Pause with camera on unit before move
             StartCoroutine(animate.MoveCameraUntilOnscreen(transform.position, finalCoordinates, secondsToDelay: secondsToDelayBeforeCameraMove));
         }
         for (int i = 1; i < movementPath.zones.Count; i++)
@@ -1811,9 +1822,11 @@ public class Unit : MonoBehaviour
                         requiredSuccesses = lineOfSight.IndexOf(unitTurn.targetedZone) + applicableCurrentZoneHindrance;
                         actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls + MissionSpecifics.GetAttackRollBonus(), requiredSuccesses);
                         GameObject targetedZone;
+                        //bool hasHitTarget = false;
                         if (actionSuccesses >= requiredSuccesses)
                         {
                             targetedZone = unitTurn.targetedZone;
+                            //hasHitTarget = true;
                         }
                         else
                         {
@@ -1823,6 +1836,10 @@ public class Unit : MonoBehaviour
                         yield return StartCoroutine(animate.ThrowGrenade(transform.position, targetedZone.transform.position));
                         yield return StartCoroutine(targetedZoneInfo.IncreaseTerrainDangerTemporarily(grenade));
                         yield return StartCoroutine(targetedZoneInfo.AddEnvironTokens(new EnvironTokenSave("Frost", 1, false, true)));
+                        //if (!hasHitTarget)
+                        //{
+                        yield return new WaitForSecondsRealtime(1.5f);  // If you miss the target, don't immediately jump to the next unit's turn  // Whether you miss or not, add a delay for the frost tokens
+                        //}
                     }
                 }
                 else
@@ -1864,6 +1881,7 @@ public class Unit : MonoBehaviour
     private int RollAndReroll(List<GameObject> dicePool, int rerolls, int requiredSuccesses)
     {
         int rolledSuccesses = 0;
+        rerolls += luckyRerolls;
         List<ActionResult> currentActionResults = new List<ActionResult>();
         string debugString = "RollAndReroll for unit " + gameObject.name + " with " + requiredSuccesses.ToString() + " requiredSuccesses. ";
 
@@ -1971,7 +1989,8 @@ public class Unit : MonoBehaviour
     private int RollAndReroll(List<GameObject> dicePool, int rerolls)  // Only Melee and Ranged attacks use this method version without requiredSuccesses
     {
         int rolledSuccesses = 0;
-        rerolls += MissionSpecifics.GetAttackRollBonus();
+        rerolls += luckyRerolls;
+        //rerolls += MissionSpecifics.GetAttackRollBonus();  // All returning 0 right now
         List<ActionResult> currentActionResults = new List<ActionResult>();
         string debugString = "RollAndReroll for unit " + gameObject.name + ". ";
 

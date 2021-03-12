@@ -48,6 +48,7 @@ public class ScenarioMap : MonoBehaviour
     public GameObject briefcasePrefab;
     public GameObject jammerPrefab;
     public GameObject activeJammerPrefab;
+    public GameObject ratPrefab;
 
 
     void Awake()

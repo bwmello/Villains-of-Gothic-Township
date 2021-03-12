@@ -45,6 +45,11 @@ TagManager:
   - LIVEFIRE
   - Jammer
   - ActiveJammer
+  - HAZMAT
+  - LAZARUS
+  - RATSNATCHER
+  - Rat
+  - GasCapsule
   layers:
   - Default
   - TransparentFX
