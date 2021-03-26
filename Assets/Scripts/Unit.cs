@@ -676,6 +676,7 @@ public class Unit : MonoBehaviour
     private double GetAverageSuccesses(List<GameObject> dice, int rerolls = 0)
     {
         double averageSuccesses = 0;
+        rerolls += luckyRerolls;
         foreach (GameObject die in dice)
         {
             averageSuccesses += die.GetComponent<Dice>().GetExpectedValue(rerolls);
@@ -686,6 +687,7 @@ public class Unit : MonoBehaviour
     public double GetChanceOfSuccess(int requiredSuccesses, List<GameObject> dice, int rerolls = 0)
     {
         int maxSuccesses = 0;  // TODO Remove this maxSuccess check once the dice math regarding rerolls is fixed (so GetChanceOfSuccess returns 0 without this check)
+        rerolls += luckyRerolls;
         foreach (GameObject die in dice)
         {
             maxSuccesses += die.GetComponent<Dice>().GetLargestPossibleResult();
@@ -1354,7 +1356,8 @@ public class Unit : MonoBehaviour
             Vector3 finalCoordinates = animate.GetPointFurthestFromOrigin(transform.position, unitSlotCoords, endZoneCoords);
             float secondsToDelayBeforeCameraMove = animate.PostionCameraBeforeCameraMove(transform.position, finalCoordinates);
             yield return new WaitForSecondsRealtime(1f);  // Pause with camera on unit before move
-            StartCoroutine(animate.MoveCameraUntilOnscreen(transform.position, finalCoordinates, secondsToDelay: secondsToDelayBeforeCameraMove));
+            StartCoroutine(animate.MoveCameraUntilOnscreen(animate.mainCamera.transform.position, finalCoordinates, secondsToDelay: secondsToDelayBeforeCameraMove));
+            //StartCoroutine(animate.MoveCameraUntilOnscreen(transform.position, finalCoordinates, secondsToDelay: secondsToDelayBeforeCameraMove));
         }
         for (int i = 1; i < movementPath.zones.Count; i++)
         {
@@ -1457,6 +1460,10 @@ public class Unit : MonoBehaviour
                     int currentMeleeTargetIndex = 0;
                     for (int i = 0; i < unitTurn.actionProficiency.actionMultiplier; i++)
                     {
+                        if (i > 0)
+                        {
+                            yield return new WaitForSecondsRealtime(1f);
+                        }
                         GameObject targetZone = null;
                         if (currentMeleeTarget.TryGetComponent<Hero>(out Hero targetHero))
                         {
@@ -1627,6 +1634,10 @@ public class Unit : MonoBehaviour
                     int currentRangedTargetIndex = 0;
                     for (int i = 0; i < unitTurn.actionProficiency.actionMultiplier; i++)
                     {
+                        if (i > 0)
+                        {
+                            yield return new WaitForSecondsRealtime(1f);
+                        }
                         GameObject targetZone = null;
                         if (currentRangedTarget.TryGetComponent<Hero>(out Hero targetHero))
                         {

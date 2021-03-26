@@ -189,25 +189,29 @@ public static class MissionSpecifics
                     ZoneInfo actionZoneInfo = actionZone.GetComponent<ZoneInfo>();  // Will throw if actionZone not passed and I like it that way
                     foreach (GameObject rat in GameObject.FindGameObjectsWithTag("Rat"))
                     {
-                        GameObject ratZone = rat.GetComponent<Token>().GetZone();
-                        ZoneInfo ratZoneInfo = ratZone.GetComponent<ZoneInfo>();
-                        if (ratZone == actionZone)
+                        Token ratToken = rat.GetComponent<Token>();
+                        if (ratToken.IsActive())
                         {
-                            weight -= actionWeight.weightFactor / 2;
-                            //ratPlacementWeightDebugString += "\tratZone == actionZone, weight: " + weight.ToString();
-                        }
-                        else if (actionZoneInfo.adjacentZones.Contains(ratZone))
-                        {
-                            weight -= actionWeight.weightFactor / 4;
-                            //ratPlacementWeightDebugString += "\tactionZone.adjacentZones.Contains(" + ratZone.name + "), weight: " + weight.ToString();
-                        }
-                        else if (actionZoneInfo.steeplyAdjacentZones.Contains(ratZone))
-                        {
-                            weight -= actionWeight.weightFactor / 6;
-                            //ratPlacementWeightDebugString += "\tactionZone.steeplyAdjacentZones.Contains(" + ratZone.name + "), weight: " + weight.ToString();
+                            GameObject ratZone = ratToken.GetZone();
+                            ZoneInfo ratZoneInfo = ratZone.GetComponent<ZoneInfo>();
+                            if (ratZone == actionZone)
+                            {
+                                weight -= actionWeight.weightFactor / 2;
+                                //ratPlacementWeightDebugString += "\tratZone == actionZone, weight: " + weight.ToString();
+                            }
+                            else if (actionZoneInfo.adjacentZones.Contains(ratZone))
+                            {
+                                weight -= actionWeight.weightFactor / 4;
+                                //ratPlacementWeightDebugString += "\tactionZone.adjacentZones.Contains(" + ratZone.name + "), weight: " + weight.ToString();
+                            }
+                            else if (actionZoneInfo.steeplyAdjacentZones.Contains(ratZone))
+                            {
+                                weight -= actionWeight.weightFactor / 6;
+                                //ratPlacementWeightDebugString += "\tactionZone.steeplyAdjacentZones.Contains(" + ratZone.name + "), weight: " + weight.ToString();
+                            }
                         }
                     }
-                    weight *= GetHeroProximityToObjectiveWeightMultiplier(actionZone, true);
+                    weight -= (actionWeight.weightFactor / GetHeroProximityToObjectiveWeightMultiplier(actionZone, true)) - actionWeight.weightFactor;  // -= ((100 / 1) - 100) / 10 = 1     // -= ((100 / .25) - 100) / 10 = 30
                     //ratPlacementWeightDebugString += "\tGetHeroProximityToObjectiveWeightMultiplier(actionZone, true): " + GetHeroProximityToObjectiveWeightMultiplier(actionZone, true).ToString() + "), weight: " + weight.ToString();
                     //Debug.Log(ratPlacementWeightDebugString);
                     return weight;
@@ -798,12 +802,21 @@ public static class MissionSpecifics
                     }
                 }
                 break;
+            case "RatRace":
+                GameObject ratSnatcher = GameObject.FindGameObjectWithTag("RATSNATCHER");
+                int activeRats = GetTotalActiveTokens(new List<string>() { "Rat" });
+                if (ratSnatcher != null && activeRats > 0)
+                {
+                    weight = 5;
+                }
+                break;
         }
         return weight;
     }
 
     public static IEnumerator ActivateReinforcement()
     {
+        string debugString = "MissionSpecifics.ActivateReinforcement(), missionName " + missionName;
         switch (missionName)
         {
             case "ASinkingFeeling":
@@ -857,7 +870,81 @@ public static class MissionSpecifics
                     }
                 }
                 break;
+            case "RatRace":
+                GameObject ratSnatcher = GameObject.FindGameObjectWithTag("RATSNATCHER");
+                List<GameObject> activeRats = GetActiveTokens(new List<string>() { "Rat" });
+                if (ratSnatcher != null && activeRats.Count > 0)
+                {
+                    debugString += "\nRATSNATCHER is active and activeRats.Count " + activeRats.Count.ToString();
+                    List<(GameObject, GameObject, double)> ratMovesByWeight = new List<(GameObject, GameObject, double)>();  // rat, zone, weight
+                    ActionWeight spreadInfectionAction = new ActionWeight(null, 3, 100, SpreadInfection, null);  // Generic SpreadInfection actionWeight or GetComplexActionWeight()
+
+                    foreach (GameObject rat in activeRats)
+                    {
+                        rat.GetComponent<Token>().TokenButtonClicked(rat.GetComponent<Button>());  // Deactivate rat so it's not counting itself when calling GetComplexActionWeight()
+                        GameObject ratZone = rat.GetComponent<Token>().GetZone();
+                        ZoneInfo ratZoneInfo = ratZone.GetComponent<ZoneInfo>();
+                        double ratOriginalZoneWeight = GetComplexActionWeight(null, spreadInfectionAction, ratZone);
+                        //ratMovesByWeight.Add((rat, ratZone, 0));
+
+                        HashSet<GameObject> possibleZones = new HashSet<GameObject>(ratZoneInfo.adjacentZones);
+                        possibleZones.UnionWith(ratZoneInfo.steeplyAdjacentZones);  // Like AddRange, but non-unique zones are discarded
+                        HashSet<GameObject> adjacentZones = new HashSet<GameObject>(possibleZones);  // Needed bc you can't add to possibleZones while iterating over possibleZones
+                        foreach (GameObject zone in adjacentZones)  // Get the adjacent zones of the adjacent zones
+                        {
+                            ZoneInfo zoneInfo = zone.GetComponent<ZoneInfo>();
+                            possibleZones.UnionWith(zoneInfo.adjacentZones);
+                            possibleZones.UnionWith(zoneInfo.steeplyAdjacentZones);
+                        }
+                        debugString += "\nFor rat in " + ratZone.name + ", with " + possibleZones.Count.ToString() + " possibleZones and ratOriginalZoneWeight " + ratOriginalZoneWeight.ToString();
+
+                        foreach (GameObject zone in possibleZones)
+                        {
+                            double ratInZoneWeight = GetComplexActionWeight(null, spreadInfectionAction, zone);  // If rat is not disabled, it will count against itself as another rat
+                            double ratMoveWeight = ratInZoneWeight - ratOriginalZoneWeight;
+                            if (ratMoveWeight > 0)
+                            {
+                                debugString += "\tAdding " + zone.name + " with ratMoveWeight " + ratMoveWeight.ToString();
+                                ratMovesByWeight.Add((rat, zone, ratMoveWeight));
+                            }
+                        }
+
+                        rat.GetComponent<Token>().TokenButtonClicked(rat.GetComponent<Button>());  // Reactivate rat
+                    }
+
+                    if (ratMovesByWeight.Count > 0)
+                    {
+                        ratMovesByWeight.Sort((x, y) => y.Item3.CompareTo(x.Item3));  // Sorts from highest weight tuple to lowest
+                        GameObject ratToMove = ratMovesByWeight[0].Item1;
+                        ZoneInfo zoneOriginInfo = ratToMove.GetComponent<Token>().GetZone().GetComponent<ZoneInfo>();
+                        GameObject zoneDestination = ratMovesByWeight[0].Item2;
+                        ZoneInfo zoneDestinationInfo = zoneDestination.GetComponent<ZoneInfo>();
+                        scenarioMap.animate.PostionCameraBeforeCameraMove(ratToMove.transform.position, zoneDestination.transform.position);
+                        ratToMove.transform.SetParent(scenarioMap.animationContainer.transform);
+                        yield return new WaitForSecondsRealtime(1f);  // Pause with camera on rat before move
+                        scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(scenarioMap.animate.mainCamera.transform.position, zoneDestination.transform.position));
+                        if (!zoneOriginInfo.adjacentZones.Contains(zoneDestination) && !zoneOriginInfo.steeplyAdjacentZones.Contains(zoneDestination))  // If origin and destination are not adjacent
+                        {
+                            HashSet<GameObject> originAllAdjacentZones = new HashSet<GameObject>(zoneOriginInfo.adjacentZones);
+                            originAllAdjacentZones.UnionWith(zoneOriginInfo.steeplyAdjacentZones);
+                            foreach (GameObject originAdjacentZone in originAllAdjacentZones)
+                            {
+                                if (zoneDestinationInfo.adjacentZones.Contains(originAdjacentZone) || zoneDestinationInfo.steeplyAdjacentZones.Contains(originAdjacentZone))
+                                {
+                                    yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveObjectOverTime(new List<GameObject>() { ratToMove }, ratToMove.transform.position, originAdjacentZone.transform.position));
+                                    break;
+                                }
+                            }
+                        }
+                        yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveObjectOverTime(new List<GameObject>() { ratToMove }, ratToMove.transform.position, zoneDestination.transform.position));
+                        GameObject.DestroyImmediate(ratToMove);
+                        zoneDestination.GetComponent<ZoneInfo>().AddObjectiveToken("Rat");
+                        yield return new WaitForSecondsRealtime(1f);  // Pause with camera after rat move
+                    }
+                }
+                break;
         }
+        Debug.Log(debugString);
         yield return 0;
     }
 
