@@ -519,10 +519,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   heroName: 
-  moveSpeed: 4
-  ignoreTerrainDifficulty: 1
-  ignoreElevation: 1
-  ignoreSize: 1
+  moveSpeed: 500
+  ignoreTerrainDifficulty: 0
+  ignoreElevation: 0
+  ignoreSize: 0
   canCounterMeleeAttacks: 0
   canCounterRangedAttacks: 0
   isClickable: 0

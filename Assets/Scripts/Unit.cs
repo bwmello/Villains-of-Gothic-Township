@@ -438,8 +438,7 @@ public class Unit : MonoBehaviour
         Dictionary<GameObject, MovementPath> possibleDestinations = GetPossibleDestinations(currentZone);
         List<UnitPossibleAction> allPossibleUnitActions = GetPossibleActions(possibleDestinations);
         bool hasMoved = false;
-        //Debug.Log("ActivateUnit for " + transform.tag + " in " + GetZone().name + "   allPossibleUnitActions.Count: " + allPossibleUnitActions.Count.ToString());
-        //string allPossibleUnitActionsDebugString = "!!!allPossibleUnitActionsDebugString";
+        //string allPossibleUnitActionsDebugString = "Unit.ActivateUnit for " + transform.tag + " in " + GetZone().name + "\tallPossibleUnitActions.Count: " + allPossibleUnitActions.Count.ToString();
 
         if (allPossibleUnitActions != null && allPossibleUnitActions.Count > 0)  // if there's an action with weight > GetInactiveWeight()
         {
@@ -842,7 +841,8 @@ public class Unit : MonoBehaviour
                                 if (possibleFinalDestinationZoneInfo.HasObjectiveToken(guardable.targetType))
                                 {
                                     GameObject objectiveToken = possibleFinalDestinationZoneInfo.GetObjectiveToken(guardable.targetType);
-                                    possibleGuardZoneWeight += guardable.weightFactor * MissionSpecifics.GetHeroProximityToObjectiveWeightMultiplier(possibleFinalDestinationZone, isPartialMove);
+                                    double heroProximityWeightFactor = UnitIntel.GetProximityWeightFactorForClosestHero(possibleFinalDestinationZone, weighingClosestHighest: !isPartialMove);
+                                    possibleGuardZoneWeight += guardable.weightFactor * heroProximityWeightFactor;
                                     possibleGuardAction = guardable;
                                 }
                             }
@@ -873,7 +873,8 @@ public class Unit : MonoBehaviour
                         if (possibleZoneInfo.HasObjectiveToken(guardable.targetType))
                         {
                             GameObject objectiveToken = possibleZoneInfo.GetObjectiveToken(guardable.targetType);
-                            guardZoneWeight += guardable.weightFactor * MissionSpecifics.GetHeroProximityToObjectiveWeightMultiplier(possibleZone, isPartialMove);
+                            double heroProximityWeightFactor = UnitIntel.GetProximityWeightFactorForClosestHero(possibleZone, weighingClosestHighest : !isPartialMove);
+                            guardZoneWeight += guardable.weightFactor * heroProximityWeightFactor;
                         }
                     }
                 }

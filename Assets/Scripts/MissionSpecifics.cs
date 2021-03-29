@@ -169,10 +169,10 @@ public static class MissionSpecifics
                 actionsWeightTable["RANGED"] = new List<ActionWeight>(initialAttackWeightTable);
 
                 actionsWeightTable["MANIPULATION"] = new List<ActionWeight>();
-                actionsWeightTable["MANIPULATION"].Add(new ActionWeight(null, 3, 100, SpreadInfection, new List<string>() { "HAZMAT" }));  // 100 * chanceOfSuccess, 
+                actionsWeightTable["MANIPULATION"].Add(new ActionWeight(null, 3, 200, SpreadInfection, new List<string>() { "HAZMAT" }));  // 200 * chanceOfSuccess, 
 
                 actionsWeightTable["THOUGHT"] = new List<ActionWeight>();
-                actionsWeightTable["THOUGHT"].Add(new ActionWeight(null, 3, 100, SpreadInfection, new List<string>() { "RATSNATCHER" }));
+                actionsWeightTable["THOUGHT"].Add(new ActionWeight(null, 3, 200, SpreadInfection, new List<string>() { "RATSNATCHER" }));
                 break;
         }
     }
@@ -211,8 +211,10 @@ public static class MissionSpecifics
                             }
                         }
                     }
-                    weight -= (actionWeight.weightFactor / GetHeroProximityToObjectiveWeightMultiplier(actionZone, true)) - actionWeight.weightFactor;  // -= ((100 / 1) - 100) / 10 = 1     // -= ((100 / .25) - 100) / 10 = 30
-                    //ratPlacementWeightDebugString += "\tGetHeroProximityToObjectiveWeightMultiplier(actionZone, true): " + GetHeroProximityToObjectiveWeightMultiplier(actionZone, true).ToString() + "), weight: " + weight.ToString();
+                    double heroProximityWeightFactor = UnitIntel.GetProximityWeightFactorForClosestHero(actionZone, weighingClosestHighest : false);
+                    heroProximityWeightFactor += (1 - heroProximityWeightFactor) / 1.2;  // .6 / 1.2 = .5, from .4 to .9  // (1 - .4) / 1.5, go from .4 to .8  // (1 - .4) / 2, hero 10 move points away goes from .4 to .7
+                    weight *= heroProximityWeightFactor;
+                    //ratPlacementWeightDebugString += "\theroProximityWeightFactor: " + heroProximityWeightFactor.ToString() + "), weight: " + weight.ToString();
                     //Debug.Log(ratPlacementWeightDebugString);
                     return weight;
                 }
@@ -354,31 +356,6 @@ public static class MissionSpecifics
         //        return new int[] { 0, 1, 2 };
         //}
         return new int[] { 0, 1, 2 };  // Can be adjusted like: { 0, 1, 1, 2} to increase frequency of certain values
-    }
-
-    public static double GetHeroProximityToObjectiveWeightMultiplier(GameObject zone, bool isPartialMove = false)  // isPartialMove could also be called "inverseWeightMultiplier"
-    {
-        double weightMultiplier = .1;  // Default if no heroes within 4 moves
-        double[] weightBasedOnHeroProximity;
-        if (!isPartialMove)
-        {
-            weightBasedOnHeroProximity = new double[] { 1, .9, .75, .5, .25 };
-        }
-        else
-        {
-            weightMultiplier = 1;  // Default if no heroes within 4 moves
-            weightBasedOnHeroProximity = new double[] { .25, .5, .75, .9, 1 };
-        }
-
-        if (UnitIntel.heroMovesRequiredToReachZone.ContainsKey(zone))  // If heroes within 4 moves
-        {
-            if (UnitIntel.heroMovesRequiredToReachZone[zone].Count > 0)
-            {
-                weightMultiplier = weightBasedOnHeroProximity[UnitIntel.heroMovesRequiredToReachZone[zone][0]];  // Disregards any heroes beyond or equal to closest hero
-            }
-        }
-
-        return weightMultiplier;
     }
 
     public static void ObjectiveTokenClicked(Button button)
@@ -1320,7 +1297,7 @@ public static class MissionSpecifics
             foreach (GameObject bomb in GameObject.FindGameObjectsWithTag("Bomb"))
             {
                 GameObject bombZone = bomb.transform.parent.parent.gameObject;
-                double zoneWeightMultiplier = GetHeroProximityToObjectiveWeightMultiplier(bombZone);
+                double zoneWeightMultiplier = UnitIntel.GetProximityWeightFactorForClosestHero(bombZone);  // double heroProximityWeightFactor
                 ZoneInfo bombZoneInfo = bombZone.GetComponent<ZoneInfo>();
                 existingCryoTokenDecrement = (double)bombZoneInfo.GetQuantityOfEnvironTokensWithTag("Cryogenic") * 5d;
                 cryoZoneTargets.Add(((18 - existingCryoTokenDecrement) * zoneWeightMultiplier, bombZone));

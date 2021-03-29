@@ -9,10 +9,11 @@ public class Hero : MonoBehaviour
     public string heroName;  // One of three tags: "1stHero", "2ndHero", "3rdHero"
     private float fadedAlpha = .5f;
 
-    public int moveSpeed = 4;
-    public int ignoreTerrainDifficulty = 1;
-    public int ignoreElevation = 1;
-    public int ignoreSize = 1;
+    // If these defaults are changed, must be changed for prefab as well until initialization method is used (it's fine for now)
+    public int moveSpeed = 500;  // 4 is a better guess, but this is so Unit.GetPossibleDestinations() returns all zones for UnitIntel.SetHeroMovePointsRequiredToReachZone()
+    public int ignoreTerrainDifficulty = 0;
+    public int ignoreElevation = 0;
+    public int ignoreSize = 0;
     //public int wallBreaker = 0;  // wall breaking items are single use, making tracking this pointless
     //public int woundsReceived = 0;
     public bool canCounterMeleeAttacks = false;

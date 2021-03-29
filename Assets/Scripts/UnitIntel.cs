@@ -17,43 +17,44 @@ public static class UnitIntel
     public static double[] bonusMovePointWeight = new double[] { 0, -15, -30, -45 };  // Accessed by UnitIntel.bonusMovePointWeight[movePointsUsed - unit.movePoints], so bonusMovePointWeight[0] = 0
     public static double[] partialMoveWeight = new double[] { .25, .0625 };  // * actionWeight. Accessed by UnitIntel.partialMoveWeight[additional moves required - 1]
     public static double[] terrainDangerWeightFactor = new double[] { 1, .25, .1, .01, .001, .0001, .00001, .000001, .0000001, .00000001, .000000001, .0000000001, .00000000001, .000000000001 };  // * actionWeight
+    public static double[] heroProximityWeightFactor = new double[] { 1, .99, .98, .96, .93, .9, .87, .84, .81, .78, .75, .72, .69, .66, .63, .60, .57, .54, .51, .5, .49, .48, .47, .46, .45, .44, .43, .42, .41, .40, .39, .38, .37, .36, .35, .34, .33, .32, .31, .30 };  // 40 move points worth of entries (40/41)
     //public static double terrainDangerWeight = -50;  // * terrainDanger
 
     // Helpers for activating units during villain turn
     public static Queue<GameObject> unitsToActivateLast = new Queue<GameObject>();  // Needed for when a unit's turn negatively impacts other units activating the same turn. Ex: Crowbars in IceToSeeYou activating computers blocking not yet activated Crowbars
 
-    public static Dictionary<GameObject, List<int>> heroMovesRequiredToReachZone;
-    public static Dictionary<GameObject, List<int>> heroMovePointsRequiredToReachZone;  // TODO not used yet, but would be more useful than wildly guessing heroMovesRequiredToReachZone
-    //public static List<HeroIntel> heroesIntel;
-    //[Serializable]
-    //public class HeroIntel  // Moved to Hero.cs
-    //{
-    //    public string tag;
-    //    public int moveSpeed = 4;
-    //    public int ignoreTerrainDifficulty = 1;
-    //    public int ignoreElevation = 1;
-    //    public int ignoreSize = 1;
-    //    public int wallBreaker = 0;  // wall breaking items are single use, making tracking this pointless
-    //    public int woundsReceived = 0;
-    //    public bool canCounterMeleeAttacks = false;
-    //    public bool canCounterRangedAttacks = false;
+    public static Dictionary<GameObject, List<int>> heroMovePointsRequiredToReachZone;
 
-    //    public HeroIntel(string newTag)
-    //    {
-    //        tag = newTag;
-    //    }
-    //}
+
+    public static double GetProximityWeightFactorForClosestHero(GameObject zone, bool weighingClosestHighest = true)
+    {
+        if (weighingClosestHighest)
+        {
+            return heroProximityWeightFactor[heroMovePointsRequiredToReachZone[zone][0]];  // All zone keys should exist, so throw if key not found
+        }
+        else
+        {
+            int reverseIndex = (heroProximityWeightFactor.Length - 1) - heroMovePointsRequiredToReachZone[zone][0];  // 40 - 0 = 40    40 - 40 = 0
+            return heroProximityWeightFactor[reverseIndex];  // All zone keys should exist, so throw if key not found
+        }
+    }
 
     public static void ResetPerRoundResources()
     {
         bonusMovePointsRemaining = MissionSpecifics.GetBonusMovePointsPerRound();
-        SetHeroMovesRequiredToReachZone();
+        SetHeroMovePointsRequiredToReachZone();
     }
 
-    public static void SetHeroMovesRequiredToReachZone()
+    public static void SetHeroMovePointsRequiredToReachZone()
     {
-        heroMovesRequiredToReachZone = new Dictionary<GameObject, List<int>>();
-        heroMovePointsRequiredToReachZone = new Dictionary<GameObject, List<int>>();  // TODO set this below
+        string debugString = "UnitIntel.SetHeroMovePointsRequiredToReachZone()";
+
+        heroMovePointsRequiredToReachZone = new Dictionary<GameObject, List<int>>();
+        // heroMovepointsRequiredToReachZone must contain every zone, so if heroes can't go somewhere, you need to populate each zone key like so
+        //foreach (GameObject zone in GameObject.FindGameObjectsWithTag("ZoneInfoPanel"))
+        //{
+        //    heroMovePointsRequiredToReachZone[zone] = new List<int>();
+        //}
 
         ScenarioMap scenarioMap = GameObject.FindGameObjectWithTag("ScenarioMap").GetComponent<ScenarioMap>();
 
@@ -66,38 +67,32 @@ public static class UnitIntel
                 Dictionary<GameObject, Unit.MovementPath> heroPossibleDestinations = GetPossibleDestinations(hero, heroZone);
                 foreach (GameObject zone in heroPossibleDestinations.Keys)
                 {
-                    if (!heroMovesRequiredToReachZone.ContainsKey(zone))
+                    if (!heroMovePointsRequiredToReachZone.ContainsKey(zone))
                     {
-                        heroMovesRequiredToReachZone[zone] = new List<int>();
+                        heroMovePointsRequiredToReachZone[zone] = new List<int>() { heroPossibleDestinations[zone].movementSpent };
                     }
-                    int movesRequired = (int)Math.Ceiling((double)heroPossibleDestinations[zone].movementSpent / (double)hero.moveSpeed);
-                    heroMovesRequiredToReachZone[zone].Add(movesRequired);
+                    else
+                    {
+                        heroMovePointsRequiredToReachZone[zone].Add(heroPossibleDestinations[zone].movementSpent);
+                    }
                 }
             }
         }
 
-        //foreach (HeroIntel heroIntel in heroesIntel)
-        //{
-        //    GameObject heroObject = GameObject.FindGameObjectWithTag(heroIntel.tag);
-        //    if (heroObject)
-        //    {
-        //        GameObject heroZone = heroObject.GetComponent<Hero>().GetZone();
-        //        Dictionary<GameObject, Unit.MovementPath> heroPossibleDestinations = GetPossibleDestinations(heroIntel, heroZone);
-        //        foreach (GameObject zone in heroPossibleDestinations.Keys)
-        //        {
-        //            if (!heroMovesRequiredToReachZone.ContainsKey(zone))
-        //            {
-        //                heroMovesRequiredToReachZone[zone] = new List<int>();
-        //            }
-        //            int movesRequired = (int)Math.Ceiling((double)heroPossibleDestinations[zone].movementSpent / (double)heroIntel.moveSpeed);
-        //            heroMovesRequiredToReachZone[zone].Add(movesRequired);
-        //        }
-        //    }
-        //}
-        foreach (List<int> movesRequiredList in heroMovesRequiredToReachZone.Values)
+        foreach (List<int> movesRequiredList in heroMovePointsRequiredToReachZone.Values)
         {
             movesRequiredList.Sort((x, y) => x.CompareTo(y));
         }
+
+        foreach (GameObject zone in heroMovePointsRequiredToReachZone.Keys)
+        {
+            debugString += "\t" + zone.name + ": ";
+            foreach (int movePointsNeeded in heroMovePointsRequiredToReachZone[zone])
+            {
+                debugString += movePointsNeeded.ToString() + ", ";
+            }
+        }
+        Debug.Log(debugString);
     }
 
     private static Dictionary<GameObject, Unit.MovementPath> GetPossibleDestinations(Hero hero, GameObject currentZone, Dictionary<GameObject, Unit.MovementPath> possibleDestinations = null, HashSet<GameObject> alreadyPossibleZones = null)
@@ -144,10 +139,10 @@ public static class UnitIntel
         {
             ZoneInfo potentialZoneInfo = potentialZone.GetComponent<ZoneInfo>();
 
-            if (potentialZoneInfo.GetCurrentOccupancy() >= potentialZoneInfo.maxOccupancy)
-            {
-                continue;  // Skip this potentialZone if potentialZone is at maxOccupancy
-            }
+            //if (potentialZoneInfo.GetCurrentOccupancy() >= potentialZoneInfo.maxOccupancy)  // Ignore maxOccupancy for heroes as they can easily free a slot
+            //{
+            //    continue;  // Skip this potentialZone if potentialZone is at maxOccupancy
+            //}
 
             int terrainDifficultyCost = currentZoneInfo.terrainDifficulty >= hero.ignoreTerrainDifficulty ? currentZoneInfo.terrainDifficulty - hero.ignoreTerrainDifficulty : 0;
             List<GameObject> frostTokens = potentialZoneInfo.GetAllTokensWithTag("Frost");
