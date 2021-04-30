@@ -1,6 +1,7 @@
 ﻿using System;  // for [Serializable]
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;  // For converting array.ToList()
 using UnityEngine;
 
 public static class UnitIntel
@@ -15,9 +16,10 @@ public static class UnitIntel
     public static double additionalTargetsForAdditionalAttacksWeight = 3;
     //public static double breakingThroughWallWeight = 10;  // TODO To encourage units to break through walls because it's cool
     public static double[] bonusMovePointWeight = new double[] { 0, -15, -30, -45 };  // Accessed by UnitIntel.bonusMovePointWeight[movePointsUsed - unit.movePoints], so bonusMovePointWeight[0] = 0
-    public static double[] partialMoveWeight = new double[] { .25, .0625 };  // * actionWeight. Accessed by UnitIntel.partialMoveWeight[additional moves required - 1]
+    public static double[] partialMoveWeight = new double[] { 1, .2, .04, .008, .0016, .00032, .000064 };  // Reduce future actions, not just by futureActionProximityWeightFactor, but also because it's a future action (as in, not happening yet)
     public static double[] terrainDangerWeightFactor = new double[] { 1, .25, .1, .01, .001, .0001, .00001, .000001, .0000001, .00000001, .000000001, .0000000001, .00000000001, .000000000001 };  // * actionWeight
     public static double[] heroProximityWeightFactor = new double[] { 1, .99, .98, .96, .93, .9, .87, .84, .81, .78, .75, .72, .69, .66, .63, .60, .57, .54, .51, .5, .49, .48, .47, .46, .45, .44, .43, .42, .41, .40, .39, .38, .37, .36, .35, .34, .33, .32, .31, .30 };  // 40 move points worth of entries (40/41)
+    public static double[] futureActionProximityWeightFactor = new double[] { 1, .99, .98, .96, .93, .9, .87, .84, .81, .78, .75, .72, .69, .66, .63, .60, .57, .54, .51, .5, .49, .48, .47, .46, .45, .44, .43, .42, .41, .40, .39, .38, .37, .36, .35, .34, .33, .32, .31, .30 };  // 40 move points worth of entries (40/41)
     //public static double terrainDangerWeight = -50;  // * terrainDanger
 
     // Helpers for activating units during villain turn
@@ -84,15 +86,15 @@ public static class UnitIntel
             movesRequiredList.Sort((x, y) => x.CompareTo(y));
         }
 
-        foreach (GameObject zone in heroMovePointsRequiredToReachZone.Keys)
-        {
-            debugString += "\t" + zone.name + ": ";
-            foreach (int movePointsNeeded in heroMovePointsRequiredToReachZone[zone])
-            {
-                debugString += movePointsNeeded.ToString() + ", ";
-            }
-        }
-        Debug.Log(debugString);
+        //foreach (KeyValuePair<GameObject, List<int>> movePointsToZone in heroMovePointsRequiredToReachZone.OrderBy(movePointsToZone => movePointsToZone.Value[0] < movePointsToZone.Value[1] ? movePointsToZone.Value[0] : movePointsToZone.Value[1]))
+        //{
+        //    debugString += "\t" + movePointsToZone.Key.name + ": ";
+        //    foreach (int movePointsNeeded in movePointsToZone.Value)
+        //    {
+        //        debugString += movePointsNeeded.ToString() + ", ";
+        //    }
+        //}
+        //Debug.Log(debugString);
     }
 
     private static Dictionary<GameObject, Unit.MovementPath> GetPossibleDestinations(Hero hero, GameObject currentZone, Dictionary<GameObject, Unit.MovementPath> possibleDestinations = null, HashSet<GameObject> alreadyPossibleZones = null)

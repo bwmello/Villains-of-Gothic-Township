@@ -568,7 +568,7 @@ public class ScenarioMap : MonoBehaviour
 
     public void GoBackATurn()
     {
-        ScenarioSave scenarioSave = JsonUtility.FromJson<ScenarioSave>(File.ReadAllText(Application.persistentDataPath + "/" +  (currentRound-1).ToString() + missionName +   ".json"));
+        ScenarioSave scenarioSave = JsonUtility.FromJson<ScenarioSave>(File.ReadAllText(Application.persistentDataPath + "/" + (currentRound - 1).ToString() + missionName + ".json"));
         LoadScenarioSave(scenarioSave);
         UIOverlay.GetComponent<UIOverlay>().CloseMenu();
         ConfigureUnitHeroAndTokenInteractivity();

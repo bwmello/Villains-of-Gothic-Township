@@ -337,7 +337,8 @@ public class Unit : MonoBehaviour
         }
         if (chosenAction.finalDestinationZone != chosenAction.actionZone)
         {
-            Dictionary<GameObject, MovementPath> possibleFinalDestinations = GetPossibleDestinations(currentZone);
+            // chosenAction.finalDestinationZone could be replaced with chosenAction.finalDestinationZonesWeightDict, but below is also fine
+            Dictionary<GameObject, MovementPath> possibleFinalDestinations = GetReachableDestinations();
             if (!possibleFinalDestinations.ContainsKey(chosenAction.finalDestinationZone))  // If moving to chosenAction.finalDestinationZone is no longer possible (due to performed action)
             {
                 if (MissionSpecifics.actionsWeightTable.ContainsKey("GUARD") && menace > 0)
@@ -366,15 +367,6 @@ public class Unit : MonoBehaviour
             chosenAction.pathTaken.zones.Add(chosenAction.finalDestinationZone);
             yield return StartCoroutine(MoveToken(chosenAction.pathTaken));
         }
-        //else
-        //{
-        //    GameObject destinationZone = GetPartialMoveAndWeight(possibleDestinations).Item1;
-        //    if (destinationZone != null && currentZone != destinationZone)
-        //    {
-        //        possibleDestinations[destinationZone].zones.Add(destinationZone);  // Otherwise token is never animated moving the last zone to the destination
-        //        yield return StartCoroutine(MoveToken(possibleDestinations[destinationZone]));
-        //    }
-        //}
         yield return 0;
     }
 
@@ -386,8 +378,7 @@ public class Unit : MonoBehaviour
 
     public IEnumerator ForceMovement()  // Used after Interrogate draggableTool used in JamAndSeek. Forces a move (cannot end in same zone as started in). Up to MissionSpecifics to disable size movement restrictions and bonus move points
     {
-        GameObject currentZone = GetZone();
-        Dictionary<GameObject, MovementPath> possibleDestinations = GetPossibleDestinations(currentZone);
+        Dictionary<GameObject, MovementPath> possibleDestinations = GetReachableDestinations();
         List<UnitPossibleAction> allPossibleUnitActions = GetPossibleActions(possibleDestinations);
         bool hasMoved = false;
 
@@ -409,14 +400,14 @@ public class Unit : MonoBehaviour
 
             foreach (UnitPossibleAction unitAction in allPossibleUnitActions)
             {
-                if (unitAction.actionZone != currentZone && (chosenAction == null || unitAction.actionWeight > chosenAction.actionWeight))
+                if (unitAction.actionZone != GetZone() && (chosenAction == null || unitAction.actionWeight > chosenAction.actionWeight))
                 {
                     chosenAction = unitAction;
                 }
             }
 
             animate.CameraToFixedZoom();   // Placed here because otherwise the camera "jumps" from zoomed in to first unit's move
-            if (currentZone != chosenAction.actionZone)
+            if (GetZone() != chosenAction.actionZone)
             {
                 chosenAction.pathTaken.zones.Add(chosenAction.actionZone);  // Otherwise token is never animated moving the last zone to the destination
                 yield return StartCoroutine(MoveToken(chosenAction.pathTaken));
@@ -434,13 +425,14 @@ public class Unit : MonoBehaviour
 
     public IEnumerator ActivateUnit(bool activatingLast = false)
     {
-        GameObject currentZone = GetZone();
-        Dictionary<GameObject, MovementPath> possibleDestinations = GetPossibleDestinations(currentZone);
+        Dictionary<GameObject, MovementPath> allZonesMovementMap = GetAllZonesMovementMap(GetZone());
+        Dictionary<GameObject, MovementPath> possibleDestinations = GetReachableDestinations(allZonesMovementMap: allZonesMovementMap);
         List<UnitPossibleAction> allPossibleUnitActions = GetPossibleActions(possibleDestinations);
         bool hasMoved = false;
+        bool hasActed = false;
         //string allPossibleUnitActionsDebugString = "Unit.ActivateUnit for " + transform.tag + " in " + GetZone().name + "\tallPossibleUnitActions.Count: " + allPossibleUnitActions.Count.ToString();
 
-        if (allPossibleUnitActions != null && allPossibleUnitActions.Count > 0)  // if there's an action with weight > GetInactiveWeight()
+        if (allPossibleUnitActions != null && allPossibleUnitActions.Count > 0)
         {
             UnitPossibleAction chosenAction = null;
 
@@ -460,7 +452,7 @@ public class Unit : MonoBehaviour
             }
 
             animate.CameraToFixedZoom();   // Placed here because otherwise the camera "jumps" from zoomed in to first unit's move
-            if (currentZone != chosenAction.actionZone)
+            if (GetZone() != chosenAction.actionZone)
             {
                 chosenAction.pathTaken.zones.Add(chosenAction.actionZone);  // Otherwise token is never animated moving the last zone to the destination
                 yield return StartCoroutine(MoveToken(chosenAction.pathTaken));
@@ -471,9 +463,11 @@ public class Unit : MonoBehaviour
             {
                 yield break;
             }
+
             if (chosenAction.actionProficiency.actionType != moveActionProficiency.actionType)  // If performing action other than moving
             {
                 yield return StartCoroutine(PerformAction(chosenAction));
+                hasActed = true;
             }
 
             if (!IsActive())  // If killed by own action
@@ -483,63 +477,75 @@ public class Unit : MonoBehaviour
 
             if (!hasMoved)  // chosenAction.finalDestinationZone is now only used to estimate unit's turn weight of final move before unit takes their turn
             {
-                Dictionary<GameObject, MovementPath> possibleFinalDestinations = GetPossibleDestinations(currentZone);
-                double mostValuableFinalDestinationWeight = 0;
-                GameObject finalDestinationZone = null;
-                MovementPath finalDestinationMovePath = new MovementPath();
-                //string afterActionMoveDebugString = "!!!AfterActionMoveDebug for " + tag + " in " + GetZone().name;
-                foreach (GameObject possibleFinalDestinationZone in possibleFinalDestinations.Keys)
+                if (!hasActed && GetZone() != chosenAction.finalDestinationZone)
                 {
-                    if (possibleFinalDestinations[possibleFinalDestinationZone].terrainDanger == 0)  // TODO: Already accounts for terrainDanger, but not failing to activate a cryo computer (move through dangerous terrain just to run back through on next turn to activate cryo computer again)
+                    yield return StartCoroutine(MoveToken(possibleDestinations[chosenAction.finalDestinationZone]));
+                }
+                else if (hasActed)
+                {
+                    Dictionary<GameObject, MovementPath> postActionAllZonesMovementMap = GetAllZonesMovementMap(GetZone());  // Recalculate movement/capacity as unit's action may have affected it
+                    Dictionary<GameObject, MovementPath> possibleFinalDestinations = GetReachableDestinations(allZonesMovementMap: postActionAllZonesMovementMap);
+                    Dictionary<GameObject, double> postActionZonesFutureActionWeight = GetReachableZonesFutureWeightDict(postActionAllZonesMovementMap, possibleFinalDestinations);
+                    double mostValuableFinalDestinationWeight = 0;
+                    GameObject finalDestinationZone = null;
+                    MovementPath finalDestinationMovePath = new MovementPath();
+                    //string afterActionMoveDebugString = "!!!AfterActionMoveDebug for " + tag + " in " + GetZone().name;
+                    foreach (GameObject possibleFinalDestinationZone in possibleFinalDestinations.Keys)
                     {
-                        double currentFinalDestinationWeight = 0;
-                        double finalActionWeightFactor = 1;
-
-                        finalActionWeightFactor *= UnitIntel.terrainDangerWeightFactor[possibleFinalDestinations[possibleFinalDestinationZone].terrainDanger];
-                        if (possibleFinalDestinations[possibleFinalDestinationZone].movementSpent > movePoints)  // Add in negative bonusMovePointWeight
+                        if (possibleFinalDestinations[possibleFinalDestinationZone].terrainDanger == 0)  // TODO: Already accounts for terrainDanger, but not failing to activate a cryo computer (move through dangerous terrain just to run back through on next turn to activate cryo computer again)
                         {
-                            currentFinalDestinationWeight += UnitIntel.bonusMovePointWeight[possibleFinalDestinations[possibleFinalDestinationZone].movementSpent - movePoints];
-                        }
+                            double currentFinalDestinationWeight = 0;
+                            double finalActionWeightFactor = 1;
 
-                        if (MissionSpecifics.actionsWeightTable.ContainsKey("GUARD") && menace > 0)
-                        {
-                            ZoneInfo possibleFinalDestinationZoneInfo = possibleFinalDestinationZone.GetComponent<ZoneInfo>();
-                            foreach (MissionSpecifics.ActionWeight guardable in MissionSpecifics.actionsWeightTable["GUARD"])
+                            finalActionWeightFactor *= UnitIntel.terrainDangerWeightFactor[possibleFinalDestinations[possibleFinalDestinationZone].terrainDanger];
+
+                            // Calculate onlyMovingWeight    // could be combined in some way with GetPossibleActions()
+                            currentFinalDestinationWeight += postActionZonesFutureActionWeight[possibleFinalDestinationZone];
+                            if (possibleFinalDestinations[possibleFinalDestinationZone].movementSpent > movePoints)  // Add in negative bonusMovePointWeight
                             {
-                                if (possibleFinalDestinationZoneInfo.HasObjectiveToken(guardable.targetType))
+                                currentFinalDestinationWeight += UnitIntel.bonusMovePointWeight[possibleFinalDestinations[possibleFinalDestinationZone].movementSpent - movePoints];
+                            }
+                            if (MissionSpecifics.actionsWeightTable.ContainsKey("GUARD") && menace > 0)
+                            {
+                                ZoneInfo possibleFinalDestinationZoneInfo = possibleFinalDestinationZone.GetComponent<ZoneInfo>();
+                                foreach (MissionSpecifics.ActionWeight guardable in MissionSpecifics.actionsWeightTable["GUARD"])
                                 {
-                                    currentFinalDestinationWeight += guardable.weightFactor;
+                                    if (possibleFinalDestinationZoneInfo.HasObjectiveToken(guardable.targetType))
+                                    {
+                                        currentFinalDestinationWeight += guardable.weightFactor;
+                                    }
                                 }
                             }
-                        }
-                        currentFinalDestinationWeight = currentFinalDestinationWeight >= 0 ? currentFinalDestinationWeight * finalActionWeightFactor : currentFinalDestinationWeight / finalActionWeightFactor;  // if currentFinalDestinationWeight is negative, divide by finalActionWeightFactor instead of multiplying
-                        //afterActionMoveDebugString += "\nLooking at possibleFinalDestinationZone: " + possibleFinalDestinationZone.name + " with currentFinalDestinationWeight: " + currentFinalDestinationWeight.ToString() + ", including finalActionWeightFactor: " + finalActionWeightFactor.ToString();
 
-                        if (currentFinalDestinationWeight > mostValuableFinalDestinationWeight)
-                        {
-                            finalDestinationZone = possibleFinalDestinationZone;
-                            finalDestinationMovePath = possibleFinalDestinations[possibleFinalDestinationZone];
-                            mostValuableFinalDestinationWeight = currentFinalDestinationWeight;
+                            currentFinalDestinationWeight = currentFinalDestinationWeight >= 0 ? currentFinalDestinationWeight * finalActionWeightFactor : currentFinalDestinationWeight / finalActionWeightFactor;  // if currentFinalDestinationWeight is negative, divide by finalActionWeightFactor instead of multiplying
+                            //afterActionMoveDebugString += "\nLooking at possibleFinalDestinationZone: " + possibleFinalDestinationZone.name + " with currentFinalDestinationWeight: " + currentFinalDestinationWeight.ToString() + ", including finalActionWeightFactor: " + finalActionWeightFactor.ToString();
+
+                            if (currentFinalDestinationWeight > mostValuableFinalDestinationWeight)
+                            {
+                                finalDestinationZone = possibleFinalDestinationZone;
+                                finalDestinationMovePath = possibleFinalDestinations[possibleFinalDestinationZone];
+                                mostValuableFinalDestinationWeight = currentFinalDestinationWeight;
+                            }
                         }
                     }
+                    if (finalDestinationZone)
+                    {
+                        finalDestinationMovePath.zones.Add(finalDestinationZone);
+                        yield return StartCoroutine(MoveToken(finalDestinationMovePath));
+                        hasMoved = true;
+                        //afterActionMoveDebugString += "\nChosen finalDestinationZone: " + finalDestinationZone.name + " with a weight of " + mostValuableFinalDestinationWeight.ToString();
+                    }
+                    //Debug.Log(afterActionMoveDebugString);
                 }
-                if (finalDestinationZone)
-                {
-                    finalDestinationMovePath.zones.Add(finalDestinationZone);
-                    yield return StartCoroutine(MoveToken(finalDestinationMovePath));
-                    hasMoved = true;
-                    //afterActionMoveDebugString += "\nChosen finalDestinationZone: " + finalDestinationZone.name + " with a weight of " + mostValuableFinalDestinationWeight.ToString();
-                }
-                //Debug.Log(afterActionMoveDebugString);
             }
         }
-        else
+        else  // Means no guarding, no actions of moveActionProficiency.actionType
         {
-            GameObject destinationZone = GetPartialMoveAndWeight(possibleDestinations).Item1;
-            if (destinationZone != null && currentZone != destinationZone)
+            Dictionary<GameObject, double> noActionZonesFutureActionWeight = GetReachableZonesFutureWeightDict(allZonesMovementMap, possibleDestinations);
+            if (noActionZonesFutureActionWeight.Count > 0)
             {
-                possibleDestinations[destinationZone].zones.Add(destinationZone);  // Otherwise token is never animated moving the last zone to the destination
-                yield return StartCoroutine(MoveToken(possibleDestinations[destinationZone]));
+                GameObject noActionDestinationZone = noActionZonesFutureActionWeight.OrderByDescending(zoneFutureWeight => zoneFutureWeight.Value).First<KeyValuePair<GameObject, double>>().Key;
+                yield return StartCoroutine(MoveToken(possibleDestinations[noActionDestinationZone]));
                 hasMoved = true;
             }
         }
@@ -567,9 +573,32 @@ public class Unit : MonoBehaviour
         }
     }
 
-    private Dictionary<GameObject, MovementPath> GetPossibleDestinations(GameObject currentZone, Dictionary<GameObject, MovementPath> possibleDestinations = null, HashSet<GameObject> alreadyPossibleZones = null)
+    private Dictionary<GameObject, MovementPath> GetReachableDestinations(Dictionary<GameObject, MovementPath> allZonesMovementMap = null)
     {
+        Dictionary<GameObject, MovementPath> reachableDestinations = new Dictionary<GameObject, MovementPath>();
+        if (allZonesMovementMap is null)
+        {
+            allZonesMovementMap = GetAllZonesMovementMap(GetZone());
+        }
         int totalPossibleMovePoints = movePoints + UnitIntel.bonusMovePointsRemaining;
+
+        foreach (KeyValuePair<GameObject, MovementPath> zoneAndMovementPath in allZonesMovementMap.OrderBy(zone => zone.Value.movementSpent))  // ascending order
+        {
+            if (zoneAndMovementPath.Value.movementSpent > totalPossibleMovePoints)
+            {
+                break;
+            }
+            else
+            {
+                reachableDestinations.Add(zoneAndMovementPath.Key, zoneAndMovementPath.Value);
+            }
+        }
+
+        return reachableDestinations;
+    }
+
+    private Dictionary<GameObject, MovementPath> GetAllZonesMovementMap(GameObject currentZone, Dictionary<GameObject, MovementPath> possibleDestinations = null)
+    {
         if (possibleDestinations is null)
         {
             possibleDestinations = new Dictionary<GameObject, MovementPath> { { currentZone, new MovementPath() } };
@@ -596,14 +625,6 @@ public class Unit : MonoBehaviour
                         }
                     }
                 }
-            }
-        }
-
-        if (alreadyPossibleZones != null)
-        {
-            foreach (GameObject zone in alreadyPossibleZones)
-            {
-                allAdjacentZones.Remove(zone);
             }
         }
 
@@ -636,37 +657,29 @@ public class Unit : MonoBehaviour
                 wallBreakCost = 2;
             }
             int totalMovementCost = 1 + terrainDifficultyCost + sizeCost + elevationCost + wallBreakCost + possibleDestinations[currentZone].movementSpent;
+            //Debug.Log("!!!GetAllZonesMovementMap for " + gameObject.name + " in  " + GetZone().name + "... Looking at totalMovementCost " + totalMovementCost.ToString() + "  and totalPossibleMovePoints " + totalPossibleMovePoints.ToString());
 
-            if (totalPossibleMovePoints >= totalMovementCost)  // if unit can move here
+            int totalTerrainDanger = possibleDestinations[currentZone].terrainDanger + potentialZoneInfo.GetTerrainDangerTotal(this);
+            if (possibleDestinations.ContainsKey(potentialZone))
             {
-                int totalTerrainDanger = possibleDestinations[currentZone].terrainDanger + potentialZoneInfo.GetTerrainDangerTotal(this);
-                if (possibleDestinations.ContainsKey(potentialZone))
+                // If two movementPaths to the same zone, prioritize movementPath with less terrain danger. If equal, prioritize movementPath with less totalMovementCost. If equal, prioritize movementPath that breaks a wall, because it's cool!
+                if (totalTerrainDanger < possibleDestinations[potentialZone].terrainDanger || (totalTerrainDanger == possibleDestinations[potentialZone].terrainDanger &&  (totalMovementCost < possibleDestinations[potentialZone].movementSpent || (totalMovementCost == possibleDestinations[potentialZone].movementSpent && wallBreakCost > 0))))
                 {
-                    // If two movementPaths to the same zone, prioritize movementPath with less terrain danger. If equal, prioritize movementPath with less totalMovementCost. If equal, prioritize movementPath that breaks a wall, because it's cool!
-                    if (totalTerrainDanger < possibleDestinations[potentialZone].terrainDanger || (totalTerrainDanger == possibleDestinations[potentialZone].terrainDanger &&  (totalMovementCost < possibleDestinations[potentialZone].movementSpent || (totalMovementCost == possibleDestinations[potentialZone].movementSpent && wallBreakCost > 0))))
-                    {
-                        possibleDestinations[potentialZone].zones = new List<GameObject>(possibleDestinations[currentZone].zones);
-                        possibleDestinations[potentialZone].zones.Add(currentZone);
-                        possibleDestinations[potentialZone].terrainDanger = totalTerrainDanger;
-                        possibleDestinations[potentialZone].movementSpent = totalMovementCost;
-                        if (totalPossibleMovePoints > totalMovementCost)
-                        {
-                            possibleDestinations = GetPossibleDestinations(potentialZone, possibleDestinations, alreadyPossibleZones);
-                        }
-                    }
-                }
-                else
-                {
-                    possibleDestinations.Add(potentialZone, new MovementPath());
                     possibleDestinations[potentialZone].zones = new List<GameObject>(possibleDestinations[currentZone].zones);
                     possibleDestinations[potentialZone].zones.Add(currentZone);
                     possibleDestinations[potentialZone].terrainDanger = totalTerrainDanger;
                     possibleDestinations[potentialZone].movementSpent = totalMovementCost;
-                    if (totalPossibleMovePoints > totalMovementCost)
-                    {
-                        possibleDestinations = GetPossibleDestinations(potentialZone, possibleDestinations, alreadyPossibleZones);
-                    }
+                    possibleDestinations = GetAllZonesMovementMap(potentialZone, possibleDestinations);
                 }
+            }
+            else
+            {
+                possibleDestinations.Add(potentialZone, new MovementPath());
+                possibleDestinations[potentialZone].zones = new List<GameObject>(possibleDestinations[currentZone].zones);
+                possibleDestinations[potentialZone].zones.Add(currentZone);
+                possibleDestinations[potentialZone].terrainDanger = totalTerrainDanger;
+                possibleDestinations[potentialZone].movementSpent = totalMovementCost;
+                possibleDestinations = GetAllZonesMovementMap(potentialZone, possibleDestinations);
             }
         }
         return possibleDestinations;
@@ -794,15 +807,14 @@ public class Unit : MonoBehaviour
         }
     }
 
-    public List<UnitPossibleAction> GetPossibleActions(Dictionary<GameObject, MovementPath> possibleDestinationsAndPaths, bool isPartialMove = false)  // TODO isPartialMove doesn't seem to change anything
+    public List<UnitPossibleAction> GetPossibleActions(Dictionary<GameObject, MovementPath> possibleDestinationsAndPaths, bool isFutureAction = false)  //  if isFutureAction: Disregard bonusMovePointWeight and futureActionProximityWeight  // isFutureAction determines how hero proximity affects guardZoneWeight
     {
         List<UnitPossibleAction> allPossibleActions = new List<UnitPossibleAction>();
 
-        Tuple<GameObject, double> partialMoveZoneAndWeight = new Tuple<GameObject, double>(null, 0);  // TODO maybe expand this to return a list
-        if (!isPartialMove)
+        Dictionary<GameObject, double> reachableZonesFutureWeightDict = new Dictionary<GameObject, double>();
+        if (!isFutureAction)
         {
-            partialMoveZoneAndWeight = GetPartialMoveAndWeight(possibleDestinationsAndPaths);
-            //Debug.Log("!!!partialMoveZoneAndWeight zone.name: " + partialMoveZoneAndWeight.Item1.name + "  and weight: " + partialMoveZoneAndWeight.Item2.ToString());
+            reachableZonesFutureWeightDict = GetReachableZonesFutureWeightDict(GetAllZonesMovementMap(GetZone()), possibleDestinationsAndPaths);
         }
 
         foreach (GameObject possibleZone in possibleDestinationsAndPaths.Keys)
@@ -816,7 +828,8 @@ public class Unit : MonoBehaviour
             double finalActionWeightFactor = 1;  // actionWeight = actionWeight >= 0 ? actionWeight * finalActionWeightFactor : actionWeight / finalActionWeightFactor
             GameObject finalDestinationZone = possibleZone;
             MissionSpecifics.ActionWeight defaultGuardAction = new MissionSpecifics.ActionWeight();
-            //double inactiveWeight = GetInactiveWeight();
+
+            // Calculate onlyMovingWeight (and finalDestinationZone if action zone is unit's zone)
             if (GetZone() == possibleZone)
             {
                 foreach (GameObject possibleFinalDestinationZone in possibleDestinationsAndPaths.Keys)
@@ -828,8 +841,9 @@ public class Unit : MonoBehaviour
                         MissionSpecifics.ActionWeight possibleGuardAction = new MissionSpecifics.ActionWeight();
                         ZoneInfo possibleFinalDestinationZoneInfo = possibleFinalDestinationZone.GetComponent<ZoneInfo>();
 
-                        if (possibleDestinationsAndPaths[possibleFinalDestinationZone].movementSpent > movePoints)
+                        if (!isFutureAction && possibleDestinationsAndPaths[possibleFinalDestinationZone].movementSpent > movePoints)
                         {
+                            //Debug.Log(gameObject.name + " looking at possibleFinalDestinationZone " + possibleFinalDestinationZone.name + ":   possibleDestinationsAndPaths[possibleFinalDestinationZone].movementSpent " + possibleDestinationsAndPaths[possibleFinalDestinationZone].movementSpent.ToString() + " > movePoints " + movePoints.ToString());
                             possibleBonusMovePointWeight = UnitIntel.bonusMovePointWeight[possibleDestinationsAndPaths[possibleFinalDestinationZone].movementSpent - movePoints];
                         }
 
@@ -841,7 +855,7 @@ public class Unit : MonoBehaviour
                                 if (possibleFinalDestinationZoneInfo.HasObjectiveToken(guardable.targetType))
                                 {
                                     GameObject objectiveToken = possibleFinalDestinationZoneInfo.GetObjectiveToken(guardable.targetType);
-                                    double heroProximityWeightFactor = UnitIntel.GetProximityWeightFactorForClosestHero(possibleFinalDestinationZone, weighingClosestHighest: !isPartialMove);
+                                    double heroProximityWeightFactor = UnitIntel.GetProximityWeightFactorForClosestHero(possibleFinalDestinationZone, weighingClosestHighest: !isFutureAction);
                                     possibleGuardZoneWeight += guardable.weightFactor * heroProximityWeightFactor;
                                     possibleGuardAction = guardable;
                                 }
@@ -861,7 +875,7 @@ public class Unit : MonoBehaviour
             else
             {
                 finalActionWeightFactor *= UnitIntel.terrainDangerWeightFactor[possibleDestinationsAndPaths[possibleZone].terrainDanger];
-                if (possibleDestinationsAndPaths[possibleZone].movementSpent > movePoints)
+                if (!isFutureAction && possibleDestinationsAndPaths[possibleZone].movementSpent > movePoints)
                 {
                     bonusMovePointWeight = UnitIntel.bonusMovePointWeight[possibleDestinationsAndPaths[possibleZone].movementSpent - movePoints];
                 }
@@ -873,19 +887,14 @@ public class Unit : MonoBehaviour
                         if (possibleZoneInfo.HasObjectiveToken(guardable.targetType))
                         {
                             GameObject objectiveToken = possibleZoneInfo.GetObjectiveToken(guardable.targetType);
-                            double heroProximityWeightFactor = UnitIntel.GetProximityWeightFactorForClosestHero(possibleZone, weighingClosestHighest : !isPartialMove);
+                            double heroProximityWeightFactor = UnitIntel.GetProximityWeightFactorForClosestHero(possibleZone, weighingClosestHighest : !isFutureAction);
                             guardZoneWeight += guardable.weightFactor * heroProximityWeightFactor;
                         }
                     }
                 }
             }
+            double onlyMovingWeight = bonusMovePointWeight + guardZoneWeight;  // + futureActionProximityWeight;
 
-            double partialMoveWeight = 0;  // If moving here puts us towards something much more weight valuable in future moves
-            if (partialMoveZoneAndWeight.Item1 == possibleZone && partialMoveZoneAndWeight.Item2 > 0)
-            {
-                partialMoveWeight += partialMoveZoneAndWeight.Item2;
-            }
-            double onlyMovingWeight = bonusMovePointWeight + guardZoneWeight + partialMoveWeight;
             bool zoneAddedToAllPossibleActions = false;
             foreach (ActionProficiency actionProficiency in actionProficiencies)
             {
@@ -1161,9 +1170,9 @@ public class Unit : MonoBehaviour
                                         int requiredSuccesses = manipulatable.requiredSuccesses + applicableActionZoneHindrance - (manipulatable.targetType == "Bomb" ? munitionSpecialist : 0);
                                         double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
                                         double manipulatableWeightFactor = MissionSpecifics.GetComplexActionWeight("MANIPULATION", manipulatable, possibleZone);
-                                        //actionWeight += chanceOfSuccess * manipulatable.weightFactor;
                                         actionWeight += chanceOfSuccess * manipulatableWeightFactor;
                                         actionWeight = actionWeight >= 0 ? actionWeight * finalActionWeightFactor : actionWeight / finalActionWeightFactor;  // if actionWeight is negative, divide by finalActionWeightFactor instead of multiplying
+                                        //Debug.Log("!!!!" + gameObject.name + " in " + GetZone().name + " MANIPULATION in " + possibleZone.name + " actionWeight: " + actionWeight.ToString() + " chanceOfSuccess: " + chanceOfSuccess.ToString() + "  manipulatableWeightFactor: " + manipulatableWeightFactor.ToString() + "  finalActionWeightFactor: " + finalActionWeightFactor.ToString());
 
                                         //if (actionWeight > inactiveWeight)
                                         //{
@@ -1187,11 +1196,10 @@ public class Unit : MonoBehaviour
                                         int requiredSuccesses = thoughtable.requiredSuccesses + applicableActionZoneHindrance;
                                         double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
                                         double thoughtableWeightFactor = MissionSpecifics.GetComplexActionWeight("THOUGHT", thoughtable, possibleZone);
-                                        //actionWeight += chanceOfSuccess * thoughtable.weightFactor;
                                         actionWeight += chanceOfSuccess * thoughtableWeightFactor;
                                         actionWeight = actionWeight >= 0 ? actionWeight * finalActionWeightFactor : actionWeight / finalActionWeightFactor;  // if actionWeight is negative, divide by finalActionWeightFactor instead of multiplying
 
-                                        //Debug.Log("Possible THOUGHT action for " + gameObject.name + " in " + possibleZone.name + "  with chanceOfSuccess: " + chanceOfSuccess.ToString() + "  onlyMovingWeight: " + onlyMovingWeight.ToString() + "  actionWeight: " + actionWeight.ToString() + " which should be greater than inactiveWeight: " + inactiveWeight.ToString());
+                                        //Debug.Log("Possible THOUGHT action for " + gameObject.name + " in " + possibleZone.name + "  with chanceOfSuccess: " + chanceOfSuccess.ToString() + "  onlyMovingWeight: " + onlyMovingWeight.ToString() + "  actionWeight: " + actionWeight.ToString());
                                         //if (actionWeight > inactiveWeight)
                                         //{
                                         allPossibleActions.Add(new UnitPossibleAction(this, thoughtable, actionProficiency, actionWeight, possibleZone, finalDestinationZone, possibleDestinationsAndPaths[finalDestinationZone], null, null));
@@ -1219,18 +1227,25 @@ public class Unit : MonoBehaviour
     public double GetMostValuableActionWeight()
     {
         double mostValuableActionWeight = 0;
-        GameObject currentZone = GetZone();
 
-        Dictionary<GameObject, MovementPath> possibleDestinations = GetPossibleDestinations(currentZone);
+        Dictionary<GameObject, MovementPath> allZonesMovementMap = GetAllZonesMovementMap(GetZone());
+        Dictionary<GameObject, MovementPath> possibleDestinations = GetReachableDestinations(allZonesMovementMap: allZonesMovementMap);
         List<UnitPossibleAction> allPossibleUnitActions = GetPossibleActions(possibleDestinations);
 
-        //string debugString = "GetMostValuableActionWeight for " + transform.tag;
+        string debugString = "GetMostValuableActionWeight for " + transform.tag;
+        //debugString += "\npossibleDestinations: ";
         //foreach (KeyValuePair<GameObject, MovementPath> zoneMove in possibleDestinations)
         //{
         //    debugString += "   " + zoneMove.Key.name + " with " + zoneMove.Value.movementSpent.ToString() + " movePoints";
         //}
-        //debugString += "\n";
-        //foreach (UnitPossibleAction unitPossibleAction in allPossibleUnitActions)
+        //debugString += "\nreachableZonesFutureWeightDict: ";
+        //Dictionary<GameObject, double> reachableZonesFutureWeightDict = GetReachableZonesFutureWeightDict(allZonesMovementMap, possibleDestinations);
+        //foreach (KeyValuePair<GameObject, double> zoneFutureWeight in reachableZonesFutureWeightDict)
+        //{
+        //    debugString += "   " + zoneFutureWeight.Key.name + " with " + zoneFutureWeight.Value.ToString() + " weight\t";
+        //}
+        //debugString += "\nallPossibleUnitActions: ";
+        //foreach (UnitPossibleAction unitPossibleAction in allPossibleUnitActions.OrderByDescending(possibleAction => possibleAction.actionWeight))
         //{
         //    debugString += "   " + unitPossibleAction.actionProficiency.actionType + " in " + unitPossibleAction.actionZone.name + " with weight " + unitPossibleAction.actionWeight.ToString();
         //}
@@ -1248,7 +1263,11 @@ public class Unit : MonoBehaviour
         }
         else
         {
-            mostValuableActionWeight = GetPartialMoveAndWeight(possibleDestinations).Item2;
+            Dictionary<GameObject, double> zonesFutureActionWeight = GetReachableZonesFutureWeightDict(allZonesMovementMap, possibleDestinations);
+            if (zonesFutureActionWeight.Count > 0)
+            {
+                mostValuableActionWeight = zonesFutureActionWeight.OrderByDescending(zoneFutureWeight => zoneFutureWeight.Value).First<KeyValuePair<GameObject, double>>().Value;
+            }
         }
 
         return mostValuableActionWeight;
@@ -1271,68 +1290,52 @@ public class Unit : MonoBehaviour
         return standingStillWeight;
     }
 
-    private Tuple<GameObject, double> GetPartialMoveAndWeight(Dictionary<GameObject, MovementPath> reachableDestinations, int iterations = 1)
+    private Dictionary<GameObject, double> GetReachableZonesFutureWeightDict(Dictionary<GameObject, MovementPath> zonesMovementMap, Dictionary<GameObject, MovementPath> reachableDestinations)
     {
-        double mostValuableActionWeight = -1000;  // Any suitably low number will work. Used to be InactiveWeight();, but with things like ForceMovement, I want every option added up
-        GameObject chosenDestination = null;
-        Dictionary<GameObject, MovementPath> reachableDestinationsWithoutBonusMovePoints = new Dictionary<GameObject, MovementPath>();
-
+        //string debugString = "Unit.GetReachableZonesFutureWeightDict() for " + gameObject.name + " in " + GetZone().name;
+        Dictionary<GameObject, double> zonesFutureWeightDict = new Dictionary<GameObject, double>();
         foreach (GameObject zone in reachableDestinations.Keys)
         {
-            if (reachableDestinations[zone].movementSpent <= movePoints)
-            {
-                reachableDestinationsWithoutBonusMovePoints[zone] = reachableDestinations[zone];
-                reachableDestinationsWithoutBonusMovePoints[zone].movementSpent = 0;  // Don't want to account for previously spent movement so set it to 0.
-            }
+            zonesFutureWeightDict[zone] = 0;
         }
 
-        Dictionary<GameObject, MovementPath> reachableAndFutureDestinations = new Dictionary<GameObject, MovementPath>(reachableDestinationsWithoutBonusMovePoints);
-        foreach (GameObject reachableZone in reachableDestinationsWithoutBonusMovePoints.Keys)
+        List<UnitPossibleAction> futurePossibleActions = GetPossibleActions(zonesMovementMap, isFutureAction: true);  // isFutureAction flag prevents infinite loop of GetPossibleActions() calling GetReachableZonesFutureWeightDict()
+        foreach (UnitPossibleAction unitAction in futurePossibleActions)
         {
-            Dictionary<GameObject, MovementPath> nextPossibleDestinations = GetPossibleDestinations(reachableZone, new Dictionary<GameObject, MovementPath>(reachableDestinationsWithoutBonusMovePoints), new HashSet<GameObject>(reachableDestinationsWithoutBonusMovePoints.Keys));
-            List<UnitPossibleAction> futurePossibleActions = GetPossibleActions(nextPossibleDestinations, true);  // isPartialMove = true
-
-            if (futurePossibleActions != null && futurePossibleActions.Count > 0)
+            foreach (GameObject zoneInPathToFutureAction in zonesMovementMap[unitAction.actionZone].zones)
             {
-                foreach (UnitPossibleAction unitAction in futurePossibleActions)
+                if (reachableDestinations.ContainsKey(zoneInPathToFutureAction)) 
                 {
-                    //// If an action with a moving target (the target being a hero)
+                    int movePointsToReachActionZone = zonesMovementMap[unitAction.actionZone].movementSpent - zonesMovementMap[zoneInPathToFutureAction].movementSpent;
+                    int movesToReachActionZone = (int)Math.Ceiling(movePointsToReachActionZone / (decimal)movePoints);
+                    if (movesToReachActionZone >= UnitIntel.partialMoveWeight.Length)  // Doesn't count UnitIntel.bonusMovePointsRemaining (and maybe it should)
+                    {
+                        movesToReachActionZone = UnitIntel.partialMoveWeight.Length - 1;
+                    }
+
+                    // If an action with a moving target (the target being a hero), reduce because otherwise these ranged actions all add up
                     //if (unitAction.actionProficiency.actionType == "MELEE" || unitAction.actionProficiency.actionType == "RANGED" || (unitAction.actionProficiency.actionType == "MANIPULATE" && unitAction.missionSpecificAction.targetType == "Grenade"))
                     //{
-                    //    unitAction.actionWeight = unitAction.actionWeight >= 0 ? unitAction.actionWeight * UnitIntel.partialMoveWeight[0] : unitAction.actionWeight / UnitIntel.partialMoveWeight[0];
+                    //    unitAction.actionWeight = unitAction.actionWeight >= 0 ? unitAction.actionWeight * UnitIntel.partialMoveWeight[1] : unitAction.actionWeight / UnitIntel.partialMoveWeight[1];
                     //}
-
-                    unitAction.actionWeight = unitAction.actionWeight >= 0 ? unitAction.actionWeight * UnitIntel.partialMoveWeight[0] : unitAction.actionWeight / UnitIntel.partialMoveWeight[0];  // Reduce weight for the fact these actions can't be completed until a second activation.
-                    if (unitAction.actionWeight > mostValuableActionWeight)
+                    double reachableZoneFutureWeightFactor = UnitIntel.partialMoveWeight[movesToReachActionZone] * UnitIntel.futureActionProximityWeightFactor[movePointsToReachActionZone];
+                    double weightOfFutureActionProximity = unitAction.actionWeight >= 0 ? unitAction.actionWeight * reachableZoneFutureWeightFactor : unitAction.actionWeight / reachableZoneFutureWeightFactor;
+                    if (weightOfFutureActionProximity > zonesFutureWeightDict[zoneInPathToFutureAction])
                     {
-                        mostValuableActionWeight = unitAction.actionWeight;
-                        chosenDestination = reachableZone;
-                        //Debug.Log("chosenDestination: " + chosenDestination.name + "  unitAction.actionProficiency.actionType: " + unitAction.actionProficiency.actionType + "   unitAction.actionWeight (after being reduced to 25%): " + unitAction.actionWeight.ToString());
-                    }
-                }
-            }
-
-            if (chosenDestination == null)
-            {
-                foreach (KeyValuePair<GameObject, MovementPath> aPossibleDestination in nextPossibleDestinations)
-                {
-                    if (!reachableAndFutureDestinations.ContainsKey(aPossibleDestination.Key))
-                    {
-                        reachableAndFutureDestinations.Add(aPossibleDestination.Key, aPossibleDestination.Value);
+                        zonesFutureWeightDict[zoneInPathToFutureAction] = weightOfFutureActionProximity;
                     }
                 }
             }
         }
-        if (chosenDestination != null)
-        {
-            return new Tuple<GameObject, double>(chosenDestination, mostValuableActionWeight);
-        }
-        //else if (iterations < 5)
+
+        //debugString += "\nzonesFutureWeightDict\t";
+        //foreach (KeyValuePair<GameObject, double> zoneFutureWeight in zonesFutureWeightDict.OrderByDescending(zoneFutureWeight => zoneFutureWeight.Value))
         //{
-        //    Tuple<GameObject, double> nextPartialMoveAndWeight = GetPartialMoveAndWeight(reachableAndFutureDestinations, iterations + 1);  // TODO Fix so it's not thinking a futureDestination is a reachable one, else you get "The given key was not present in the dictionary"
-        //    return new Tuple<GameObject, double>(nextPartialMoveAndWeight.Item1, nextPartialMoveAndWeight.Item2 * .25);
+        //    debugString += "\t" + zoneFutureWeight.Key.name + ":" + zoneFutureWeight.Value.ToString();
         //}
-        return new Tuple<GameObject, double>(null, 0);
+        //Debug.Log(debugString);
+
+        return zonesFutureWeightDict;
     }
 
     IEnumerator MoveToken(MovementPath pathToMove)
@@ -1890,12 +1893,12 @@ public class Unit : MonoBehaviour
         }
     }
 
-    private int RollAndReroll(List<GameObject> dicePool, int rerolls, int requiredSuccesses)
+    public int RollAndReroll(List<GameObject> dicePool, int rerolls, int requiredSuccesses)
     {
         int rolledSuccesses = 0;
         rerolls += luckyRerolls;
         List<ActionResult> currentActionResults = new List<ActionResult>();
-        string debugString = "RollAndReroll for unit " + gameObject.name + " with " + requiredSuccesses.ToString() + " requiredSuccesses. ";
+        //string debugString = "RollAndReroll for unit " + gameObject.name + " with " + requiredSuccesses.ToString() + " requiredSuccesses. ";
 
         // Separate dice results by color for freeRerolls
         Dictionary<string, List<ActionResult>> actionResultsByColor = new Dictionary<string, List<ActionResult>>();
@@ -1925,7 +1928,7 @@ public class Unit : MonoBehaviour
                     freeRerolls += 1;
                 }
             }
-            debugString += dieResults[0].die.color + " has " + freeRerolls.ToString() + " freeRerolls. ";
+            //debugString += dieResults[0].die.color + " has " + freeRerolls.ToString() + " freeRerolls. ";
 
             if (freeRerolls > 0 && rolledSuccesses < requiredSuccesses)
             {
@@ -1940,11 +1943,11 @@ public class Unit : MonoBehaviour
                     }
                     else
                     {
-                        debugString += "Using freeReroll to change from " + dieResults[i].successes.ToString() + " to ";
+                        //debugString += "Using freeReroll to change from " + dieResults[i].successes.ToString() + " to ";
                         rolledSuccesses -= dieResults[i].successes;
                         dieResults[i] = new ActionResult(dieResults[i].die, dieResults[i].die.Roll());
                         rolledSuccesses += dieResults[i].successes;
-                        debugString += dieResults[i].successes.ToString();
+                        //debugString += dieResults[i].successes.ToString();
 
                         if (rolledSuccesses >= requiredSuccesses)
                         {
@@ -1963,38 +1966,38 @@ public class Unit : MonoBehaviour
             {
                 break;
             }
-            debugString += "  On my " + (i + 1).ToString() + " reroll: ";
+            //debugString += "  On my " + (i + 1).ToString() + " reroll: ";
             int totalDiceRerolled = 0;
             for (int j = 0; j < currentActionResults.Count; j++)  // Reroll each die still below its average
             {
                 if (currentActionResults[i].successes < currentActionResults[i].die.averageSuccesses)
                 {
-                    debugString += " Changing " + currentActionResults[i].successes.ToString() + " to ";
+                    //debugString += " Changing " + currentActionResults[i].successes.ToString() + " to ";
                     rolledSuccesses -= currentActionResults[i].successes;
                     currentActionResults[i] = new ActionResult(currentActionResults[i].die, currentActionResults[i].die.Roll());
                     rolledSuccesses += currentActionResults[i].successes;
-                    debugString += currentActionResults[i].successes.ToString();
+                    //debugString += currentActionResults[i].successes.ToString();
                     totalDiceRerolled++;
                 }
             }
             if (totalDiceRerolled == 0)
             {
                 currentActionResults.Sort((x, y) => (y.die.averageSuccesses - y.successes).CompareTo(x.die.averageSuccesses - x.successes));  // Sorts from greatest below average to most above average
-                debugString += " Changing " + currentActionResults[i].successes.ToString() + " to ";
+                //debugString += " Changing " + currentActionResults[i].successes.ToString() + " to ";
                 rolledSuccesses -= currentActionResults[i].successes;
                 currentActionResults[i] = new ActionResult(currentActionResults[i].die, currentActionResults[i].die.Roll());
                 rolledSuccesses += currentActionResults[i].successes;
-                debugString += currentActionResults[i].successes.ToString();
+                //debugString += currentActionResults[i].successes.ToString();
             }
         }
 
         // Debug final roll
-        debugString += "\nFinal roll: ";
-        foreach (ActionResult myActionResult in currentActionResults)
-        {
-            debugString += myActionResult.successes.ToString() + ", ";
-        }
-        Debug.Log(debugString);
+        //debugString += "\nFinal roll: ";
+        //foreach (ActionResult myActionResult in currentActionResults)
+        //{
+        //    debugString += myActionResult.successes.ToString() + ", ";
+        //}
+        //Debug.Log(debugString);
         return rolledSuccesses;
     }
 

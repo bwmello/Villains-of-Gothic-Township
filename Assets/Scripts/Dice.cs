@@ -29,9 +29,10 @@ public class Dice : MonoBehaviour
             totalRerolls++;
         }
 
+        //return DiceMath.GetProbabilityOfDieResultToAvoid(color, totalRerolls, result, result);  // Fix this with desiredResult instead of result twice and replace all below
         if (totalRerolls > 0)
         {
-            double resultProbablility = Mathf.Pow((float)(GetProbabilityOfResult(result, 0, true)), totalRerolls + 1);  // This assumes you're using rerolls to avoid the result, giving you a lower probability. If that's not the case, resultProbability = 1 - this equation
+            double resultProbablility = Mathf.Pow((float)GetProbabilityOfResult(result, 0, true), totalRerolls + 1);  // This assumes you're using rerolls to avoid the result, giving you a lower probability. If that's not the case, resultProbability = 1 - this equation
             return resultProbablility;
         }
         else
@@ -63,71 +64,76 @@ public class Dice : MonoBehaviour
         switch (color)
         {
             case "white":
-                switch (totalRerolls)  // Unity can't handle C# 8 syntax yet, so don't simplify this into a switch expression until then
-                {
-                    case 0:
-                        expectedValue = 2d / 3d;
-                        break;
-                    default:
-                        expectedValue = Mathf.Pow(4f / 6f, totalRerolls) * GetExpectedValue(0, true) + 2 - Mathf.Pow(2, totalRerolls + 1) * Mathf.Pow(3, -totalRerolls);
-                        break;
-                }
+                expectedValue = DiceMath.whiteDieExpectedValues[totalRerolls];
+                //switch (totalRerolls)  // Unity can't handle C# 8 syntax yet, so don't simplify this into a switch expression until then
+                //{
+                //    case 0:
+                //        expectedValue = 2d / 3d;
+                //        break;
+                //    default:
+                //        expectedValue = Mathf.Pow(4f / 6f, totalRerolls) * GetExpectedValue(0, true) + 2 - Mathf.Pow(2, totalRerolls + 1) * Mathf.Pow(3, -totalRerolls);
+                //        break;
+                //}
                 break;
             case "yellow":
-                switch (totalRerolls)
-                {
-                    case 0:
-                        expectedValue = 2d / 3d;
-                        break;
-                    case 1:
-                        expectedValue = 1;
-                        break;
-                    case 2:
-                        expectedValue = 7d / 6d;
-                        break;
-                    default:
-                        expectedValue = Mathf.Pow(5f / 6f, totalRerolls - 2) * GetExpectedValue(2, true) + (1d / 3d) * (6 - Mathf.Pow(5, totalRerolls - 2) * Mathf.Pow(6, 3 - totalRerolls));
-                        break;
-                }
+                expectedValue = DiceMath.yellowDieExpectedValues[totalRerolls];
+                //switch (totalRerolls)
+                //{
+                //    case 0:
+                //        expectedValue = 2d / 3d;
+                //        break;
+                //    case 1:
+                //        expectedValue = 1;
+                //        break;
+                //    case 2:
+                //        expectedValue = 7d / 6d;
+                //        break;
+                //    default:
+                //        expectedValue = Mathf.Pow(5f / 6f, totalRerolls - 2) * GetExpectedValue(2, true) + (1d / 3d) * (6 - Mathf.Pow(5, totalRerolls - 2) * Mathf.Pow(6, 3 - totalRerolls));
+                //        break;
+                //}
                 break;
             case "orange":
-                switch (totalRerolls)
-                {
-                    case 0:
-                        expectedValue = 1;
-                        break;
-                    default:
-                        expectedValue = Mathf.Pow(4f / 6f, totalRerolls) * GetExpectedValue(0, true) + 2 - Mathf.Pow(2, totalRerolls + 1) * Mathf.Pow(3, -totalRerolls);
-                        break;
-                }
+                expectedValue = DiceMath.orangeDieExpectedValues[totalRerolls];
+                //switch (totalRerolls)
+                //{
+                //    case 0:
+                //        expectedValue = 1;
+                //        break;
+                //    default:
+                //        expectedValue = Mathf.Pow(4f / 6f, totalRerolls) * GetExpectedValue(0, true) + 2 - Mathf.Pow(2, totalRerolls + 1) * Mathf.Pow(3, -totalRerolls);
+                //        break;
+                //}
                 break;
             case "red":
-                switch (totalRerolls)
-                {
-                    case 0:
-                        expectedValue = 1.5;
-                        break;
-                    case 1:
-                        expectedValue = 23d / 12d;
-                        break;
-                    case 2:
-                        expectedValue = 17d / 8d;
-                        break;
-                    default:
-                        expectedValue = Mathf.Pow(5f / 6f, totalRerolls - 2) * GetExpectedValue(2, true) + 3 - Mathf.Pow(2, 2 - totalRerolls) * Mathf.Pow(3, 3 - totalRerolls) * Mathf.Pow(5, totalRerolls - 2);
-                        break;
-                }
+                expectedValue = DiceMath.redDieExpectedValues[totalRerolls];
+                //switch (totalRerolls)
+                //{
+                //    case 0:
+                //        expectedValue = 1.5;
+                //        break;
+                //    case 1:
+                //        expectedValue = 23d / 12d;
+                //        break;
+                //    case 2:
+                //        expectedValue = 17d / 8d;
+                //        break;
+                //    default:
+                //        expectedValue = Mathf.Pow(5f / 6f, totalRerolls - 2) * GetExpectedValue(2, true) + 3 - Mathf.Pow(2, 2 - totalRerolls) * Mathf.Pow(3, 3 - totalRerolls) * Mathf.Pow(5, totalRerolls - 2);
+                //        break;
+                //}
                 break;
             case "black":
-                switch (totalRerolls)
-                {
-                    case 0:
-                        expectedValue = 1.5;
-                        break;
-                    default:
-                        expectedValue = Mathf.Pow(4f / 6f, totalRerolls) * GetExpectedValue(0, true) + 4 - Mathf.Pow(2, totalRerolls + 2) * Mathf.Pow(3, -totalRerolls);
-                        break;
-                }
+                expectedValue = DiceMath.blackDieExpectedValues[totalRerolls];
+                //switch (totalRerolls)
+                //{
+                //    case 0:
+                //        expectedValue = 1.5;
+                //        break;
+                //    default:
+                //        expectedValue = Mathf.Pow(4f / 6f, totalRerolls) * GetExpectedValue(0, true) + 4 - Mathf.Pow(2, totalRerolls + 2) * Mathf.Pow(3, -totalRerolls);
+                //        break;
+                //}
                 break;
         }
         return expectedValue;

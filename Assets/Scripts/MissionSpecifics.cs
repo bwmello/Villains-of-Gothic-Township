@@ -196,17 +196,17 @@ public static class MissionSpecifics
                             ZoneInfo ratZoneInfo = ratZone.GetComponent<ZoneInfo>();
                             if (ratZone == actionZone)
                             {
-                                weight -= actionWeight.weightFactor / 2;
+                                weight -= actionWeight.weightFactor / 1.1;
                                 //ratPlacementWeightDebugString += "\tratZone == actionZone, weight: " + weight.ToString();
                             }
                             else if (actionZoneInfo.adjacentZones.Contains(ratZone))
                             {
-                                weight -= actionWeight.weightFactor / 4;
+                                weight -= actionWeight.weightFactor / 2;
                                 //ratPlacementWeightDebugString += "\tactionZone.adjacentZones.Contains(" + ratZone.name + "), weight: " + weight.ToString();
                             }
                             else if (actionZoneInfo.steeplyAdjacentZones.Contains(ratZone))
                             {
-                                weight -= actionWeight.weightFactor / 6;
+                                weight -= actionWeight.weightFactor / 3;
                                 //ratPlacementWeightDebugString += "\tactionZone.steeplyAdjacentZones.Contains(" + ratZone.name + "), weight: " + weight.ToString();
                             }
                         }
