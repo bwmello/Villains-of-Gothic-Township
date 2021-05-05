@@ -157,7 +157,6 @@ public class ScenarioMap : MonoBehaviour
         }
         else
         {
-            animate.CameraToFixedZoom();
             // Dredge the river, removing any tiles with 0 units on the map
             foreach (string unitTag in new List<string>(villainRiver))
             {
@@ -179,6 +178,7 @@ public class ScenarioMap : MonoBehaviour
         MissionSpecifics.currentPhase = "Villain";
         EnablePlayerUI();  // Needed to show UtilityBelt if villain taking first turn. Can't put in StartFirstTurn() either because don't want clock and menu buttons to flash on screen
         DisablePlayerUI();  // Disable all UI so Villain turn isn't interrupted
+        Camera.main.GetComponent<PanAndZoom>().controlCamera = false;  // Disable camera controls. Animate functions undo this, but are responsible for redisabling player's control of camera
         yield return StartCoroutine(MissionSpecifics.VillainTurnStarted());
 
         if (MissionSpecifics.IsGameOver(currentRound))
@@ -190,10 +190,6 @@ public class ScenarioMap : MonoBehaviour
         {
             DissipateEnvironTokens(false);
             MissionSpecifics.SetActionsWeightTable();
-            // Disable camera controls
-            Camera.main.GetComponent<PanAndZoom>().controlCamera = false;
-            //animate.CameraToFixedZoom();  // Moved to Unit.ActivateUnit() to prevent camera jump from zoomed in to first unit's turn
-
             UnitIntel.ResetPerRoundResources();
 
             yield return StartCoroutine(ActivateRiverTiles());
@@ -235,6 +231,7 @@ public class ScenarioMap : MonoBehaviour
             if (unitTypeToActivate == "REINFORCEMENT")
             {
                 yield return StartCoroutine(CallReinforcements(MissionSpecifics.GetReinforcementPoints()));
+                yield return StartCoroutine(MissionSpecifics.ActivateReinforcement());
             }
             else
             {
@@ -450,6 +447,8 @@ public class ScenarioMap : MonoBehaviour
         List<Tuple<UnitPool, double, GameObject>> reinforcementsAvailable = GetAvailableReinforcements();
         //int reinforcementPointsRemaining = reinforcementPoints;
         int i = 0;
+        animate.CameraToFixedZoom();
+
         while (reinforcementPoints > 0 && i < reinforcementsAvailable.Count)
         {
             Unit unitInfo = reinforcementsAvailable[i].Item1.unit.GetComponent<Unit>();
@@ -475,7 +474,6 @@ public class ScenarioMap : MonoBehaviour
             i++;
         }
 
-        yield return StartCoroutine(MissionSpecifics.ActivateReinforcement());
         yield return 0;
     }
 
@@ -533,13 +531,16 @@ public class ScenarioMap : MonoBehaviour
         foreach (GameObject possibleZone in possibleZones)
         {
             GameObject availableUnitSlot = possibleZone.GetComponent<ZoneInfo>().GetAvailableUnitSlot();
-            GameObject tempUnit = Instantiate(unitPrefab, availableUnitSlot.transform);
-            double currentZoneActionWeight = tempUnit.GetComponent<Unit>().GetMostValuableActionWeight();
-            DestroyImmediate(tempUnit);
-            if (currentZoneActionWeight > bestZoneActionWeight)
+            if (availableUnitSlot != null)
             {
-                bestZone = possibleZone;
-                bestZoneActionWeight = currentZoneActionWeight;
+                GameObject tempUnit = Instantiate(unitPrefab, availableUnitSlot.transform);
+                double currentZoneActionWeight = tempUnit.GetComponent<Unit>().GetMostValuableActionWeight();
+                DestroyImmediate(tempUnit);
+                if (currentZoneActionWeight > bestZoneActionWeight)
+                {
+                    bestZone = possibleZone;
+                    bestZoneActionWeight = currentZoneActionWeight;
+                }
             }
         }
 

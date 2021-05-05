@@ -315,7 +315,6 @@ public class Unit : MonoBehaviour
     {
         GameObject currentZone = GetZone();
 
-        animate.CameraToFixedZoom();   // Placed here because otherwise the camera "jumps" from zoomed in to first unit's move
         if (currentZone != chosenAction.actionZone)
         {
             chosenAction.pathTaken.zones.Add(chosenAction.actionZone);  // Otherwise token is never animated moving the last zone to the destination
@@ -406,7 +405,6 @@ public class Unit : MonoBehaviour
                 }
             }
 
-            animate.CameraToFixedZoom();   // Placed here because otherwise the camera "jumps" from zoomed in to first unit's move
             if (GetZone() != chosenAction.actionZone)
             {
                 chosenAction.pathTaken.zones.Add(chosenAction.actionZone);  // Otherwise token is never animated moving the last zone to the destination
@@ -438,7 +436,7 @@ public class Unit : MonoBehaviour
 
             foreach (UnitPossibleAction unitAction in allPossibleUnitActions)
             {
-                //allPossibleUnitActionsDebugString += "\nPossible " + unitAction.actionProficiency.actionType + " action in " + unitAction.actionZone.name + " with weight: " + unitAction.actionWeight.ToString();
+                //allPossibleUnitActionsDebugString += "\nPossible " + unitAction.actionProficiency.actionType + " action in " + unitAction.actionZone.name + " and finalDestinationZone: " + unitAction.finalDestinationZone.name + "  with weight: " + unitAction.actionWeight.ToString();
                 if (chosenAction == null || unitAction.actionWeight > chosenAction.actionWeight)
                 {
                     chosenAction = unitAction;
@@ -451,7 +449,6 @@ public class Unit : MonoBehaviour
                 yield break;
             }
 
-            animate.CameraToFixedZoom();   // Placed here because otherwise the camera "jumps" from zoomed in to first unit's move
             if (GetZone() != chosenAction.actionZone)
             {
                 chosenAction.pathTaken.zones.Add(chosenAction.actionZone);  // Otherwise token is never animated moving the last zone to the destination
@@ -479,9 +476,10 @@ public class Unit : MonoBehaviour
             {
                 if (!hasActed && GetZone() != chosenAction.finalDestinationZone)
                 {
+                    possibleDestinations[chosenAction.finalDestinationZone].zones.Add(chosenAction.finalDestinationZone);  // Otherwise token is never animated moving the last zone to the destination
                     yield return StartCoroutine(MoveToken(possibleDestinations[chosenAction.finalDestinationZone]));
                 }
-                else if (hasActed)
+                else if (hasActed)  // Recalculate optimal finalDestinationZone as may have been impacted by action (ex: failing to arm bomb in ASinkingFeeling mission or successfully activating cryo computers from IceToMeetYou mission)
                 {
                     Dictionary<GameObject, MovementPath> postActionAllZonesMovementMap = GetAllZonesMovementMap(GetZone());  // Recalculate movement/capacity as unit's action may have affected it
                     Dictionary<GameObject, MovementPath> possibleFinalDestinations = GetReachableDestinations(allZonesMovementMap: postActionAllZonesMovementMap);
@@ -528,7 +526,7 @@ public class Unit : MonoBehaviour
                             }
                         }
                     }
-                    if (finalDestinationZone)
+                    if (finalDestinationZone && finalDestinationZone != GetZone())
                     {
                         finalDestinationMovePath.zones.Add(finalDestinationZone);
                         yield return StartCoroutine(MoveToken(finalDestinationMovePath));
@@ -539,17 +537,7 @@ public class Unit : MonoBehaviour
                 }
             }
         }
-        else  // Means no guarding, no actions of moveActionProficiency.actionType
-        {
-            Dictionary<GameObject, double> noActionZonesFutureActionWeight = GetReachableZonesFutureWeightDict(allZonesMovementMap, possibleDestinations);
-            if (noActionZonesFutureActionWeight.Count > 0)
-            {
-                GameObject noActionDestinationZone = noActionZonesFutureActionWeight.OrderByDescending(zoneFutureWeight => zoneFutureWeight.Value).First<KeyValuePair<GameObject, double>>().Key;
-                yield return StartCoroutine(MoveToken(possibleDestinations[noActionDestinationZone]));
-                hasMoved = true;
-            }
-        }
-        //Debug.Log(allPossibleUnitActionsDebugString);
+
         yield return 0;
     }
 
@@ -825,6 +813,7 @@ public class Unit : MonoBehaviour
             int availableRerolls = possibleZoneInfo.GetSupportRerolls(gameObject);
             double bonusMovePointWeight = 0;
             double guardZoneWeight = 0;
+            double futureActionProximityWeight = 0;  // Only counted if !isFutureAction
             double finalActionWeightFactor = 1;  // actionWeight = actionWeight >= 0 ? actionWeight * finalActionWeightFactor : actionWeight / finalActionWeightFactor
             GameObject finalDestinationZone = possibleZone;
             MissionSpecifics.ActionWeight defaultGuardAction = new MissionSpecifics.ActionWeight();
@@ -838,15 +827,18 @@ public class Unit : MonoBehaviour
                     {
                         double possibleBonusMovePointWeight = 0;
                         double possibleGuardZoneWeight = 0;
+                        double possibleFutureActionProximityWeight = 0;
                         MissionSpecifics.ActionWeight possibleGuardAction = new MissionSpecifics.ActionWeight();
                         ZoneInfo possibleFinalDestinationZoneInfo = possibleFinalDestinationZone.GetComponent<ZoneInfo>();
 
+                        // Calculate possibleBonusMovePointWeight
                         if (!isFutureAction && possibleDestinationsAndPaths[possibleFinalDestinationZone].movementSpent > movePoints)
                         {
                             //Debug.Log(gameObject.name + " looking at possibleFinalDestinationZone " + possibleFinalDestinationZone.name + ":   possibleDestinationsAndPaths[possibleFinalDestinationZone].movementSpent " + possibleDestinationsAndPaths[possibleFinalDestinationZone].movementSpent.ToString() + " > movePoints " + movePoints.ToString());
                             possibleBonusMovePointWeight = UnitIntel.bonusMovePointWeight[possibleDestinationsAndPaths[possibleFinalDestinationZone].movementSpent - movePoints];
                         }
 
+                        // Calculate possibleGuardZoneWeight
                         if (MissionSpecifics.actionsWeightTable.ContainsKey("GUARD") && menace > 0)
                         {
                             foreach (MissionSpecifics.ActionWeight guardable in MissionSpecifics.actionsWeightTable["GUARD"])
@@ -862,12 +854,19 @@ public class Unit : MonoBehaviour
                             }
                         }
 
-                        if (possibleGuardZoneWeight + possibleBonusMovePointWeight > guardZoneWeight + bonusMovePointWeight)
+                        // Calculate possibleFutureActionProximityWeight
+                        if (!isFutureAction)
+                        {
+                            possibleFutureActionProximityWeight = reachableZonesFutureWeightDict[possibleFinalDestinationZone];
+                        }
+
+                        if (possibleGuardZoneWeight + possibleBonusMovePointWeight + possibleFutureActionProximityWeight > guardZoneWeight + bonusMovePointWeight + futureActionProximityWeight)
                         {
                             finalDestinationZone = possibleFinalDestinationZone;
                             guardZoneWeight = possibleGuardZoneWeight;
-                            bonusMovePointWeight = possibleBonusMovePointWeight;
                             defaultGuardAction = possibleGuardAction;
+                            bonusMovePointWeight = possibleBonusMovePointWeight;
+                            futureActionProximityWeight = possibleFutureActionProximityWeight;
                         }
                     }
                 }
@@ -875,10 +874,14 @@ public class Unit : MonoBehaviour
             else
             {
                 finalActionWeightFactor *= UnitIntel.terrainDangerWeightFactor[possibleDestinationsAndPaths[possibleZone].terrainDanger];
+
+                // Calculate bonusMovePointWeight
                 if (!isFutureAction && possibleDestinationsAndPaths[possibleZone].movementSpent > movePoints)
                 {
                     bonusMovePointWeight = UnitIntel.bonusMovePointWeight[possibleDestinationsAndPaths[possibleZone].movementSpent - movePoints];
                 }
+
+                // Calculate guardZoneWeight
                 if (MissionSpecifics.actionsWeightTable.ContainsKey("GUARD") && menace > 0)
                 {
                     foreach (MissionSpecifics.ActionWeight guardable in MissionSpecifics.actionsWeightTable["GUARD"])
@@ -892,8 +895,14 @@ public class Unit : MonoBehaviour
                         }
                     }
                 }
+
+                // Calculate futureActionProximityWeight
+                if (!isFutureAction)
+                {
+                    futureActionProximityWeight = reachableZonesFutureWeightDict[possibleZone];
+                }
             }
-            double onlyMovingWeight = bonusMovePointWeight + guardZoneWeight;  // + futureActionProximityWeight;
+            double onlyMovingWeight = bonusMovePointWeight + guardZoneWeight + futureActionProximityWeight;
 
             bool zoneAddedToAllPossibleActions = false;
             foreach (ActionProficiency actionProficiency in actionProficiencies)
@@ -1231,6 +1240,7 @@ public class Unit : MonoBehaviour
         Dictionary<GameObject, MovementPath> allZonesMovementMap = GetAllZonesMovementMap(GetZone());
         Dictionary<GameObject, MovementPath> possibleDestinations = GetReachableDestinations(allZonesMovementMap: allZonesMovementMap);
         List<UnitPossibleAction> allPossibleUnitActions = GetPossibleActions(possibleDestinations);
+        double inactiveWeight = GetInactiveWeight() + GetReachableZonesFutureWeightDict(zonesMovementMap: allZonesMovementMap, reachableDestinations: possibleDestinations)[GetZone()];
 
         string debugString = "GetMostValuableActionWeight for " + transform.tag;
         //debugString += "\npossibleDestinations: ";
@@ -1247,7 +1257,7 @@ public class Unit : MonoBehaviour
         //debugString += "\nallPossibleUnitActions: ";
         //foreach (UnitPossibleAction unitPossibleAction in allPossibleUnitActions.OrderByDescending(possibleAction => possibleAction.actionWeight))
         //{
-        //    debugString += "   " + unitPossibleAction.actionProficiency.actionType + " in " + unitPossibleAction.actionZone.name + " with weight " + unitPossibleAction.actionWeight.ToString();
+        //    debugString += "   " + unitPossibleAction.actionProficiency.actionType + " in actionZone: " + unitPossibleAction.actionZone.name + " and finalDestinationZone: " + unitPossibleAction.finalDestinationZone.name + " with weight " + unitPossibleAction.actionWeight.ToString();
         //}
         //Debug.Log(debugString);
 
@@ -1261,19 +1271,11 @@ public class Unit : MonoBehaviour
                 }
             }
         }
-        else
-        {
-            Dictionary<GameObject, double> zonesFutureActionWeight = GetReachableZonesFutureWeightDict(allZonesMovementMap, possibleDestinations);
-            if (zonesFutureActionWeight.Count > 0)
-            {
-                mostValuableActionWeight = zonesFutureActionWeight.OrderByDescending(zoneFutureWeight => zoneFutureWeight.Value).First<KeyValuePair<GameObject, double>>().Value;
-            }
-        }
 
-        return mostValuableActionWeight;
+        return mostValuableActionWeight - inactiveWeight;
     }
 
-    public double GetInactiveWeight()  // Weight from standing still and just guarding
+    public double GetInactiveWeight()  // Weight from standing still and just guarding, doesn't include futureWeightDict
     {
         double standingStillWeight = 0;
         if (MissionSpecifics.actionsWeightTable.ContainsKey("GUARD") && menace > 0)
@@ -1340,6 +1342,7 @@ public class Unit : MonoBehaviour
 
     IEnumerator MoveToken(MovementPath pathToMove)
     {
+        animate.CameraToFixedZoom();
         yield return StartCoroutine(AnimateMovementPath(pathToMove));
         string debugString = "Moved " + tag;
         for (int i = 1; i < pathToMove.zones.Count; i++)
@@ -1448,6 +1451,7 @@ public class Unit : MonoBehaviour
         int applicableCurrentZoneHindrance = currentZoneHindrance > ignoreMenace ? currentZoneHindrance - ignoreMenace : 0;
         int availableRerolls = currentZoneInfo.GetSupportRerolls(gameObject);
 
+        animate.CameraToFixedZoom();
         if (!animate.IsPointOnScreen(transform.position, 0))
         {
             animate.mainCamera.transform.position = new Vector3(transform.position.x, transform.position.y, animate.mainCamera.transform.position.z);

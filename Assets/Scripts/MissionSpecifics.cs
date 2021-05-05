@@ -138,7 +138,7 @@ public static class MissionSpecifics
             case "JamAndSeek":
                 actionsWeightTable["MELEE"] = new List<ActionWeight>();
                 actionsWeightTable["RANGED"] = new List<ActionWeight>();
-                if (currentRound >= GetFinalPassiveRound())  // Gives a few passive villain turns before turning aggressive
+                if (currentRound > GetFinalPassiveRound())  // Gives a few passive villain turns before turning aggressive
                 {
                     actionsWeightTable["MELEE"] = new List<ActionWeight>(initialAttackWeightTable);
                     actionsWeightTable["RANGED"] = new List<ActionWeight>(initialAttackWeightTable);
@@ -250,7 +250,7 @@ public static class MissionSpecifics
         switch (missionName)
         {
             case "JamAndSeek":
-                return 3;  // 3 is maximum
+                return 2;  // 2 is maximum  // Must be Aggressive by villain turn 4, which is round 3, so FinalPassiveRound can't be greater than 2
         }
         return 0;
     }
@@ -643,7 +643,7 @@ public static class MissionSpecifics
         switch (missionName)
         {
             case "JamAndSeek":
-                if (currentRound == GetFinalPassiveRound())
+                if (currentRound == GetFinalPassiveRound() + 1)  // GetFinalPassiveRound() + 1 is the round the villain goes Aggressive
                 {
                     GameObject ollygatorEntranceZone = null;
                     foreach (GameObject zone in GameObject.FindGameObjectsWithTag("ZoneInfoPanel"))
@@ -655,6 +655,8 @@ public static class MissionSpecifics
                         }
                     }
                     GameObject ollygatorUnitSlot = ollygatorEntranceZone.GetComponent<ZoneInfo>().GetAvailableUnitSlot();
+
+                    scenarioMap.animate.CameraToFixedZoom();  // Not the standard reinforcement flow, so doublecheck camera zoom
                     if (!scenarioMap.animate.IsPointOnScreen(ollygatorUnitSlot.transform.position, .01f))  // Reinforcements typically spawned on edges/corners of map, so greatly reduce buffer to prevent slight camera jumps
                     {
                         scenarioMap.animate.mainCamera.transform.position = new Vector3(ollygatorUnitSlot.transform.position.x, ollygatorUnitSlot.transform.position.y, scenarioMap.animate.mainCamera.transform.position.z);
@@ -771,11 +773,11 @@ public static class MissionSpecifics
                 {
                     if (currentRound > GetFinalPassiveRound())
                     {
-                        weight = 100;  // Sure, 100 points for getting rid of an information token
+                        weight = 30;  // Sure, 30 points for getting rid of an information token
                     }
                     else
                     {
-                        weight = 50;  // You don't get the red reinforcement die if you activate REINFORCEMENTS instead of a character tile, so wait until you're no longer passive to reinforce
+                        weight = 10;  // You don't get the red reinforcement die if you activate REINFORCEMENTS instead of a character tile, so wait until you're no longer passive to reinforce
                     }
                 }
                 break;
@@ -793,7 +795,7 @@ public static class MissionSpecifics
 
     public static IEnumerator ActivateReinforcement()
     {
-        string debugString = "MissionSpecifics.ActivateReinforcement(), missionName " + missionName;
+        //string debugString = "MissionSpecifics.ActivateReinforcement(), missionName " + missionName;
         switch (missionName)
         {
             case "ASinkingFeeling":
@@ -852,7 +854,7 @@ public static class MissionSpecifics
                 List<GameObject> activeRats = GetActiveTokens(new List<string>() { "Rat" });
                 if (ratSnatcher != null && activeRats.Count > 0)
                 {
-                    debugString += "\nRATSNATCHER is active and activeRats.Count " + activeRats.Count.ToString();
+                    //debugString += "\nRATSNATCHER is active and activeRats.Count " + activeRats.Count.ToString();
                     List<(GameObject, GameObject, double)> ratMovesByWeight = new List<(GameObject, GameObject, double)>();  // rat, zone, weight
                     ActionWeight spreadInfectionAction = new ActionWeight(null, 3, 100, SpreadInfection, null);  // Generic SpreadInfection actionWeight or GetComplexActionWeight()
 
@@ -873,7 +875,7 @@ public static class MissionSpecifics
                             possibleZones.UnionWith(zoneInfo.adjacentZones);
                             possibleZones.UnionWith(zoneInfo.steeplyAdjacentZones);
                         }
-                        debugString += "\nFor rat in " + ratZone.name + ", with " + possibleZones.Count.ToString() + " possibleZones and ratOriginalZoneWeight " + ratOriginalZoneWeight.ToString();
+                        //debugString += "\nFor rat in " + ratZone.name + ", with " + possibleZones.Count.ToString() + " possibleZones and ratOriginalZoneWeight " + ratOriginalZoneWeight.ToString();
 
                         foreach (GameObject zone in possibleZones)
                         {
@@ -881,7 +883,7 @@ public static class MissionSpecifics
                             double ratMoveWeight = ratInZoneWeight - ratOriginalZoneWeight;
                             if (ratMoveWeight > 0)
                             {
-                                debugString += "\tAdding " + zone.name + " with ratMoveWeight " + ratMoveWeight.ToString();
+                                //debugString += "\tAdding " + zone.name + " with ratMoveWeight " + ratMoveWeight.ToString();
                                 ratMovesByWeight.Add((rat, zone, ratMoveWeight));
                             }
                         }
@@ -921,7 +923,7 @@ public static class MissionSpecifics
                 }
                 break;
         }
-        Debug.Log(debugString);
+        //Debug.Log(debugString);
         yield return 0;
     }
 

@@ -276,6 +276,7 @@ public class Animate : MonoBehaviour
         yield return new WaitForSecondsRealtime(secondsToDelay);
         float t = 0;
         Vector3 camStartCoords;
+        CameraToFixedZoom();  // To prevent moving the camera at max zoom (ex: player zooms in between ranged attacks)
         if (IsPointOnScreen(origin))
         {
             //Debug.Log("!!!MoveCameraUntilOnscreen, origin " + origin.ToString() + "  is on screen.");
@@ -399,7 +400,7 @@ public class Animate : MonoBehaviour
         attacker.GetComponent<Unit>().SetIsClickable(false);
         targetZoneInfo.SetIsClickableForHeroesAndAllies(false);
         panAndZoom.controlCamera = false;
-        CameraToFixedZoom();
+        // Don't zoom in here or you get a weird jump if player has moved the camera
 
         EndShowImpact();
         attacker.GetComponent<ObjectShake>().StopShaking();
@@ -491,6 +492,7 @@ public class Animate : MonoBehaviour
         attacker.GetComponent<Unit>().SetIsClickable(false);
         targetZoneInfo.SetIsClickableForHeroesAndAllies(false);
         panAndZoom.controlCamera = false;
+        // Don't zoom in here or you get a weird jump if player has moved the camera
 
         EndBulletPaths();
         attacker.GetComponent<ObjectShake>().StopShaking();
