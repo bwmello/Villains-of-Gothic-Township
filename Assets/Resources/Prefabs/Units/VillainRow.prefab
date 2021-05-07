@@ -1003,6 +1003,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   berserkDie: {fileID: 3977603957081343019, guid: d58eb93d5ddbb4ba8a58a52718e7f90a,
     type: 3}
+  imaginedCompanionDie: {fileID: 4378926195687391191, guid: 57078db74302144e8a156c288214f7e9,
+    type: 3}
   fadedAlpha: 0.2
   isHeroAlly: 0
   lifePoints: 1
@@ -1016,6 +1018,8 @@ MonoBehaviour:
   size: 1
   menace: 1
   supportRerolls: 0
+  luckyRerolls: 0
+  imaginedCompanion: 0
   movePoints: 0
   ignoreTerrainDifficulty: 0
   ignoreElevation: 0
@@ -1034,6 +1038,7 @@ MonoBehaviour:
   pointBlankRerolls: 0
   burstCarryOver: 0
   munitionSpecialist: 0
+  reducedMobility: 0
   flying: 0
   gasImmunity: 0
   frosty: 0

@@ -59,6 +59,8 @@ public static class MissionSpecifics
         int totalComputers;
         int totalJammers;
         int totalActiveJammers;
+        int totalToyBoxes;
+        int totalTraps;
 
         switch (missionName)  // Each nonconstant key (ex: "THOUGHT") should be wiped each time and only added back in if conditions are still met
         {
@@ -174,6 +176,25 @@ public static class MissionSpecifics
                 actionsWeightTable["THOUGHT"] = new List<ActionWeight>();
                 actionsWeightTable["THOUGHT"].Add(new ActionWeight(null, 3, 200, SpreadInfection, new List<string>() { "RATSNATCHER" }));
                 break;
+            case "JackInTheBomb":
+                actionsWeightTable["MELEE"] = new List<ActionWeight>(initialAttackWeightTable);
+                actionsWeightTable["RANGED"] = new List<ActionWeight>(initialAttackWeightTable);
+
+                totalToyBoxes = GetTotalActiveTokens(new List<string>() { "ToyBox" });
+                totalTraps = GetTotalActiveTokens(new List<string>() { "Trap" });
+
+                actionsWeightTable["MANIPULATION"] = new List<ActionWeight>();
+                if (totalTraps < 4)
+                {
+                    actionsWeightTable["MANIPULATION"].Add(new ActionWeight("Trap", 2, 100, PlaceTrap, new List<string>()));  // 100 * chanceOfSuccess, 
+                }
+
+                actionsWeightTable["GUARD"] = new List<ActionWeight>();
+                if (totalToyBoxes > 0)
+                {
+                    actionsWeightTable["GUARD"].Add(new ActionWeight("ToyBox", 0, 20, null, new List<string>()));  // Flat weight bonus for hindering heroes attempting to disable objectives
+                }
+                break;
         }
     }
 
@@ -241,6 +262,8 @@ public static class MissionSpecifics
                 return 7;
             case "RatRace":
                 return 7;
+            case "JackInTheBomb":
+                return 6;
         }
         return -1;
     }
@@ -289,6 +312,8 @@ public static class MissionSpecifics
                 return 2;
             case "RatRace":
                 return 2;
+            case "JackInTheBomb":
+                return 3;
         }
         return 0;
     }
@@ -326,6 +351,8 @@ public static class MissionSpecifics
                 return 0;
             case "RatRace":
                 return 0;
+            case "JackInTheBomb":
+                return 0;
         }
         return 0;
     }
@@ -344,6 +371,8 @@ public static class MissionSpecifics
                 return 2.75;
             case "RatRace":
                 return 2.5;
+            case "JackInTheBomb":
+                return 2.25;
         }
         return 100;
     }
@@ -355,7 +384,7 @@ public static class MissionSpecifics
         //    default:
         //        return new int[] { 0, 1, 2 };
         //}
-        return new int[] { 0, 1, 2 };  // Can be adjusted like: { 0, 1, 1, 2} to increase frequency of certain values
+        return new int[] { 0, 1, 2 };  // Can be adjusted like: { 0, 1, 1, 2 } to increase frequency of certain values
     }
 
     public static void ObjectiveTokenClicked(Button button)
@@ -545,6 +574,13 @@ public static class MissionSpecifics
                     return true;
                 }
                 break;
+            case "JackInTheBomb":
+                int totalToyBoxesRemaining = GetTotalActiveTokens(new List<string>() { "ToyBox" });
+                if (currentRound >= GetFinalRound() || totalToyBoxesRemaining < 2)  // end of hero turn 6 or 4 of 5 toyboxes are neutralized
+                {
+                    return true;
+                }
+                break;
             default:
                 break;
         }
@@ -605,6 +641,13 @@ public static class MissionSpecifics
                     return true;
                 }
                 break;
+            case "JackInTheBomb":
+                int totalToyBoxesRemaining = GetTotalActiveTokens(new List<string>() { "ToyBox" });
+                if (totalToyBoxesRemaining < 2)
+                {
+                    return true;
+                }
+                break;
             default:
                 break;
         }
@@ -630,6 +673,15 @@ public static class MissionSpecifics
                     foreach (GameObject primedBomb in GetActiveTokens(new List<string>() { "PrimedBomb" }))
                     {
                         scenarioMap.animate.ShowLoopingExplosion(primedBomb.transform.position);
+                    }
+                }
+                break;
+            case "JackInTheBomb":
+                if (!IsHeroVictory())
+                {
+                    foreach (GameObject toyBox in GetActiveTokens(new List<string>() { "ToyBox" }))
+                    {
+                        scenarioMap.animate.ShowLoopingExplosion(toyBox.transform.position);
                     }
                 }
                 break;
@@ -752,6 +804,8 @@ public static class MissionSpecifics
                 return 2;
             case "RatRace":
                 return 3;
+            case "JackInTheBomb":
+                return 5;
         }
         return 0;
     }
@@ -787,6 +841,12 @@ public static class MissionSpecifics
                 if (ratSnatcher != null && activeRats > 0)
                 {
                     weight = 5;
+                }
+                break;
+            case "JackInTheBomb":
+                if (currentRound > 3)  // hyenas can't activate earlier than round 3, so assume hero bitten after this point
+                {
+                    weight = 10;
                 }
                 break;
         }
@@ -1523,6 +1583,13 @@ public static class MissionSpecifics
             SetActionsWeightTable();
         }
         GameObject.Destroy(successContainer);
+        yield return 0;
+    }
+
+    /* ActionCallbacks specific to "JackInTheBomb" mission */
+    public static IEnumerator PlaceTrap(GameObject unit, GameObject target, int totalSuccesses, int requiredSuccesses)
+    {
+        // TODO
         yield return 0;
     }
 }

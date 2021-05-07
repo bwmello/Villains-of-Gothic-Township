@@ -1,0 +1,500 @@
+{
+    "missionName": "JackInTheBomb",
+    "currentRound": 1,
+    "reinforcementPoints": 5,
+    "heroes": [
+        {
+            "heroName": "1stHero",
+            "zoneID": 0
+        },
+        {
+            "heroName": "2ndHero",
+            "zoneID": 24
+        },
+        {
+            "heroName": "3rdHero",
+            "zoneID": 35
+        }
+    ],
+    "utilityBelt": {
+        "draggableTools": [ "Smoke", "WallBreak", "Gas" ],
+        "claimableTokens": []
+    },
+    "villainRiver": [ "JESTERRIFLE", "CHAINS", "JESTERQUEEN", "REINFORCEMENT", "SHOTGUN", "PRISONER", "HYENA" ],
+    "unitTagsMasterList": [ "JESTERRIFLE", "CHAINS", "JESTERQUEEN", "SHOTGUN", "PRISONER", "HYENA" ],
+    "unitsPool": [
+        {
+            "tag": "JESTERRIFLE",
+            "total": 4
+        },
+        {
+            "tag": "CHAINS",
+            "total": 3
+        },
+        {
+            "tag": "SHOTGUN",
+            "total": 3
+        },
+        {
+            "tag": "PRISONER",
+            "total": 4
+        }
+    ],
+    "brokenWalls": [],
+    "zones": [
+        {
+            "id": 0,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 1,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 2,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "PRISONER",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 4,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [ "ToyBox" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "CHAINS",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 5,
+            "isSpawnZone": true,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 6,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "SHOTGUN",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 7,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 8,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 9,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [ "ToyBox" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "HYENA",
+                    "isHeroAlly": false,
+                    "lifePoints": 4,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 10,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 11,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "PRISONER",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 12,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 13,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 14,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "JESTERRIFLE",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 15,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 16,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "SHOTGUN",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 17,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 18,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 19,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "JESTERRIFLE",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 20,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 21,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "CHAINS",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 22,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 23,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [ "ToyBox" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 24,
+            "isSpawnZone": true,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 25,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 26,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [ "ImaginedCompanion" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "JESTERQUEEN",
+                    "isHeroAlly": false,
+                    "lifePoints": 4,
+                    "woundShields": -1
+                },
+                {
+                    "tag": "PRISONER",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 27,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 28,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 29,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 30,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "SHOTGUN",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 31,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 32,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 33,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "JESTERRIFLE",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 34,
+            "isSpawnZone": true,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 35,
+            "isSpawnZone": true,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 36,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 37,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": []
+        },
+        {
+            "id": 38,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "PRISONER",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 39,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [ "ToyBox" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "JESTERRIFLE",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 40,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "CHAINS",
+                    "isHeroAlly": false,
+                    "lifePoints": 1,
+                    "woundShields": -1
+                }
+            ]
+        },
+        {
+            "id": 41,
+            "isSpawnZone": false,
+            "tokensAndHeroesTags": [ "ToyBox" ],
+            "fadedTokensTags": [],
+            "environTokens": [],
+            "units": [
+                {
+                    "tag": "HYENA",
+                    "isHeroAlly": false,
+                    "lifePoints": 4,
+                    "woundShields": -1
+                }
+            ]
+        }
+    ]
+}

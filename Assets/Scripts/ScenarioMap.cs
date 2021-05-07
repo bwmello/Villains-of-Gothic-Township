@@ -563,7 +563,27 @@ public class ScenarioMap : MonoBehaviour
     {
         foreach (GameObject zone in GameObject.FindGameObjectsWithTag("ZoneInfoPanel"))
         {
-            zone.GetComponent<ZoneInfo>().DestroyFadedTokensAndUnits();
+            ZoneInfo zoneInfo = zone.GetComponent<ZoneInfo>();
+
+            if (zoneInfo.HasObjectiveToken("ImaginedCompanion"))
+            {
+                bool existsActiveImaginer = false;
+                foreach (Unit unit in zoneInfo.GetUnitsInfo())
+                {
+                    if (unit.imaginedCompanion > 0)
+                    {
+                        existsActiveImaginer = true;
+                        break;
+                    }
+                }
+                if (!existsActiveImaginer)
+                {
+                    GameObject imaginedCompanionToken = zoneInfo.GetObjectiveToken("ImaginedCompanion");
+                    imaginedCompanionToken.GetComponent<Token>().TokenButtonClicked(imaginedCompanionToken.GetComponent<Button>());
+                }
+            }
+
+            zoneInfo.DestroyFadedTokensAndUnits();
         }
     }
 

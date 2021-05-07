@@ -1,7 +1,7 @@
 ﻿using System;  // for [Serializable]
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;  // For converting array.ToList()
+using System.Linq;  // For converting array.ToList() and List<int>().Sum()
 using UnityEngine;
 using UnityEngine.UI;  // For button
 using TMPro;  // for TMP_Text to update the henchmen quantity from UnitRows
@@ -11,6 +11,7 @@ public class Unit : MonoBehaviour
 {
     readonly System.Random random = new System.Random();
     public GameObject berserkDie;
+    public GameObject imaginedCompanionDie;
     private Animate animate;
     public float fadedAlpha = .3f;  // Public so can be used by ZoneInfo.cs when terrain danger increases
     public bool isHeroAlly = false;
@@ -27,7 +28,8 @@ public class Unit : MonoBehaviour
     public int size = 1;
     public int menace = 1;
     public int supportRerolls = 0;
-    public int luckyRerolls = 0;  // TODO apply to ZoneInfo.IncreaseTerrainDangerTemporarily() to try and roll 
+    public int luckyRerolls = 0;
+    public int imaginedCompanion = 0;  // If greater than 0, mission setup save json must include ImaginedCompanion token in this unit's zone
 
     public int movePoints;
     public int ignoreTerrainDifficulty = 0;
@@ -52,6 +54,7 @@ public class Unit : MonoBehaviour
 
     public int munitionSpecialist = 0;
 
+    public bool reducedMobility = false;  // If true, can't go into steeply adjacent zones (can't climb, jump, nor fall)
     public bool flying = false;  // TODO implement for DRONEs
     public bool gasImmunity = false;
     public bool frosty = false;  // OTTERPOP's ability to ignore frost and cryogenic tokens and spawn frost tokens  // Frost (OTTERPOP) During attack or explosion from unit, place Frost Token in targeted area, which increases difficult terrain by number of Frost Tokens (except Mr. Freeze)
@@ -113,6 +116,15 @@ public class Unit : MonoBehaviour
         {
             return false;
         }
+    }
+
+    public bool IsImaginingCompanion()
+    {
+        if (imaginedCompanion > 0 && GetZone().GetComponent<ZoneInfo>().HasObjectiveToken("ImaginedCompanion"))  // Token doesn't work as well if more than one enemy in a mission has imaginedCompanion
+        {
+            return true;
+        }
+        return false;
     }
 
     public bool isClickable = false;
@@ -594,7 +606,10 @@ public class Unit : MonoBehaviour
 
         ZoneInfo currentZoneInfo = currentZone.GetComponent<ZoneInfo>();
         List<GameObject> allAdjacentZones = new List<GameObject>(currentZoneInfo.adjacentZones);
-        allAdjacentZones.AddRange(currentZoneInfo.steeplyAdjacentZones);
+        if (!reducedMobility)
+        {
+            allAdjacentZones.AddRange(currentZoneInfo.steeplyAdjacentZones);
+        }
         if (wallBreaker > 0)
         {
             allAdjacentZones.AddRange(currentZoneInfo.wall1AdjacentZones);
@@ -677,6 +692,12 @@ public class Unit : MonoBehaviour
     {
         double averageSuccesses = 0;
         rerolls += luckyRerolls;
+
+        if (IsImaginingCompanion())
+        {
+            dice.Add(imaginedCompanionDie);
+        }
+
         foreach (GameObject die in dice)
         {
             averageSuccesses += die.GetComponent<Dice>().GetExpectedValue(rerolls);
@@ -688,6 +709,12 @@ public class Unit : MonoBehaviour
     {
         int maxSuccesses = 0;  // TODO Remove this maxSuccess check once the dice math regarding rerolls is fixed (so GetChanceOfSuccess returns 0 without this check)
         rerolls += luckyRerolls;
+
+        if (IsImaginingCompanion())
+        {
+            dice.Add(imaginedCompanionDie);
+        }
+
         foreach (GameObject die in dice)
         {
             maxSuccesses += die.GetComponent<Dice>().GetLargestPossibleResult();
@@ -1356,6 +1383,12 @@ public class Unit : MonoBehaviour
     IEnumerator AnimateMovementPath(MovementPath movementPath)
     {
         GameObject destination = null;  // Needed for transform.SetParent(destination.transform) after loop
+        List<string> stickyTokensToMove = new List<string>();
+        if (IsImaginingCompanion())
+        {
+            stickyTokensToMove.Add("ImaginedCompanion");
+        }
+
         if (movementPath.zones.Count > 1)
         {
             Vector3 unitSlotCoords = movementPath.zones[movementPath.zones.Count - 1].GetComponent<ZoneInfo>().GetAvailableUnitSlot().transform.position;
@@ -1369,10 +1402,11 @@ public class Unit : MonoBehaviour
         for (int i = 1; i < movementPath.zones.Count; i++)
         {
             GameObject origin = movementPath.zones[i - 1];
+            ZoneInfo originInfo = origin.GetComponent<ZoneInfo>();
             destination = movementPath.zones[i];
+            ZoneInfo destinationInfo = destination.GetComponent<ZoneInfo>();
             if (wallBreaker > 0)
             {
-                ZoneInfo originInfo = origin.GetComponent<ZoneInfo>();
                 if (!originInfo.adjacentZones.Contains(destination) && !originInfo.steeplyAdjacentZones.Contains(destination))
                 {
                     foreach (GameObject wallRubble in GameObject.FindGameObjectsWithTag("WallRubble"))
@@ -1389,14 +1423,33 @@ public class Unit : MonoBehaviour
             }
             yield return StartCoroutine(AnimateMovement(origin, destination));
 
-            ZoneInfo destinationInfo = destination.GetComponent<ZoneInfo>();
+            // Move accompanying "sticky" tokens (ex: ImaginedCompanion)
+            foreach (string token in stickyTokensToMove)
+            {
+                originInfo.RemoveObjectiveToken(token);
+                destinationInfo.AddObjectiveToken(token);
+            }
+
+            // Terrain Danger
             int desinationTerrainDanger = destinationInfo.GetTerrainDangerTotal(this);
-            int automaticWounds = 0;
-            Dice damageDie = destinationInfo.environmentalDie.GetComponent<Dice>();
+            Dice damageDieInfo = destinationInfo.environmentalDie.GetComponent<Dice>();
+            List<int> terrainDangerDiceResults = new List<int>();
             for (int j = 0; j < desinationTerrainDanger; j++)
             {
-                automaticWounds += damageDie.Roll();
+                terrainDangerDiceResults.Add(damageDieInfo.Roll());
             }
+            int rerolls = luckyRerolls + destinationInfo.GetSupportRerolls(gameObject);
+            for (int ii = 0; ii < rerolls; ii++)
+            {
+                for (int j = 0; j < terrainDangerDiceResults.Count; j++)
+                {
+                    if (terrainDangerDiceResults[j] < damageDieInfo.averageSuccesses)
+                    {
+                        terrainDangerDiceResults[j] = damageDieInfo.Roll();
+                    }
+                }
+            }
+            int automaticWounds = terrainDangerDiceResults.Sum();
             ModifyLifePoints(-automaticWounds);
             if (!IsActive())
             {
@@ -1901,8 +1954,14 @@ public class Unit : MonoBehaviour
     {
         int rolledSuccesses = 0;
         rerolls += luckyRerolls;
+
+        if (IsImaginingCompanion())
+        {
+            dicePool.Add(imaginedCompanionDie);
+        }
+
         List<ActionResult> currentActionResults = new List<ActionResult>();
-        //string debugString = "RollAndReroll for unit " + gameObject.name + " with " + requiredSuccesses.ToString() + " requiredSuccesses. ";
+        string debugString = "RollAndReroll for unit " + gameObject.name + " with " + requiredSuccesses.ToString() + " requiredSuccesses. ";
 
         // Separate dice results by color for freeRerolls
         Dictionary<string, List<ActionResult>> actionResultsByColor = new Dictionary<string, List<ActionResult>>();
@@ -1932,26 +1991,19 @@ public class Unit : MonoBehaviour
                     freeRerolls += 1;
                 }
             }
-            //debugString += dieResults[0].die.color + " has " + freeRerolls.ToString() + " freeRerolls. ";
+            debugString += dieResults[0].die.color + " has " + freeRerolls.ToString() + " freeRerolls. ";
 
             if (freeRerolls > 0 && rolledSuccesses < requiredSuccesses)
             {
-                dieResults.Sort((x, y) => (y.die.averageSuccesses - y.successes).CompareTo(x.die.averageSuccesses - x.successes));  // Sorts from greatest below average to most above average
-
                 for (int i = 0; i < freeRerolls; i++)
                 {
-                    if (dieResults[i].successes >= dieResults[i].die.averageSuccesses)
+                    if (dieResults[i].successes < dieResults[i].die.averageSuccesses)
                     {
-                        // TODO If rerolls == 0 add dieResults[i] to another list of worst results by color with leftover freeRerolls, sort that list like above, and reroll the worst of the above average results until rolledSuccesses >= requiredSuccesses
-                        break;  // Exit freeRerolls loop if none of the dice rolled below average
-                    }
-                    else
-                    {
-                        //debugString += "Using freeReroll to change from " + dieResults[i].successes.ToString() + " to ";
+                        debugString += "Using freeReroll to change from " + dieResults[i].successes.ToString() + " to ";
                         rolledSuccesses -= dieResults[i].successes;
                         dieResults[i] = new ActionResult(dieResults[i].die, dieResults[i].die.Roll());
                         rolledSuccesses += dieResults[i].successes;
-                        //debugString += dieResults[i].successes.ToString();
+                        debugString += dieResults[i].successes.ToString();
 
                         if (rolledSuccesses >= requiredSuccesses)
                         {
@@ -1970,38 +2022,38 @@ public class Unit : MonoBehaviour
             {
                 break;
             }
-            //debugString += "  On my " + (i + 1).ToString() + " reroll: ";
+            debugString += "  On my " + (i + 1).ToString() + " reroll: ";
             int totalDiceRerolled = 0;
             for (int j = 0; j < currentActionResults.Count; j++)  // Reroll each die still below its average
             {
                 if (currentActionResults[i].successes < currentActionResults[i].die.averageSuccesses)
                 {
-                    //debugString += " Changing " + currentActionResults[i].successes.ToString() + " to ";
+                    debugString += " Changing " + currentActionResults[i].successes.ToString() + " to ";
                     rolledSuccesses -= currentActionResults[i].successes;
                     currentActionResults[i] = new ActionResult(currentActionResults[i].die, currentActionResults[i].die.Roll());
                     rolledSuccesses += currentActionResults[i].successes;
-                    //debugString += currentActionResults[i].successes.ToString();
+                    debugString += currentActionResults[i].successes.ToString();
                     totalDiceRerolled++;
                 }
             }
             if (totalDiceRerolled == 0)
             {
                 currentActionResults.Sort((x, y) => (y.die.averageSuccesses - y.successes).CompareTo(x.die.averageSuccesses - x.successes));  // Sorts from greatest below average to most above average
-                //debugString += " Changing " + currentActionResults[i].successes.ToString() + " to ";
+                debugString += " Changing " + currentActionResults[i].successes.ToString() + " to ";
                 rolledSuccesses -= currentActionResults[i].successes;
                 currentActionResults[i] = new ActionResult(currentActionResults[i].die, currentActionResults[i].die.Roll());
                 rolledSuccesses += currentActionResults[i].successes;
-                //debugString += currentActionResults[i].successes.ToString();
+                debugString += currentActionResults[i].successes.ToString();
             }
         }
 
         // Debug final roll
-        //debugString += "\nFinal roll: ";
-        //foreach (ActionResult myActionResult in currentActionResults)
-        //{
-        //    debugString += myActionResult.successes.ToString() + ", ";
-        //}
-        //Debug.Log(debugString);
+        debugString += "\nFinal roll: ";
+        foreach (ActionResult myActionResult in currentActionResults)
+        {
+            debugString += myActionResult.successes.ToString() + ", ";
+        }
+        Debug.Log(debugString);
         return rolledSuccesses;
     }
 
@@ -2010,6 +2062,12 @@ public class Unit : MonoBehaviour
         int rolledSuccesses = 0;
         rerolls += luckyRerolls;
         //rerolls += MissionSpecifics.GetAttackRollBonus();  // All returning 0 right now
+
+        if (IsImaginingCompanion())
+        {
+            dicePool.Add(imaginedCompanionDie);
+        }
+
         List<ActionResult> currentActionResults = new List<ActionResult>();
         string debugString = "RollAndReroll for unit " + gameObject.name + ". ";
 
@@ -2044,15 +2102,9 @@ public class Unit : MonoBehaviour
 
             if (freeRerolls > 0)
             {
-                dieResults.Sort((x, y) => (y.die.averageSuccesses - y.successes).CompareTo(x.die.averageSuccesses - x.successes));  // Sorts from greatest below average to most above average
-
                 for (int i = 0; i < freeRerolls; i++)
                 {
-                    if (dieResults[i].successes >= dieResults[i].die.averageSuccesses)
-                    {
-                        break;  // Exit freeRerolls loop if none of the dice rolled below average
-                    }
-                    else
+                    if (dieResults[i].successes < dieResults[i].die.averageSuccesses)
                     {
                         debugString += "Using freeReroll to change from " + dieResults[i].successes.ToString() + " to ";
                         dieResults[i] = new ActionResult(dieResults[i].die, dieResults[i].die.Roll());
@@ -2163,7 +2215,6 @@ public class Unit : MonoBehaviour
         ModifyLifePoints(unitSave.lifePoints - lifePoints);
         isHeroAlly = unitSave.isHeroAlly;
         lifePoints = unitSave.lifePoints;
-        //HideWoundShields();
         if (!isHeroAlly && unitSave.woundShields < 0)  // if still -1, set this unit's woundShields
         {
             GenerateWoundShields();

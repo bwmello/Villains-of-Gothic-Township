@@ -50,6 +50,12 @@ TagManager:
   - RATSNATCHER
   - Rat
   - GasCapsule
+  - JESTERRIFLE
+  - HYENA
+  - JESTERQUEEN
+  - ToyBox
+  - ImaginedCompanion
+  - Trap
   layers:
   - Default
   - TransparentFX

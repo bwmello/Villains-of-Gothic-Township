@@ -166,7 +166,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &9185730025264078121
 Transform:
   m_ObjectHideFlags: 0
@@ -267,6 +267,12 @@ MonoBehaviour:
   activeJammerPrefab: {fileID: 953632970655867874, guid: ba7fd2ae349fc4bdf8f6bf8b1cc8ad75,
     type: 3}
   ratPrefab: {fileID: 6866263541080484263, guid: a27858e542c49418f8294bb018411573,
+    type: 3}
+  toyBoxPrefab: {fileID: 5200067173664663110, guid: 6c27079b9fb874f5cac26b7b0eb96104,
+    type: 3}
+  imaginedCompanionPrefab: {fileID: 2298897929212002345, guid: 66d9ce13fe2ed4d929758fd9b7072980,
+    type: 3}
+  trapPrefab: {fileID: 1764824806192529477, guid: d18161573ecc640d7a3f1112079cd351,
     type: 3}
   gasPrefab: {fileID: 7277206314685628404, guid: e9ebf41599b4240debd66e2d883f0934,
     type: 3}

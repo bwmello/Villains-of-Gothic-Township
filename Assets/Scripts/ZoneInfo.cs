@@ -1,6 +1,7 @@
 ﻿using System;  // For NullReferenceException
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;  // For List<int>().Sum()
 using UnityEngine;
 using UnityEngine.UI;  // For button AddEnvironToken continue prompt when hero suffers terrainDanger
 using TMPro;  // For adding heroes to the zone and knowing which button to light up
@@ -28,6 +29,9 @@ public class ZoneInfo : MonoBehaviour
     public GameObject jammerPrefab;
     public GameObject activeJammerPrefab;
     public GameObject ratPrefab;
+    public GameObject toyBoxPrefab;
+    public GameObject imaginedCompanionPrefab;
+    public GameObject trapPrefab;
     public GameObject gasPrefab;
     public GameObject flamePrefab;
     public GameObject smokePrefab;
@@ -39,7 +43,6 @@ public class ZoneInfo : MonoBehaviour
     public GameObject successPrefab;
     public GameObject failurePrefab;
     public GameObject environmentalDie;  // Determines terrainDanger/fall damage and bonus for ranged attacks made from a higher elevation
-    public GameObject confirmButtonPrefab;
 
     public Boolean isSpawnZone = false;
     public int elevation;
@@ -581,12 +584,25 @@ public class ZoneInfo : MonoBehaviour
         {
             if (unit.IsActive() && !unit.isHeroAlly)
             {
-                int automaticWounds = 0;
-                Dice damageDie = environmentalDie.GetComponent<Dice>();
-                for (int i = 0; i < dangerIncrease; i++)
+                int rerolls = unit.luckyRerolls + GetSupportRerolls(unit.gameObject);
+                Dice damageDieInfo = environmentalDie.GetComponent<Dice>();
+                List<int> terrainDangerDiceResults = new List<int>();
+                for (int j = 0; j < terrainDanger; j++)
                 {
-                    automaticWounds += damageDie.Roll();
+                    terrainDangerDiceResults.Add(damageDieInfo.Roll());
                 }
+                // Apply rerolls
+                for (int ii = 0; ii < rerolls; ii++)
+                {
+                    for (int j = 0; j < terrainDangerDiceResults.Count; j++)
+                    {
+                        if (terrainDangerDiceResults[j] < damageDieInfo.averageSuccesses)
+                        {
+                            terrainDangerDiceResults[j] = damageDieInfo.Roll();
+                        }
+                    }
+                }
+                int automaticWounds = terrainDangerDiceResults.Sum();
                 unit.ModifyLifePoints(-automaticWounds);
                 if (!unit.IsActive())
                 {
@@ -655,6 +671,15 @@ public class ZoneInfo : MonoBehaviour
                 break;
             case "Rat":
                 objectiveTokenPrefab = ratPrefab;
+                break;
+            case "ToyBox":
+                objectiveTokenPrefab = toyBoxPrefab;
+                break;
+            case "ImaginedCompanion":
+                objectiveTokenPrefab = imaginedCompanionPrefab;
+                break;
+            case "Trap":
+                objectiveTokenPrefab = trapPrefab;
                 break;
         }
         if (objectiveTokenPrefab)
