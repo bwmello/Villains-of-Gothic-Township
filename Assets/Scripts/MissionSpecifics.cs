@@ -1353,7 +1353,6 @@ public static class MissionSpecifics
             GameObject hero = GameObject.FindGameObjectWithTag("1stHero");
             GameObject heroZone = hero.GetComponent<Hero>().GetZone();
             int heroZoneID = heroZone.GetComponent<ZoneInfo>().GetZoneID();
-            double existingCryoTokenDecrement;
             cryoZoneTargets.Add((30, heroZone));
 
             foreach (GameObject bomb in GameObject.FindGameObjectsWithTag("Bomb"))
@@ -1361,87 +1360,85 @@ public static class MissionSpecifics
                 GameObject bombZone = bomb.transform.parent.parent.gameObject;
                 double zoneWeightMultiplier = UnitIntel.GetProximityWeightFactorForClosestHero(bombZone);  // double heroProximityWeightFactor
                 ZoneInfo bombZoneInfo = bombZone.GetComponent<ZoneInfo>();
-                existingCryoTokenDecrement = (double)bombZoneInfo.GetQuantityOfEnvironTokensWithTag("Cryogenic") * 5d;
-                cryoZoneTargets.Add(((18 - existingCryoTokenDecrement) * zoneWeightMultiplier, bombZone));
+                cryoZoneTargets.Add((18 * zoneWeightMultiplier, bombZone));
 
                 if ((bombZoneInfo.adjacentZones.Count + bombZoneInfo.steeplyAdjacentZones.Count) == 1)  // If only one way in or out (ignoring walls)
                 {
                     if (bombZoneInfo.adjacentZones.Count == 1)
                     {
-                        existingCryoTokenDecrement = (double)bombZoneInfo.adjacentZones[0].GetComponent<ZoneInfo>().GetQuantityOfEnvironTokensWithTag("Cryogenic") * 5d;
-                        cryoZoneTargets.Add(((20 - existingCryoTokenDecrement) * zoneWeightMultiplier, bombZoneInfo.adjacentZones[0]));
+                        cryoZoneTargets.Add((20 * zoneWeightMultiplier, bombZoneInfo.adjacentZones[0]));
                     }
                     else
                     {
-                        existingCryoTokenDecrement = (double)bombZoneInfo.steeplyAdjacentZones[0].GetComponent<ZoneInfo>().GetQuantityOfEnvironTokensWithTag("Cryogenic") * 5d;
-                        cryoZoneTargets.Add(((20 - existingCryoTokenDecrement) * zoneWeightMultiplier, bombZoneInfo.steeplyAdjacentZones[0]));
+                        cryoZoneTargets.Add((20 * zoneWeightMultiplier, bombZoneInfo.steeplyAdjacentZones[0]));
                     }
                 }
                 else if (bombZone.name == "ZoneInfoPanel 38")   // Hardcoded, TODO should be with above (if each adjacentZone has adjacentZones.Count == 1)
                 {
-                    existingCryoTokenDecrement = (double)bombZoneInfo.adjacentZones[0].GetComponent<ZoneInfo>().GetQuantityOfEnvironTokensWithTag("Cryogenic") * 5d;
-                    cryoZoneTargets.Add(((20 - existingCryoTokenDecrement) * zoneWeightMultiplier, bombZoneInfo.adjacentZones[0]));
+                    cryoZoneTargets.Add((20 * zoneWeightMultiplier, bombZoneInfo.adjacentZones[0]));
                 }
                 else if (bombZone.name == "ZoneInfoPanel 26")  // Hardcoded, TODO should look at difference between moveCost for hero (before and after cryo token)
                 {
                     if (heroZoneID < 17)
                     {
                         GameObject zone22 = bombZoneInfo.adjacentZones[0].GetComponent<ZoneInfo>().adjacentZones[0];
-                        existingCryoTokenDecrement = (double)zone22.GetComponent<ZoneInfo>().GetQuantityOfEnvironTokensWithTag("Cryogenic") * 5d;
-                        cryoZoneTargets.Add(((19 - existingCryoTokenDecrement) * zoneWeightMultiplier, zone22));
+                        cryoZoneTargets.Add((19 * zoneWeightMultiplier, zone22));
                     }
                 }
             }
 
-            //if (currentRound < 1)
-            //{
-            //    //cryoZoneTargets.Add() Zone 2
-            //    GameObject zone2 = scenarioMap.gameObject.transform.Find("ZoneInfoPanel 2").gameObject;
-            //    existingCryoTokenDecrement = (double)zone2.GetComponent<ZoneInfo>().GetQuantityOfEnvironTokensWithTag("Cryogenic") * 20d;
-            //    cryoZoneTargets.Add(((50 - existingCryoTokenDecrement), zone2));
-            //}
             if (currentRound < 3)
             {
                 if (new List<int>() { 10, 11, 15, 16 }.Contains(heroZoneID))
                 {
                     GameObject zone14 = scenarioMap.gameObject.transform.Find("ZoneInfoPanel 14").gameObject;
-                    existingCryoTokenDecrement = (double)zone14.GetComponent<ZoneInfo>().GetQuantityOfEnvironTokensWithTag("Cryogenic") * 20d;
-                    cryoZoneTargets.Add(((50 - existingCryoTokenDecrement), zone14));
+                    cryoZoneTargets.Add((50, zone14));
                 }
             }
 
-            for (int i = 0; i < cryoZoneTargets.Count; i++)  // Subtract friendly fire from each target zone's weight
+            // Not allowed to cryo zones with existing cryo tokens
+            List<(double, GameObject)> validCryoZoneTargets = new List<(double, GameObject)>();
+            foreach ((double, GameObject) potentialCryoZone in cryoZoneTargets)
             {
-                //string cryoZoneTargetsDebugString = "For zone " + cryoZoneTargets[i].Item2.name;
-                foreach (Unit inAreaUnit in cryoZoneTargets[i].Item2.GetComponentsInChildren<Unit>())
+                if (potentialCryoZone.Item2.GetComponent<ZoneInfo>().GetQuantityOfEnvironTokensWithTag("Cryogenic") == 0)
+                {
+                    validCryoZoneTargets.Add(potentialCryoZone);
+                }
+            }
+
+            // Subtract friendly fire from each target zone's weight
+            for (int i = 0; i < validCryoZoneTargets.Count; i++)
+            {
+                //string cryoZoneTargetsDebugString = "For zone " + validCryoZoneTargets[i].Item2.name;
+                foreach (Unit inAreaUnit in validCryoZoneTargets[i].Item2.GetComponentsInChildren<Unit>())
                 {
                     //cryoZoneTargetsDebugString += " unit " + inAreaUnit.name;
                     if (inAreaUnit.IsActive() && !inAreaUnit.isHeroAlly && !inAreaUnit.frosty)
                     {
-                        //cryoZoneTargets[i].Item1 -= 5;  // Doesn't work because I think .Item1 is a clone of the value ("return value is not a variable")
-                        cryoZoneTargets[i] = (cryoZoneTargets[i].Item1 - 9, cryoZoneTargets[i].Item2);
-                        //cryoZoneTargetsDebugString += " sets the weight to " + cryoZoneTargets[i].Item1.ToString();
+                        //validCryoZoneTargets[i].Item1 -= 5;  // Doesn't work because I think .Item1 is a clone of the value ("return value is not a variable")
+                        validCryoZoneTargets[i] = (validCryoZoneTargets[i].Item1 - 9, validCryoZoneTargets[i].Item2);
+                        //cryoZoneTargetsDebugString += " sets the weight to " + validCryoZoneTargets[i].Item1.ToString();
                     }
                 }
                 //Debug.Log(cryoZoneTargetsDebugString);
             }
-            cryoZoneTargets.Sort((x, y) => y.Item1.CompareTo(x.Item1));  // Sorts by doubles in descending order
+            validCryoZoneTargets.Sort((x, y) => y.Item1.CompareTo(x.Item1));  // Sorts by doubles in descending order
 
             //string cryoDebugString = "";
-            //foreach ((double, GameObject) cryoZoneTarget in cryoZoneTargets)
+            //foreach ((double, GameObject) validCryoZoneTarget in validCryoZoneTargets)
             //{
-            //    cryoDebugString += "cryoZoneTarget: " + cryoZoneTarget.Item2.name + " worth " + cryoZoneTarget.Item1 + ",   ";
+            //    cryoDebugString += "cryoZoneTarget: " + validCryoZoneTarget.Item2.name + " worth " + validCryoZoneTarget.Item1 + ",   ";
             //}
             //Debug.Log("!!!ActivateCryogenicDevice of ScenarioMap, cryoDebugString: " + cryoDebugString);
 
-            for (int i = 0; i < cryoZoneTargets.Count && i < 2; i++)
+            for (int i = 0; i < validCryoZoneTargets.Count && i < 2; i++)
             {
-                GameObject zoneToCryo = cryoZoneTargets[i].Item2;
-                if (i > 0 && zoneToCryo == cryoZoneTargets[0].Item2)  // Can't cryo the same spot twice
+                GameObject zoneToCryo = validCryoZoneTargets[i].Item2;
+                if (i > 0 && zoneToCryo == validCryoZoneTargets[0].Item2)  // Can't cryo the same spot twice
                 {
-                    if (cryoZoneTargets.Count > 2 && cryoZoneTargets[0].Item2 != cryoZoneTargets[2].Item2)
+                    if (validCryoZoneTargets.Count > 2 && validCryoZoneTargets[0].Item2 != validCryoZoneTargets[2].Item2)
                     {
-                        zoneToCryo = cryoZoneTargets[2].Item2;
+                        zoneToCryo = validCryoZoneTargets[2].Item2;
                     }
                     else
                     {
