@@ -239,17 +239,6 @@ public class ZoneInfo : MonoBehaviour
         return smokeTokens;
     }
 
-    public int GetQuantityOfEnvironTokensWithTag(string tokensTag)
-    {
-        int quantity = 0;
-        List<GameObject> environTokens = GetAllTokensWithTag(tokensTag);
-        foreach (GameObject environToken in environTokens)
-        {
-            quantity += environToken.GetComponent<EnvironToken>().quantity;
-        }
-        return quantity;
-    }
-
     public int GetSupportRerolls(GameObject unitToDiscount = null)
     {
         int supportRerolls = 0;
@@ -286,28 +275,6 @@ public class ZoneInfo : MonoBehaviour
             }
         }
         return 1 - chanceOfFailure;
-    }
-
-    public bool HasObjectiveToken(string tokenName)
-    {
-        Transform tokensRow = transform.Find("TokensRow");
-        Transform token = tokensRow.Find(tokenName);
-        if (token)
-        {
-            return token.GetComponent<Token>().IsActive();
-        }
-        return false;
-    }
-
-    public GameObject GetObjectiveToken(string tokenName)
-    {
-        Transform tokensRow = transform.Find("TokensRow");
-        Transform token = tokensRow.Find(tokenName);
-        if (token && token.GetComponent<Token>().IsActive())
-        {
-            return token.gameObject;
-        }
-        return null;
     }
 
     public void DestroyFadedTokensAndUnits()
@@ -509,21 +476,6 @@ public class ZoneInfo : MonoBehaviour
         return heroes.Count > 0 ? heroes[random.Next(heroes.Count)] : null;
     }
 
-    // Could be expanded to recursively search children instead of just TokensRow
-    public List<GameObject> GetAllTokensWithTag(string tagToFind)
-    {
-        List<GameObject> childrenWithTag = new List<GameObject>();
-        Transform tokensRow = transform.Find("TokensRow");
-        foreach (Transform token in tokensRow)
-        {
-            if (token.CompareTag(tagToFind))
-            {
-                childrenWithTag.Add(token.gameObject);
-            }
-        }
-        return childrenWithTag;
-    }
-
     public void SetIsClickableForHeroesAndAllies(bool shouldMakeClickable)  // This also makes inactive heroes/units clickable, but does that really matter?
     {
         foreach (Unit unit in GetComponentsInChildren<Unit>())
@@ -552,6 +504,17 @@ public class ZoneInfo : MonoBehaviour
         {  // if (!hero.IsWoundedOut) {
             hero.ConfigureClickAndDragability();
         }
+    }
+
+    public int GetQuantityOfEnvironTokensWithTag(string tokensTag)
+    {
+        int quantity = 0;
+        List<GameObject> environTokens = GetTokensWithTags(new List<string> { tokensTag });
+        foreach (GameObject environToken in environTokens)
+        {
+            quantity += environToken.GetComponent<EnvironToken>().quantity;
+        }
+        return quantity;
     }
 
     public int GetTerrainDangerTotal(Unit unit = null)
@@ -643,6 +606,42 @@ public class ZoneInfo : MonoBehaviour
     public void DisableDropZone()
     {
         transform.Find("DropZone").gameObject.SetActive(false);
+    }
+
+    public List<GameObject> GetTokensWithTags(List<string> tagsToFind, bool onlyActive = true)  // Could replace HasObjectiveToken() and GetObjectiveToken()
+    {
+        List<GameObject> childrenWithTags = new List<GameObject>();
+        Transform tokensRow = transform.Find("TokensRow");
+        foreach (Transform token in tokensRow)
+        {
+            if (tagsToFind.Contains(token.tag))
+            {
+                if (token.TryGetComponent<Token>(out Token tempObjectiveToken))
+                {
+                    if (!onlyActive || tempObjectiveToken.IsActive())
+                    {
+                        childrenWithTags.Add(token.gameObject);
+                    }
+                }
+                else  // is EnvironToken, not Token
+                {
+                    childrenWithTags.Add(token.gameObject);
+                }
+            }
+        }
+        return childrenWithTags;
+    }
+
+    public bool HasObjectiveToken(string tokenName)
+    {
+        if (GetTokensWithTags(new List<string> { tokenName }, onlyActive: true).Count > 0)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     public void AddObjectiveToken(string tokenTag, bool isFaded = false)

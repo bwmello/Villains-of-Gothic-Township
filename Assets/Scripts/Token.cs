@@ -6,6 +6,9 @@ using TMPro;  // for getting hero number
 
 public class Token : MonoBehaviour  // Should be called ObjectiveToken as there was no need to distinguish between EnvironTokens
 {
+    public float fadedAlpha = .2f;  // Public so can be used by MissionSpecifics.ObjectiveTokenClicked()
+
+
     void Awake()
     {  // Needed so that when Instantiated is named Bomb or Computer instead of Bomb(Clone) or Computer(Clone)
         transform.name = transform.tag;
@@ -49,7 +52,7 @@ public class Token : MonoBehaviour  // Should be called ObjectiveToken as there 
     public bool IsActive()
     {
         CanvasGroup buttonCanvas = gameObject.GetComponent<CanvasGroup>();
-        if (buttonCanvas.alpha == 1)
+        if (buttonCanvas.alpha > fadedAlpha)
         {
             return true;
         }

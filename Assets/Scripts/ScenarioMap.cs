@@ -565,7 +565,8 @@ public class ScenarioMap : MonoBehaviour
         {
             ZoneInfo zoneInfo = zone.GetComponent<ZoneInfo>();
 
-            if (zoneInfo.HasObjectiveToken("ImaginedCompanion"))
+            List<GameObject> imaginedCompanionsList = zoneInfo.GetTokensWithTags(new List<string> { "ImaginedCompanion" }, onlyActive: true);
+            if (imaginedCompanionsList.Count > 0)
             {
                 bool existsActiveImaginer = false;
                 foreach (Unit unit in zoneInfo.GetUnitsInfo())
@@ -578,8 +579,10 @@ public class ScenarioMap : MonoBehaviour
                 }
                 if (!existsActiveImaginer)
                 {
-                    GameObject imaginedCompanionToken = zoneInfo.GetObjectiveToken("ImaginedCompanion");
-                    imaginedCompanionToken.GetComponent<Token>().TokenButtonClicked(imaginedCompanionToken.GetComponent<Button>());
+                    foreach (GameObject imaginedCompanionToken in imaginedCompanionsList)
+                    {
+                        imaginedCompanionToken.GetComponent<Token>().TokenButtonClicked(imaginedCompanionToken.GetComponent<Button>());
+                    }
                 }
             }
 

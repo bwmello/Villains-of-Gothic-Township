@@ -184,7 +184,7 @@ public static class MissionSpecifics
                 totalTraps = GetTotalActiveTokens(new List<string>() { "Trap" });
 
                 actionsWeightTable["MANIPULATION"] = new List<ActionWeight>();
-                if (totalTraps < 4)
+                if (totalTraps < 4)  // Max of 4 traps
                 {
                     actionsWeightTable["MANIPULATION"].Add(new ActionWeight("Trap", 2, 100, PlaceTrap, new List<string>()));  // 100 * chanceOfSuccess, 
                 }
@@ -389,13 +389,14 @@ public static class MissionSpecifics
 
     public static void ObjectiveTokenClicked(Button button)
     {
+        Token buttonToken = button.gameObject.GetComponent<Token>();
         switch (button.tag)
         {
             case "Bomb":
                 switch (missionName)
                 {
                     case "IceToSeeYou":
-                        GameObject tokenZone = button.gameObject.GetComponent<Token>().GetZone();
+                        GameObject tokenZone = buttonToken.GetZone();
                         GameObject.DestroyImmediate(button.gameObject);
                         tokenZone.GetComponent<ZoneInfo>().AddObjectiveToken("PrimedBomb");
                         return;
@@ -408,7 +409,7 @@ public static class MissionSpecifics
                 {
                     case "AFewBadApples":
                         UtilityBelt utilityBelt = scenarioMap.UIOverlay.GetComponent<UIOverlay>().utilityBelt.GetComponent<UtilityBelt>();  // Pretty terrible chain of calls just to get claimableTokens
-                        if (button.GetComponent<Token>().IsActive())
+                        if (buttonToken.IsActive())
                         {
                             foreach (GameObject claimableTokenObject in utilityBelt.claimableTokens)
                             {
@@ -446,7 +447,7 @@ public static class MissionSpecifics
                 {
                     case "AFewBadApples":
                         UtilityBelt utilityBelt = scenarioMap.UIOverlay.GetComponent<UIOverlay>().utilityBelt.GetComponent<UtilityBelt>();  // Pretty terrible chain of calls just to get claimableTokens
-                        if (button.GetComponent<Token>().IsActive())
+                        if (buttonToken.IsActive())
                         {
                             foreach (GameObject claimableTokenObject in utilityBelt.claimableTokens)
                             {
@@ -476,9 +477,9 @@ public static class MissionSpecifics
                 break;
         }
         CanvasGroup buttonCanvas = button.GetComponent<CanvasGroup>();
-        if (buttonCanvas.alpha == 1)  // Token was disabled, so remove from board
+        if (buttonToken.IsActive())  // Token was disabled, so remove from board
         {
-            buttonCanvas.alpha = .2f;
+            buttonCanvas.alpha = buttonToken.fadedAlpha;
         }
         else  // Mistake was made in removing token, so add token back to the board
         {

@@ -147,16 +147,7 @@ public static class UnitIntel
             //}
 
             int terrainDifficultyCost = currentZoneInfo.terrainDifficulty >= hero.ignoreTerrainDifficulty ? currentZoneInfo.terrainDifficulty - hero.ignoreTerrainDifficulty : 0;
-            List<GameObject> frostTokens = potentialZoneInfo.GetAllTokensWithTag("Frost");
-            foreach (GameObject frostToken in frostTokens)
-            {
-                terrainDifficultyCost += frostToken.GetComponent<EnvironToken>().quantity;
-            }
-            List<GameObject> cryogenicTokens = potentialZoneInfo.GetAllTokensWithTag("Cryogenic");
-            foreach (GameObject cryogenicToken in cryogenicTokens)
-            {
-                terrainDifficultyCost += cryogenicToken.GetComponent<EnvironToken>().quantity;
-            }
+            terrainDifficultyCost += potentialZoneInfo.GetQuantityOfEnvironTokensWithTag("Frost") + potentialZoneInfo.GetQuantityOfEnvironTokensWithTag("Cryogenic");
 
             int sizeCost = currentZoneInfo.GetCurrentHindranceForHero(hero.tag, true);
             int elevationCost = 0;

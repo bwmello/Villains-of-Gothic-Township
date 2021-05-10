@@ -120,7 +120,7 @@ public class Unit : MonoBehaviour
 
     public bool IsImaginingCompanion()
     {
-        if (imaginedCompanion > 0 && GetZone().GetComponent<ZoneInfo>().HasObjectiveToken("ImaginedCompanion"))  // Token doesn't work as well if more than one enemy in a mission has imaginedCompanion
+        if (imaginedCompanion > 0 && GetZone().GetComponent<ZoneInfo>().HasObjectiveToken("ImaginedCompanion"))
         {
             return true;
         }
@@ -871,9 +871,10 @@ public class Unit : MonoBehaviour
                             foreach (MissionSpecifics.ActionWeight guardable in MissionSpecifics.actionsWeightTable["GUARD"])
                             {
                                 //Debug.Log("!!!GetPossibleActions with GetZone() == possibleZone, looking at guardable " + guardable.targetType + "  worth " + guardable.weightFactor.ToString());
-                                if (possibleFinalDestinationZoneInfo.HasObjectiveToken(guardable.targetType))
+                                List<GameObject> guardableTokensList = possibleFinalDestinationZoneInfo.GetTokensWithTags(new List<string> { guardable.targetType });
+                                if (guardableTokensList.Count > 0)
                                 {
-                                    GameObject objectiveToken = possibleFinalDestinationZoneInfo.GetObjectiveToken(guardable.targetType);
+                                    GameObject objectiveToken = guardableTokensList[0];  // Revise if more than one of same objectiveToken can occupy one zone
                                     double heroProximityWeightFactor = UnitIntel.GetProximityWeightFactorForClosestHero(possibleFinalDestinationZone, weighingClosestHighest: !isFutureAction);
                                     possibleGuardZoneWeight += guardable.weightFactor * heroProximityWeightFactor;
                                     possibleGuardAction = guardable;
@@ -914,9 +915,10 @@ public class Unit : MonoBehaviour
                     foreach (MissionSpecifics.ActionWeight guardable in MissionSpecifics.actionsWeightTable["GUARD"])
                     {
                         //Debug.Log("!!!GetPossibleActions, looking at guardable " + guardable.targetType + "  worth " + guardable.weightFactor.ToString());
-                        if (possibleZoneInfo.HasObjectiveToken(guardable.targetType))
+                        List<GameObject> guardableTokensList = possibleZoneInfo.GetTokensWithTags(new List<string> { guardable.targetType });
+                        if (guardableTokensList.Count > 0)
                         {
-                            GameObject objectiveToken = possibleZoneInfo.GetObjectiveToken(guardable.targetType);
+                            GameObject objectiveToken = guardableTokensList[0];  // Revise if more than one of same objectiveToken can occupy one zone
                             double heroProximityWeightFactor = UnitIntel.GetProximityWeightFactorForClosestHero(possibleZone, weighingClosestHighest : !isFutureAction);
                             guardZoneWeight += guardable.weightFactor * heroProximityWeightFactor;
                         }
