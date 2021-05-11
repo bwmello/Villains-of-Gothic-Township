@@ -550,7 +550,7 @@ public class ZoneInfo : MonoBehaviour
                 int rerolls = unit.luckyRerolls + GetSupportRerolls(unit.gameObject);
                 Dice damageDieInfo = environmentalDie.GetComponent<Dice>();
                 List<int> terrainDangerDiceResults = new List<int>();
-                for (int j = 0; j < terrainDanger; j++)
+                for (int j = 0; j < dangerIncrease; j++)
                 {
                     terrainDangerDiceResults.Add(damageDieInfo.Roll());
                 }
@@ -565,6 +565,7 @@ public class ZoneInfo : MonoBehaviour
                         }
                     }
                 }
+
                 int automaticWounds = terrainDangerDiceResults.Sum();
                 unit.ModifyLifePoints(-automaticWounds);
                 if (!unit.IsActive())
@@ -579,7 +580,7 @@ public class ZoneInfo : MonoBehaviour
             yield return StartCoroutine(animate.FadeObjects(unitCasualties, 1, unitFadeAlpha));
         }
 
-        if (HasTargets())  // Gives heroes/heroAllies chance to roll damage on themselves (as they can use their rerolls)
+        if (HasTargets() && MissionSpecifics.currentPhase != "Hero")  // Gives heroes/heroAllies chance to roll damage on themselves (as they can use their rerolls)
         {
             List<GameObject> terrainDangerIcons = new List<GameObject>();
             for (int i = 0; i < dangerIncrease; i++)
@@ -743,7 +744,7 @@ public class ZoneInfo : MonoBehaviour
                         affectedUnits.Add(unitInZone);
                     }
                 }
-                yield return StartCoroutine(IncreaseTerrainDangerTemporarily(1, affectedUnits));
+                yield return StartCoroutine(IncreaseTerrainDangerTemporarily(newEnvironToken.quantity, affectedUnits));
                 break;
             case "Flame":
                 if (newTokenRequired)
@@ -758,7 +759,7 @@ public class ZoneInfo : MonoBehaviour
                         affectedUnits.Add(unitInZone);
                     }
                 }
-                yield return StartCoroutine(IncreaseTerrainDangerTemporarily(1, affectedUnits));
+                yield return StartCoroutine(IncreaseTerrainDangerTemporarily(newEnvironToken.quantity, affectedUnits));
                 break;
             case "Smoke":
                 if (newTokenRequired)
@@ -787,7 +788,7 @@ public class ZoneInfo : MonoBehaviour
                         affectedUnits.Add(unitInZone);
                     }
                 }
-                yield return StartCoroutine(IncreaseTerrainDangerTemporarily(1, affectedUnits));
+                yield return StartCoroutine(IncreaseTerrainDangerTemporarily(newEnvironToken.quantity, affectedUnits));
                 break;
             default:
                 Debug.LogError("ERROR! In ZoneInfo.LoadZoneSave(), unable to identify EnvironToken " + newEnvironToken.tag + " for " + transform.name);

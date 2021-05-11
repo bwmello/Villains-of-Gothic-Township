@@ -240,14 +240,57 @@ public static class MissionSpecifics
                     weight *= heroProximityWeightFactor;
                     //ratPlacementWeightDebugString += "\theroProximityWeightFactor: " + heroProximityWeightFactor.ToString() + "), weight: " + weight.ToString();
                     //Debug.Log(ratPlacementWeightDebugString);
-                    return weight;
                 }
-                else  // just return actionWeight.weightFactor
+                return weight;
+
+            case "JackInTheBomb":
+                if (string.IsNullOrEmpty(actionWeight.targetType))  // No target, as traps can be placed in any zone
                 {
-                    return actionWeight.weightFactor;
+                    ZoneInfo actionZoneInfo = actionZone.GetComponent<ZoneInfo>();
+                    List<GameObject> allAdjacentZones = new List<GameObject>(actionZoneInfo.adjacentZones);
+                    allAdjacentZones.AddRange(actionZoneInfo.steeplyAdjacentZones);
+                    foreach (GameObject adjacentZone in allAdjacentZones)
+                    {
+                        ZoneInfo adjacentZoneInfo = adjacentZone.GetComponent<ZoneInfo>();
+                        // If dead end
+                        if ((adjacentZoneInfo.adjacentZones.Count + adjacentZoneInfo.steeplyAdjacentZones.Count) == 1)
+                        {
+                            if (adjacentZoneInfo.HasObjectiveToken("ToyBox") || adjacentZoneInfo.HasHeroes())
+                            {
+                                return weight;
+                            }
+                        }
+                        else if ((adjacentZoneInfo.adjacentZones.Count + adjacentZoneInfo.steeplyAdjacentZones.Count) == 2)
+                        {
+                            List<GameObject> allAdjacentAdjacentZones = new List<GameObject>(adjacentZoneInfo.adjacentZones);
+                            allAdjacentAdjacentZones.AddRange(adjacentZoneInfo.steeplyAdjacentZones);
+                            foreach (GameObject adjacentAdjacentZone in allAdjacentAdjacentZones)
+                            {
+                                if (adjacentAdjacentZone != actionZone)
+                                {
+                                    ZoneInfo adjacentAdjacentZoneInfo = adjacentAdjacentZone.GetComponent<ZoneInfo>();
+                                    // If dead end
+                                    if ((adjacentAdjacentZoneInfo.adjacentZones.Count + adjacentAdjacentZoneInfo.steeplyAdjacentZones.Count) == 1)
+                                    {
+                                        if (adjacentAdjacentZoneInfo.HasObjectiveToken("ToyBox") || adjacentAdjacentZoneInfo.HasHeroes() || adjacentZoneInfo.HasObjectiveToken("ToyBox") || adjacentZoneInfo.HasHeroes())
+                                        {
+                                            if (adjacentZoneInfo.HasObjectiveToken("Trap"))
+                                            {
+                                                return weight / 2;  // Reduced weight for double trapping the same ToyBox
+                                            }
+                                            return weight;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    return -100d;  // Otherwise, just moving weight may have them trying this action
                 }
-            default:  // just return actionWeight.weightFactor
-                return actionWeight.weightFactor;
+                return weight;
+
+            default:
+                return weight;
         }
     }
 
@@ -484,17 +527,23 @@ public static class MissionSpecifics
                     case "JackInTheBomb":
                         if (buttonToken.IsActive())
                         {
-                            buttonToken.GetZone().GetComponent<ZoneInfo>().AddEnvironTokens(new EnvironTokenSave("Gas", 2, true, false));
+                            scenarioMap.animate.StartCoroutine(buttonToken.GetZone().GetComponent<ZoneInfo>().AddEnvironTokens(new EnvironTokenSave("Gas", 2, true, false)));
                         }
                         else
                         {
                             List<GameObject> gasTokensList = buttonToken.GetZone().GetComponent<ZoneInfo>().GetTokensWithTags(new List<string> { "Gas" });
-                            if (gasTokensList.Count >= 2)  // If at least two gas tokens to remove
+                            for (int i = 0; i < gasTokensList.Count; i++)
                             {
-                                Object.DestroyImmediate(gasTokensList[gasTokensList.Count - 1]);
-                                Object.DestroyImmediate(gasTokensList[gasTokensList.Count - 2]);
+                                EnvironToken gasEnvironToken = gasTokensList[i].GetComponent<EnvironToken>();
+                                if (gasEnvironToken.dissipatesHeroTurn && gasEnvironToken.quantity == 2)
+                                {
+                                    Object.DestroyImmediate(gasTokensList[i]);
+                                    break;
+                                }
                             }
                         }
+                        break;
+                    default:
                         break;
                 }
                 break;
