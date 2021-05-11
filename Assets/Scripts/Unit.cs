@@ -688,15 +688,10 @@ public class Unit : MonoBehaviour
         return possibleDestinations;
     }
 
-    private double GetAverageSuccesses(List<GameObject> dice, int rerolls = 0)
+    private double GetAverageSuccesses(List<GameObject> dice, int rerolls = 0)  // Don't modify dice as you may modify unit's actionProficiency dice
     {
         double averageSuccesses = 0;
         rerolls += luckyRerolls;
-
-        if (IsImaginingCompanion())
-        {
-            dice.Add(imaginedCompanionDie);
-        }
 
         foreach (GameObject die in dice)
         {
@@ -705,15 +700,10 @@ public class Unit : MonoBehaviour
         return averageSuccesses;
     }
 
-    public double GetChanceOfSuccess(int requiredSuccesses, List<GameObject> dice, int rerolls = 0)
+    public double GetChanceOfSuccess(int requiredSuccesses, List<GameObject> dice, int rerolls = 0)  // Don't modify dice as you may modify unit's actionProficiency dice
     {
         int maxSuccesses = 0;  // TODO Remove this maxSuccess check once the dice math regarding rerolls is fixed (so GetChanceOfSuccess returns 0 without this check)
         rerolls += luckyRerolls;
-
-        if (IsImaginingCompanion())
-        {
-            dice.Add(imaginedCompanionDie);
-        }
 
         foreach (GameObject die in dice)
         {
@@ -952,6 +942,10 @@ public class Unit : MonoBehaviour
                                 }
 
                                 List<GameObject> attackDicePool = new List<GameObject>(actionProficiency.proficiencyDice);
+                                if (IsImaginingCompanion())
+                                {
+                                    attackDicePool.Add(imaginedCompanionDie);
+                                }
                                 if (berserk > 0 && lifePointsMax / (float)lifePoints <= (float)lifePointsMax / 2f)
                                 {
                                     for (int i = 0; i < berserk; i++) {
@@ -1069,6 +1063,10 @@ public class Unit : MonoBehaviour
                                     ZoneInfo targetableZoneInfo = targetableZone.GetComponent<ZoneInfo>();
 
                                     List<GameObject> attackDicePool = new List<GameObject>(actionProficiency.proficiencyDice);
+                                    if (IsImaginingCompanion())
+                                    {
+                                        attackDicePool.Add(imaginedCompanionDie);
+                                    }
                                     if (berserk > 0 && lifePointsMax / (float)lifePoints <= (float)lifePointsMax / 2f)
                                     {
                                         for (int i = 0; i < berserk; i++)
@@ -1084,9 +1082,9 @@ public class Unit : MonoBehaviour
                                     {
                                         availableRerolls += pointBlankRerolls;
                                     }
-
                                     int smokeHindrance = possibleZoneInfo.GetSmokeBetweenZones(targetableZone);
                                     double averageWounds = GetAverageSuccesses(attackDicePool, availableRerolls) + marksmanSuccesses - applicableActionZoneHindrance - smokeHindrance;
+
                                     if (sneakAttack > 0 && targetableZoneInfo.GetCurrentHindrance(gameObject) <= 0)
                                     {
                                         averageWounds += sneakAttack;
@@ -1163,7 +1161,7 @@ public class Unit : MonoBehaviour
                         {
                             foreach (MissionSpecifics.ActionWeight manipulatable in MissionSpecifics.actionsWeightTable["MANIPULATION"])
                             {
-                                if (manipulatable.restrictedUnits.Count == 0 || manipulatable.restrictedUnits.Contains(tag))
+                                if ((manipulatable.restrictedUnits.Count == 0 || manipulatable.restrictedUnits.Contains(tag)) && possibleZoneInfo.GetTokensWithTags(manipulatable.excludeTokens).Count == 0)
                                 {
                                     if (manipulatable.targetType == "Grenade")
                                     {
@@ -1172,12 +1170,12 @@ public class Unit : MonoBehaviour
                                             GameObject grenadeTargetZone = possibleZoneInfo.GetLineOfSightZoneWithHero();  // TODO expand to return a list so can target closest hero
                                             if (grenadeTargetZone != null && grenadeTargetZone != possibleZone)  // Don't grenade your own zone
                                             {
-                                                List<GameObject> dicePool = new List<GameObject>(actionProficiency.proficiencyDice);
+                                                List<GameObject> damageDicePool = new List<GameObject>(actionProficiency.proficiencyDice);
                                                 for (int i = 0; i < grenade; i++)
                                                 {
-                                                    dicePool.Add(possibleZoneInfo.environmentalDie);
+                                                    damageDicePool.Add(possibleZoneInfo.environmentalDie);
                                                 }
-                                                double averageAutoWounds = GetAverageSuccesses(dicePool, availableRerolls);
+                                                double averageAutoWounds = GetAverageSuccesses(damageDicePool, availableRerolls);
                                                 List<GameObject> lineOfSight = new List<GameObject>() { GetZone() };
                                                 lineOfSight.AddRange(possibleZoneInfo.GetSightLineWithZone(grenadeTargetZone));
                                                 if (lineOfSight == null)
@@ -1185,7 +1183,14 @@ public class Unit : MonoBehaviour
                                                     Debug.LogError("ERROR! Unit " + gameObject.name + " in " + possibleZoneInfo.gameObject.name + " isn't able to GetSightLineWithZone with " + grenadeTargetZone.name);
                                                 }
                                                 int requiredSuccesses = lineOfSight.IndexOf(grenadeTargetZone) + applicableActionZoneHindrance;
-                                                double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
+
+                                                List<GameObject> grenadeDicePool = new List<GameObject>(actionProficiency.proficiencyDice);
+                                                if (IsImaginingCompanion())
+                                                {
+                                                    grenadeDicePool.Add(imaginedCompanionDie);
+                                                }
+                                                double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, grenadeDicePool, availableRerolls);
+
                                                 actionWeight += averageAutoWounds * manipulatable.weightFactor * chanceOfSuccess;
                                                 //Debug.Log("!!!Weighing grenade throw, actionWeight " + actionWeight.ToString() + " += " + averageAutoWounds.ToString() + " * " + manipulatable.Item3.ToString() + " * " + chanceOfSuccess.ToString());
                                                 if (frosty)  // Account for increasing difficult terrain of hero's zone
@@ -1206,8 +1211,16 @@ public class Unit : MonoBehaviour
                                     else if (String.IsNullOrEmpty(manipulatable.targetType) || possibleZoneInfo.HasObjectiveToken(manipulatable.targetType))
                                     {
                                         int requiredSuccesses = manipulatable.requiredSuccesses + applicableActionZoneHindrance - (manipulatable.targetType == "Bomb" ? munitionSpecialist : 0);
-                                        double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
+
+                                        List<GameObject> manipulationDicePool = new List<GameObject>(actionProficiency.proficiencyDice);
+                                        if (IsImaginingCompanion())
+                                        {
+                                            manipulationDicePool.Add(imaginedCompanionDie);
+                                        }
+                                        double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, manipulationDicePool, availableRerolls);
+
                                         double manipulatableWeightFactor = MissionSpecifics.GetComplexActionWeight("MANIPULATION", manipulatable, possibleZone);
+                                        //double manipulatableWeightFactor = 100d;
                                         actionWeight += chanceOfSuccess * manipulatableWeightFactor;
                                         actionWeight = actionWeight >= 0 ? actionWeight * finalActionWeightFactor : actionWeight / finalActionWeightFactor;  // if actionWeight is negative, divide by finalActionWeightFactor instead of multiplying
                                         //Debug.Log("!!!!" + gameObject.name + " in " + GetZone().name + " MANIPULATION in " + possibleZone.name + " actionWeight: " + actionWeight.ToString() + " chanceOfSuccess: " + chanceOfSuccess.ToString() + "  manipulatableWeightFactor: " + manipulatableWeightFactor.ToString() + "  finalActionWeightFactor: " + finalActionWeightFactor.ToString());
@@ -1227,12 +1240,17 @@ public class Unit : MonoBehaviour
                         {
                             foreach (MissionSpecifics.ActionWeight thoughtable in MissionSpecifics.actionsWeightTable["THOUGHT"])
                             {
-                                if (thoughtable.restrictedUnits.Count == 0 || thoughtable.restrictedUnits.Contains(tag))
+                                if ((thoughtable.restrictedUnits.Count == 0 || thoughtable.restrictedUnits.Contains(tag)) && possibleZoneInfo.GetTokensWithTags(thoughtable.excludeTokens).Count == 0)
                                 {
                                     if (String.IsNullOrEmpty(thoughtable.targetType) || possibleZoneInfo.HasObjectiveToken(thoughtable.targetType))
                                     {
                                         int requiredSuccesses = thoughtable.requiredSuccesses + applicableActionZoneHindrance;
-                                        double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, actionProficiency.proficiencyDice, availableRerolls);
+                                        List<GameObject> thoughtDicePool = new List<GameObject>(actionProficiency.proficiencyDice);
+                                        if (IsImaginingCompanion())
+                                        {
+                                            thoughtDicePool.Add(imaginedCompanionDie);
+                                        }
+                                        double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, thoughtDicePool, availableRerolls);
                                         double thoughtableWeightFactor = MissionSpecifics.GetComplexActionWeight("THOUGHT", thoughtable, possibleZone);
                                         actionWeight += chanceOfSuccess * thoughtableWeightFactor;
                                         actionWeight = actionWeight >= 0 ? actionWeight * finalActionWeightFactor : actionWeight / finalActionWeightFactor;  // if actionWeight is negative, divide by finalActionWeightFactor instead of multiplying
@@ -1574,6 +1592,10 @@ public class Unit : MonoBehaviour
                         int totalZoneEnemiesBeforeAttack = targetZoneInfo.GetTargetableHeroesCount() + targetZoneInfo.GetTargetableHeroesAlliesCount();
 
                         List<GameObject> attackDicePool = new List<GameObject>(unitTurn.actionProficiency.proficiencyDice);
+                        if (IsImaginingCompanion())
+                        {
+                            attackDicePool.Add(imaginedCompanionDie);
+                        }
                         if (berserk > 0 && lifePointsMax / (float)lifePoints <= (float)lifePointsMax / 2f)
                         {
                             for (int ii = 0; ii < berserk; ii++)
@@ -1751,6 +1773,10 @@ public class Unit : MonoBehaviour
                             int totalZoneEnemiesBeforeAttack = targetZoneInfo.GetTargetableHeroesCount() + targetZoneInfo.GetTargetableHeroesAlliesCount();
 
                             List<GameObject> attackDicePool = new List<GameObject>(unitTurn.actionProficiency.proficiencyDice);
+                            if (IsImaginingCompanion())
+                            {
+                                attackDicePool.Add(imaginedCompanionDie);
+                            }
                             if (berserk > 0 && lifePointsMax / (float)lifePoints <= (float)lifePointsMax / 2f)
                             {
                                 for (int ii = 0; ii < berserk; ii++)
@@ -1894,7 +1920,12 @@ public class Unit : MonoBehaviour
                         List<GameObject> lineOfSight = new List<GameObject>() { GetZone() };
                         lineOfSight.AddRange(currentZoneInfo.GetSightLineWithZone(unitTurn.targetedZone));
                         requiredSuccesses = lineOfSight.IndexOf(unitTurn.targetedZone) + applicableCurrentZoneHindrance;
-                        actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls + MissionSpecifics.GetAttackRollBonus(), requiredSuccesses);
+                        List<GameObject> grenadeDicePool = new List<GameObject>(unitTurn.actionProficiency.proficiencyDice);
+                        if (IsImaginingCompanion())
+                        {
+                            grenadeDicePool.Add(imaginedCompanionDie);
+                        }
+                        actionSuccesses = RollAndReroll(grenadeDicePool, availableRerolls + MissionSpecifics.GetAttackRollBonus(), requiredSuccesses);
                         GameObject targetedZone;
                         //bool hasHitTarget = false;
                         if (actionSuccesses >= requiredSuccesses)
@@ -1919,13 +1950,23 @@ public class Unit : MonoBehaviour
                 else
                 {
                     requiredSuccesses = unitTurn.missionSpecificAction.requiredSuccesses + applicableCurrentZoneHindrance - (unitTurn.missionSpecificAction.targetType == "Bomb" ? munitionSpecialist : 0);
-                    actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls, requiredSuccesses);
+                    List<GameObject> manipulationDicePool = new List<GameObject>(unitTurn.actionProficiency.proficiencyDice);
+                    if (IsImaginingCompanion())
+                    {
+                        manipulationDicePool.Add(imaginedCompanionDie);
+                    }
+                    actionSuccesses = RollAndReroll(manipulationDicePool, availableRerolls, requiredSuccesses);
                     yield return StartCoroutine(unitTurn.missionSpecificAction.actionCallback(gameObject, null, actionSuccesses, requiredSuccesses));
                 }
                 break;
             case "THOUGHT":
                 requiredSuccesses = unitTurn.missionSpecificAction.requiredSuccesses + applicableCurrentZoneHindrance;
-                actionSuccesses = RollAndReroll(unitTurn.actionProficiency.proficiencyDice, availableRerolls, requiredSuccesses);
+                List<GameObject> thoughtDicePool = new List<GameObject>(unitTurn.actionProficiency.proficiencyDice);
+                if (IsImaginingCompanion())
+                {
+                    thoughtDicePool.Add(imaginedCompanionDie);
+                }
+                actionSuccesses = RollAndReroll(thoughtDicePool, availableRerolls, requiredSuccesses);
                 yield return StartCoroutine(unitTurn.missionSpecificAction.actionCallback(gameObject, null, actionSuccesses, requiredSuccesses));
                 break;
         }
@@ -1952,15 +1993,10 @@ public class Unit : MonoBehaviour
         }
     }
 
-    public int RollAndReroll(List<GameObject> dicePool, int rerolls, int requiredSuccesses)
+    public int RollAndReroll(List<GameObject> dicePool, int rerolls, int requiredSuccesses)  // Don't modify dicePool as you may modify the unit's original actionProficiency dice
     {
         int rolledSuccesses = 0;
         rerolls += luckyRerolls;
-
-        if (IsImaginingCompanion())
-        {
-            dicePool.Add(imaginedCompanionDie);
-        }
 
         List<ActionResult> currentActionResults = new List<ActionResult>();
         string debugString = "RollAndReroll for unit " + gameObject.name + " with " + requiredSuccesses.ToString() + " requiredSuccesses. ";
@@ -2064,11 +2100,6 @@ public class Unit : MonoBehaviour
         int rolledSuccesses = 0;
         rerolls += luckyRerolls;
         //rerolls += MissionSpecifics.GetAttackRollBonus();  // All returning 0 right now
-
-        if (IsImaginingCompanion())
-        {
-            dicePool.Add(imaginedCompanionDie);
-        }
 
         List<ActionResult> currentActionResults = new List<ActionResult>();
         string debugString = "RollAndReroll for unit " + gameObject.name + ". ";

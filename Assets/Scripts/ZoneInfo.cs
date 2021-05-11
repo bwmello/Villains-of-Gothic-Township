@@ -611,21 +611,24 @@ public class ZoneInfo : MonoBehaviour
     public List<GameObject> GetTokensWithTags(List<string> tagsToFind, bool onlyActive = true)  // Could replace HasObjectiveToken() and GetObjectiveToken()
     {
         List<GameObject> childrenWithTags = new List<GameObject>();
-        Transform tokensRow = transform.Find("TokensRow");
-        foreach (Transform token in tokensRow)
+        if (tagsToFind.Count > 0)
         {
-            if (tagsToFind.Contains(token.tag))
+            Transform tokensRow = transform.Find("TokensRow");
+            foreach (Transform token in tokensRow)
             {
-                if (token.TryGetComponent<Token>(out Token tempObjectiveToken))
+                if (tagsToFind.Contains(token.tag))
                 {
-                    if (!onlyActive || tempObjectiveToken.IsActive())
+                    if (token.TryGetComponent<Token>(out Token tempObjectiveToken))
+                    {
+                        if (!onlyActive || tempObjectiveToken.IsActive())
+                        {
+                            childrenWithTags.Add(token.gameObject);
+                        }
+                    }
+                    else  // is EnvironToken, not Token
                     {
                         childrenWithTags.Add(token.gameObject);
                     }
-                }
-                else  // is EnvironToken, not Token
-                {
-                    childrenWithTags.Add(token.gameObject);
                 }
             }
         }

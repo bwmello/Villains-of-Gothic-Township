@@ -25,7 +25,7 @@ public static class MissionSpecifics
     public static int currentRound;
     public static string currentPhase = "Setup";  // "Setup", "Villain", "VillainAttack", "Hero", "HeroAnimation", "GameOver"
 
-    public static List<ActionWeight> initialAttackWeightTable = new List<ActionWeight>() { new ActionWeight("Hero", 0, 10, null, new List<string>()), new ActionWeight("HeroAlly", 0, 3, null, new List<string>()) };  // 10 * averageTotalWounds vs heroes, 3 * averageTotalWounds vs heroAllies
+    public static List<ActionWeight> initialAttackWeightTable = new List<ActionWeight>() { new ActionWeight("Hero", 0, 10, null, new List<string>(), new List<string>()), new ActionWeight("HeroAlly", 0, 3, null, new List<string>(), new List<string>()) };  // 10 * averageTotalWounds vs heroes, 3 * averageTotalWounds vs heroAllies
     public static Dictionary<string, List<ActionWeight>> actionsWeightTable = new Dictionary<string, List<ActionWeight>>() {};
 
     public delegate IEnumerator ActionCallback(GameObject unit, GameObject target, int totalSuccesses, int requiredSuccesses);
@@ -35,17 +35,20 @@ public static class MissionSpecifics
         public int requiredSuccesses;
         public double weightFactor;  // Might be per wound or * chanceOfSuccess
         public ActionCallback actionCallback;
-        public List<string> restrictedUnits;  // Either empty and there are no restrictions, or unit's name must be in this list  // Only taken into account for MANIPULATION and THOUGHT actions right now
         public bool activateLast;
+        // Below fields only taken into account for complex (MANIPULATION and THOUGHT) actions right now
+        public List<string> restrictedUnits;  // Either empty and there are no restrictions, or unit's name must be in this list
+        public List<string> excludeTokens;   // Action may not be performed in zone containing any of these token tags
 
-        public ActionWeight(string newTargetType, int newRequiredSuccesses, double newWeightFactor, ActionCallback newActionCallback, List<string> newRestrictedUnits, bool newActivateLast = false)
+        public ActionWeight(string newTargetType, int newRequiredSuccesses, double newWeightFactor, ActionCallback newActionCallback, List<string> newRestrictedUnits, List<string> newExcludeTokens, bool newActivateLast = false)
         {
             targetType = newTargetType;
             requiredSuccesses = newRequiredSuccesses;
             weightFactor = newWeightFactor;
             actionCallback = newActionCallback;
-            restrictedUnits = newRestrictedUnits;
             activateLast = newActivateLast;
+            restrictedUnits = newRestrictedUnits;
+            excludeTokens = newExcludeTokens;
         }
     }
 
@@ -75,23 +78,23 @@ public static class MissionSpecifics
                 actionsWeightTable["MANIPULATION"] = new List<ActionWeight>();
                 if (totalBombs > 0)
                 {
-                    actionsWeightTable["MANIPULATION"].Add(new ActionWeight("Bomb", 3, 100, PrimeBombManually, new List<string>()));  // 100 * chanceOfSuccess, 
+                    actionsWeightTable["MANIPULATION"].Add(new ActionWeight("Bomb", 3, 100, PrimeBombManually, new List<string>(), new List<string>()));  // 100 * chanceOfSuccess, 
                 }
 
                 actionsWeightTable["THOUGHT"] = new List<ActionWeight>();
                 if (totalComputers > 0 && totalBombs > 0)
                 {
-                    actionsWeightTable["THOUGHT"].Add(new ActionWeight("Computer", 3, 100, PrimeBombRemotely, new List<string>()));
+                    actionsWeightTable["THOUGHT"].Add(new ActionWeight("Computer", 3, 100, PrimeBombRemotely, new List<string>(), new List<string>()));
                 }
 
                 actionsWeightTable["GUARD"] = new List<ActionWeight>();
                 if (totalPrimedBombs > 0)
                 {
-                    actionsWeightTable["GUARD"].Add(new ActionWeight("PrimedBomb", 0, 20, null, new List<string>()));  // Flat weight bonus for hindering heroes attempting to disable objectives
+                    actionsWeightTable["GUARD"].Add(new ActionWeight("PrimedBomb", 0, 20, null, new List<string>(), new List<string>()));  // Flat weight bonus for hindering heroes attempting to disable objectives
                 }
                 if (totalBombs > 0)
                 {
-                    actionsWeightTable["GUARD"].Add(new ActionWeight("Bomb", 0, 15, null, new List<string>()));
+                    actionsWeightTable["GUARD"].Add(new ActionWeight("Bomb", 0, 15, null, new List<string>(), new List<string>()));
                     //if (totalComputers > 0)  // Heroes should always be going after bombs, not computers
                     //{
                     //    actionsWeightTable["GUARD"].Add(new ActionWeight("Computer", 0, 5, null));
@@ -105,25 +108,25 @@ public static class MissionSpecifics
                 totalBombs = GetTotalActiveTokens(new List<string>() { "Bomb" });
                 totalComputers = GetTotalActiveTokens(new List<string>() { "Computer" });
 
-                actionsWeightTable["MANIPULATION"] = new List<ActionWeight>() { new ActionWeight("Grenade", 0, 15, null, new List<string>()) };  // 15 * averageAutoWounds * chanceOfSuccess - friendlyFire
+                actionsWeightTable["MANIPULATION"] = new List<ActionWeight>() { new ActionWeight("Grenade", 0, 15, null, new List<string>(), new List<string>()) };  // 15 * averageAutoWounds * chanceOfSuccess - friendlyFire
 
                 actionsWeightTable["THOUGHT"] = new List<ActionWeight>();
                 if (totalComputers > 0)
                 {
-                    actionsWeightTable["THOUGHT"].Add(new ActionWeight("Computer", 3, 80, ActivateCryogenicDevice, new List<string>(), true));  // Assume you cost the hero at least 1 movepoint and auto deal 2/3 of a wound per cryogenic token, 0 weight if would hit anyone except frosty
+                    actionsWeightTable["THOUGHT"].Add(new ActionWeight("Computer", 3, 80, ActivateCryogenicDevice, new List<string>(), new List<string>(), true));  // Assume you cost the hero at least 1 movepoint and auto deal 2/3 of a wound per cryogenic token, 0 weight if would hit anyone except frosty
                 }
 
                 actionsWeightTable["GUARD"] = new List<ActionWeight>();
                 if (totalBombs > 0)
                 {
-                    actionsWeightTable["GUARD"].Add(new ActionWeight("Bomb", 0, 20, null, new List<string>()));
+                    actionsWeightTable["GUARD"].Add(new ActionWeight("Bomb", 0, 20, null, new List<string>(), new List<string>()));
                 }
                 break;
             case "AFewBadApples":
                 actionsWeightTable["MELEE"] = new List<ActionWeight>(initialAttackWeightTable);
                 actionsWeightTable["RANGED"] = new List<ActionWeight>(initialAttackWeightTable);
-                actionsWeightTable["MELEE"].Add(new ActionWeight("BYSTANDER", 0, 20, null, new List<string>()));
-                actionsWeightTable["RANGED"].Add(new ActionWeight("BYSTANDER", 0, 20, null, new List<string>()));
+                actionsWeightTable["MELEE"].Add(new ActionWeight("BYSTANDER", 0, 20, null, new List<string>(), new List<string>()));
+                actionsWeightTable["RANGED"].Add(new ActionWeight("BYSTANDER", 0, 20, null, new List<string>(), new List<string>()));
 
                 actionsWeightTable["THOUGHT"] = new List<ActionWeight>();
                 UtilityBelt utilityBelt = scenarioMap.UIOverlay.GetComponent<UIOverlay>().utilityBelt.GetComponent<UtilityBelt>();  // Pretty terrible chain of calls just to get claimableTokens
@@ -133,7 +136,7 @@ public static class MissionSpecifics
                     ClaimableToken claimableToken = claimableTokenObject.GetComponent<ClaimableToken>();
                     if (claimableToken.tokenType == "Computer" && !claimableToken.isClaimed)
                     {
-                        actionsWeightTable["THOUGHT"].Add(new ActionWeight("Computer", 3, 80, DeactivateComputer, new List<string>()));
+                        actionsWeightTable["THOUGHT"].Add(new ActionWeight("Computer", 3, 80, DeactivateComputer, new List<string>(), new List<string>()));
                     }
                 }
                 break;
@@ -152,17 +155,17 @@ public static class MissionSpecifics
                 actionsWeightTable["MANIPULATION"] = new List<ActionWeight>();
                 if (totalJammers > 0)
                 {
-                    actionsWeightTable["MANIPULATION"].Add(new ActionWeight("Jammer", 2, 100, ActivateJammer, new List<string>()));  // 100 * chanceOfSuccess, 
+                    actionsWeightTable["MANIPULATION"].Add(new ActionWeight("Jammer", 2, 100, ActivateJammer, new List<string>(), new List<string>()));  // 100 * chanceOfSuccess, 
                 }
 
                 actionsWeightTable["GUARD"] = new List<ActionWeight>();
                 if (totalActiveJammers > 0)
                 {
-                    actionsWeightTable["GUARD"].Add(new ActionWeight("ActiveJammer", 0, 20, null, new List<string>()));  // Flat weight bonus for hindering heroes attempting to disable objectives
+                    actionsWeightTable["GUARD"].Add(new ActionWeight("ActiveJammer", 0, 20, null, new List<string>(), new List<string>()));  // Flat weight bonus for hindering heroes attempting to disable objectives
                 }
                 if (totalJammers > 0)
                 {
-                    actionsWeightTable["GUARD"].Add(new ActionWeight("Jammer", 0, 15, null, new List<string>()));
+                    actionsWeightTable["GUARD"].Add(new ActionWeight("Jammer", 0, 15, null, new List<string>(), new List<string>()));
                 }
                 // Maybe GUARD each other to prevent interrogation, but don't guard BYSTANDERs (if menace > 0)
                 break;
@@ -171,10 +174,10 @@ public static class MissionSpecifics
                 actionsWeightTable["RANGED"] = new List<ActionWeight>(initialAttackWeightTable);
 
                 actionsWeightTable["MANIPULATION"] = new List<ActionWeight>();
-                actionsWeightTable["MANIPULATION"].Add(new ActionWeight(null, 3, 200, SpreadInfection, new List<string>() { "HAZMAT" }));  // 200 * chanceOfSuccess, 
+                actionsWeightTable["MANIPULATION"].Add(new ActionWeight(null, 3, 200, SpreadInfection, new List<string>() { "HAZMAT" }, new List<string>()));  // 200 * chanceOfSuccess, 
 
                 actionsWeightTable["THOUGHT"] = new List<ActionWeight>();
-                actionsWeightTable["THOUGHT"].Add(new ActionWeight(null, 3, 200, SpreadInfection, new List<string>() { "RATSNATCHER" }));
+                actionsWeightTable["THOUGHT"].Add(new ActionWeight(null, 3, 200, SpreadInfection, new List<string>() { "RATSNATCHER" }, new List<string>()));
                 break;
             case "JackInTheBomb":
                 actionsWeightTable["MELEE"] = new List<ActionWeight>(initialAttackWeightTable);
@@ -186,13 +189,13 @@ public static class MissionSpecifics
                 actionsWeightTable["MANIPULATION"] = new List<ActionWeight>();
                 if (totalTraps < 4)  // Max of 4 traps
                 {
-                    actionsWeightTable["MANIPULATION"].Add(new ActionWeight("Trap", 2, 100, PlaceTrap, new List<string>()));  // 100 * chanceOfSuccess, 
+                    actionsWeightTable["MANIPULATION"].Add(new ActionWeight(null, 2, 160, PlaceTrap, new List<string>(){}, new List<string>() { "Gas", "Trap", "ToyBox" }));  // 60 * chanceOfSuccess, 
                 }
 
                 actionsWeightTable["GUARD"] = new List<ActionWeight>();
                 if (totalToyBoxes > 0)
                 {
-                    actionsWeightTable["GUARD"].Add(new ActionWeight("ToyBox", 0, 20, null, new List<string>()));  // Flat weight bonus for hindering heroes attempting to disable objectives
+                    actionsWeightTable["GUARD"].Add(new ActionWeight("ToyBox", 0, 20, null, new List<string>(), new List<string>()));  // Flat weight bonus for hindering heroes attempting to disable objectives
                 }
                 break;
         }
@@ -472,6 +475,26 @@ public static class MissionSpecifics
                 {
                     default:
                         button.transform.Find("BlinkingLight").gameObject.SetActive(false);  // Turns off blinking light and is faded/unfaded below
+                        break;
+                }
+                break;
+            case "Trap":
+                switch (missionName)
+                {
+                    case "JackInTheBomb":
+                        if (buttonToken.IsActive())
+                        {
+                            buttonToken.GetZone().GetComponent<ZoneInfo>().AddEnvironTokens(new EnvironTokenSave("Gas", 2, true, false));
+                        }
+                        else
+                        {
+                            List<GameObject> gasTokensList = buttonToken.GetZone().GetComponent<ZoneInfo>().GetTokensWithTags(new List<string> { "Gas" });
+                            if (gasTokensList.Count >= 2)  // If at least two gas tokens to remove
+                            {
+                                Object.DestroyImmediate(gasTokensList[gasTokensList.Count - 1]);
+                                Object.DestroyImmediate(gasTokensList[gasTokensList.Count - 2]);
+                            }
+                        }
                         break;
                 }
                 break;
@@ -917,7 +940,7 @@ public static class MissionSpecifics
                 {
                     //debugString += "\nRATSNATCHER is active and activeRats.Count " + activeRats.Count.ToString();
                     List<(GameObject, GameObject, double)> ratMovesByWeight = new List<(GameObject, GameObject, double)>();  // rat, zone, weight
-                    ActionWeight spreadInfectionAction = new ActionWeight(null, 3, 100, SpreadInfection, null);  // Generic SpreadInfection actionWeight or GetComplexActionWeight()
+                    ActionWeight spreadInfectionAction = new ActionWeight(null, 3, 100, SpreadInfection, new List<string>(), new List<string>());  // Generic SpreadInfection actionWeight or GetComplexActionWeight()
 
                     foreach (GameObject rat in activeRats)
                     {
@@ -1182,7 +1205,7 @@ public static class MissionSpecifics
                         };
 
                         List<Unit.UnitPossibleAction> allPossibleUnitActions = otterPop.GetComponent<Unit>().GetPossibleActions(possibleDestinations);
-                        Unit.UnitPossibleAction chosenAction = new Unit.UnitPossibleAction(otterPop.GetComponent<Unit>(), new ActionWeight(null, 0, 0, null, null), new Unit.ActionProficiency(null, 0, null), 0, zone22, zone22, zone22MovePath, null, null);
+                        Unit.UnitPossibleAction chosenAction = new Unit.UnitPossibleAction(otterPop.GetComponent<Unit>(), new ActionWeight(null, 0, 0, null, new List<string>(), new List<string>()), new Unit.ActionProficiency(null, 0, null), 0, zone22, zone22, zone22MovePath, null, null);
                         foreach (Unit.UnitPossibleAction unitAction in allPossibleUnitActions)
                         {
                             if (chosenAction == null || unitAction.actionWeight > chosenAction.actionWeight)
@@ -1191,7 +1214,6 @@ public static class MissionSpecifics
                             }
                         }
 
-                        //return new Dictionary<GameObject, Unit.UnitPossibleAction> { { otterPop, chosenAction } };
                         return new List<Unit.UnitPossibleAction> { chosenAction };
 
                     default:
@@ -1545,10 +1567,10 @@ public static class MissionSpecifics
     public static IEnumerator SpreadInfection(GameObject unit, GameObject target, int totalSuccesses, int requiredSuccesses)
     {
         ZoneInfo unitZoneInfo = unit.GetComponent<Unit>().GetZone().GetComponent<ZoneInfo>();
+
         // Animate success vs failure UI
         GameObject successContainer = GameObject.Instantiate(unitZoneInfo.successVsFailurePrefab, scenarioMap.animationContainer.transform);
         successContainer.transform.position = unit.transform.TransformPoint(new Vector3(0, 12, 0));
-
         successContainer.GetComponent<RectTransform>().sizeDelta = new Vector2(requiredSuccesses * 10, successContainer.GetComponent<RectTransform>().rect.height);
         Transform successContainerText = successContainer.transform.GetChild(0);
         successContainerText.GetComponent<RectTransform>().sizeDelta = new Vector2(requiredSuccesses * 10, successContainerText.GetComponent<RectTransform>().rect.height);
@@ -1574,8 +1596,7 @@ public static class MissionSpecifics
         if (totalSuccesses >= requiredSuccesses)
         {
             Vector3 furtherPoint = scenarioMap.animate.GetFurtherPointOnLine(mainCamera.transform.position, unitZoneInfo.transform.position);
-            //yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, furtherPoint));  // Move camera to zone of bomb being armed
-            //unitZoneInfo.RemoveObjectiveToken("Bomb");
+            yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, furtherPoint));  // Move camera to rat if rat not visible
             unitZoneInfo.AddObjectiveToken("Rat");
             yield return new WaitForSecondsRealtime(2);
             SetActionsWeightTable();
@@ -1587,7 +1608,42 @@ public static class MissionSpecifics
     /* ActionCallbacks specific to "JackInTheBomb" mission */
     public static IEnumerator PlaceTrap(GameObject unit, GameObject target, int totalSuccesses, int requiredSuccesses)
     {
-        // TODO
+        ZoneInfo unitZoneInfo = unit.GetComponent<Unit>().GetZone().GetComponent<ZoneInfo>();
+
+        // Animate success vs failure UI
+        GameObject successContainer = GameObject.Instantiate(unitZoneInfo.successVsFailurePrefab, scenarioMap.animationContainer.transform);
+        successContainer.transform.position = unit.transform.TransformPoint(new Vector3(0, 12, 0));
+        successContainer.GetComponent<RectTransform>().sizeDelta = new Vector2(requiredSuccesses * 10, successContainer.GetComponent<RectTransform>().rect.height);
+        Transform successContainerText = successContainer.transform.GetChild(0);
+        successContainerText.GetComponent<RectTransform>().sizeDelta = new Vector2(requiredSuccesses * 10, successContainerText.GetComponent<RectTransform>().rect.height);
+        string successContainerBlanks = "_";
+        for (int i = 1; i < requiredSuccesses; i++)
+        {
+            successContainerBlanks += " _";
+        }
+        successContainerText.GetComponent<TMP_Text>().text = successContainerBlanks;
+
+        for (int i = -1; i < (totalSuccesses >= 0 ? totalSuccesses : 0); i++)
+        {
+            yield return new WaitForSecondsRealtime(1);
+            if (i == requiredSuccesses - 1)  // Otherwise there can be more results (checks/x's) displayed than requiredSuccesses
+            {
+                break;
+            }
+            GameObject successOrFailurePrefab = i + 1 < totalSuccesses ? unitZoneInfo.successPrefab : unitZoneInfo.failurePrefab;
+            GameObject successOrFailureMarker = GameObject.Instantiate(successOrFailurePrefab, successContainer.transform);
+        }
+        yield return new WaitForSecondsRealtime(1);
+
+        if (totalSuccesses >= requiredSuccesses)
+        {
+            Vector3 furtherPoint = scenarioMap.animate.GetFurtherPointOnLine(mainCamera.transform.position, unitZoneInfo.transform.position);
+            yield return scenarioMap.animate.StartCoroutine(scenarioMap.animate.MoveCameraUntilOnscreen(mainCamera.transform.position, furtherPoint));  // Move camera to trap if trap not visible
+            unitZoneInfo.AddObjectiveToken("Trap");
+            yield return new WaitForSecondsRealtime(2);
+            SetActionsWeightTable();
+        }
+        GameObject.Destroy(successContainer);
         yield return 0;
     }
 }
