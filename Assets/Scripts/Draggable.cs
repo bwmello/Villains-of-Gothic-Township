@@ -300,10 +300,16 @@ public class Draggable : MonoBehaviour
                 return new List<GameObject>(GameObject.FindGameObjectsWithTag("WallRubble"));
             case "Interrogate":
                 return MissionSpecifics.GetInterrogationTargets();
-                //return new List<GameObject>(GameObject.FindGameObjectsWithTag("WallRubble"));
             case "Hero":
-                List<GameObject> heroDropZones = new List<GameObject>(GameObject.FindGameObjectsWithTag("ZoneInfoPanel"));
-                heroDropZones.Remove(gameObject.GetComponent<Hero>().GetZone());
+                List<GameObject> heroDropZones = new List<GameObject>();
+                GameObject heroOriginZone = GetComponent<Hero>().GetZone();
+                foreach (GameObject potentialDropZone in GameObject.FindGameObjectsWithTag("ZoneInfoPanel"))
+                {
+                    if (potentialDropZone != heroOriginZone && potentialDropZone.GetComponent<ZoneInfo>().CanBeEntered(1, isHero: true))  // All heroes are size 1
+                    {
+                        heroDropZones.Add(potentialDropZone);
+                    }
+                }
                 return heroDropZones;
             case "AllySetup":
                 List<GameObject> allyDropZones = new List<GameObject>();
@@ -313,8 +319,16 @@ public class Draggable : MonoBehaviour
                 }
                 return allyDropZones;
             case "Unit":  // Extra move points can be spent when activating allies, so they can go anywhere
-                List<GameObject> unitDropZones = new List<GameObject>(GameObject.FindGameObjectsWithTag("ZoneInfoPanel"));
-                unitDropZones.Remove(gameObject.GetComponent<Unit>().GetZone());
+                Unit unit = GetComponent<Unit>();
+                GameObject unitOriginZone = unit.GetZone();
+                List<GameObject> unitDropZones = new List<GameObject>();
+                foreach (GameObject potentialDropZone in GameObject.FindGameObjectsWithTag("ZoneInfoPanel"))
+                {
+                    if (potentialDropZone != unitOriginZone && potentialDropZone.GetComponent<ZoneInfo>().CanBeEntered(unit.size))
+                    {
+                        unitDropZones.Add(potentialDropZone);
+                    }
+                }
                 return unitDropZones;
         }
         return null;

@@ -190,7 +190,8 @@ public class Animate : MonoBehaviour
     public bool IsPointOnScreen(Vector3 point, float buffer = .1f)
     {
         Vector3 screenPoint = cameraStuff.WorldToViewportPoint(point);
-        if (screenPoint.x > buffer && screenPoint.x < 1 - buffer && screenPoint.y > (.01f + buffer) && screenPoint.y < 1 - buffer)  // Add .01f to bottom buffer for UtilityBelt, which is now displayed during both hero and villain turns. Not really needed, but may need to change .01f to more significant value in future
+        float bottomBuffer = .05f;  // Add extra to bottom buffer for UtilityBelt
+        if (screenPoint.x > buffer && screenPoint.x < 1 - buffer && screenPoint.y > (bottomBuffer + buffer) && screenPoint.y < 1 - buffer)
         {
             return true;
         }

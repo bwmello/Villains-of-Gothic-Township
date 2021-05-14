@@ -782,7 +782,7 @@ public static class MissionSpecifics
                     GameObject ollygatorUnitSlot = ollygatorEntranceZone.GetComponent<ZoneInfo>().GetAvailableUnitSlot();
 
                     scenarioMap.animate.CameraToFixedZoom();  // Not the standard reinforcement flow, so doublecheck camera zoom
-                    if (!scenarioMap.animate.IsPointOnScreen(ollygatorUnitSlot.transform.position, .01f))  // Reinforcements typically spawned on edges/corners of map, so greatly reduce buffer to prevent slight camera jumps
+                    if (!scenarioMap.animate.IsPointOnScreen(ollygatorUnitSlot.transform.position))
                     {
                         scenarioMap.animate.mainCamera.transform.position = new Vector3(ollygatorUnitSlot.transform.position.x, ollygatorUnitSlot.transform.position.y, scenarioMap.animate.mainCamera.transform.position.z);
                     }
@@ -813,7 +813,7 @@ public static class MissionSpecifics
                             break;
                         }
                     }
-                    if (!scenarioMap.animate.IsPointOnScreen(livefireUnitSlot.transform.position, .01f))  // Reinforcements typically spawned on edges/corners of map, so greatly reduce buffer to prevent slight camera jumps
+                    if (!scenarioMap.animate.IsPointOnScreen(livefireUnitSlot.transform.position))
                     {
                         scenarioMap.animate.mainCamera.transform.position = new Vector3(livefireUnitSlot.transform.position.x, livefireUnitSlot.transform.position.y, scenarioMap.animate.mainCamera.transform.position.z);
                     }

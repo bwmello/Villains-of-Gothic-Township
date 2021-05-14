@@ -635,7 +635,7 @@ public class Unit : MonoBehaviour
         {
             ZoneInfo potentialZoneInfo = potentialZone.GetComponent<ZoneInfo>();
 
-            if (potentialZoneInfo.GetCurrentOccupancy() + size > potentialZoneInfo.maxOccupancy)
+            if (!potentialZoneInfo.CanBeEntered(size))
             {
                 continue;  // Skip this potentialZone if potentialZone is at maxOccupancy
             }
@@ -1525,7 +1525,7 @@ public class Unit : MonoBehaviour
         int availableRerolls = currentZoneInfo.GetSupportRerolls(gameObject);
 
         animate.CameraToFixedZoom();
-        if (!animate.IsPointOnScreen(transform.position, 0))
+        if (!animate.IsPointOnScreen(transform.position))
         {
             animate.mainCamera.transform.position = new Vector3(transform.position.x, transform.position.y, animate.mainCamera.transform.position.z);
             yield return new WaitForSecondsRealtime(1);  // Pause after camera jump to unit but before action

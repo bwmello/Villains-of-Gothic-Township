@@ -460,7 +460,7 @@ public class ScenarioMap : MonoBehaviour
             for (int j = 0; j < numToReinforce; j++)
             {
                 GameObject availableUnitSlot = reinforcementsAvailable[i].Item3.GetComponent<ZoneInfo>().GetAvailableUnitSlot();
-                if (!animate.IsPointOnScreen(availableUnitSlot.transform.position, .01f))  // Reinforcements typically spawned on edges/corners of map, so greatly reduce buffer to prevent slight camera jumps
+                if (!animate.IsPointOnScreen(availableUnitSlot.transform.position))
                 {
                     animate.mainCamera.transform.position = new Vector3(availableUnitSlot.transform.position.x, availableUnitSlot.transform.position.y, animate.mainCamera.transform.position.z);
                 }

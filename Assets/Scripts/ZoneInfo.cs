@@ -833,6 +833,25 @@ public class ZoneInfo : MonoBehaviour
         }
     }
 
+    public bool CanBeEntered(int entererSize, bool isHero=false)
+    {
+        if (isHero || GetAvailableUnitSlot())  // Heroes do not need a unit slot
+        {
+            if (entererSize > 0)
+            {
+                if (maxOccupancy >= GetCurrentOccupancy() + entererSize)
+                {
+                    return true;
+                }
+            }
+            else
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public GameObject GetAvailableUnitSlot()
     {
         GameObject availableUnitSlot = null;
@@ -858,9 +877,9 @@ public class ZoneInfo : MonoBehaviour
 
     public GameObject AddUnitToZone(string unitTag, int unitSize)  // Used by UIOverlay.cs when dragging allies onto board during Setup
     {
-        GameObject unitSlot = GetAvailableUnitSlot();
-        if (unitSlot && GetCurrentOccupancy() + unitSize <= maxOccupancy)
+        if (CanBeEntered(unitSize))
         {
+            GameObject unitSlot = GetAvailableUnitSlot();
             return Instantiate(transform.GetComponentInParent<ScenarioMap>().unitPrefabsMasterDict[unitTag], unitSlot.transform);
         }
         return null;
