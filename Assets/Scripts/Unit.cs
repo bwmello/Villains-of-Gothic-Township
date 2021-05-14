@@ -441,6 +441,11 @@ public class Unit : MonoBehaviour
         bool hasMoved = false;
         bool hasActed = false;
         //string allPossibleUnitActionsDebugString = "Unit.ActivateUnit for " + transform.tag + " in " + GetZone().name + "\tallPossibleUnitActions.Count: " + allPossibleUnitActions.Count.ToString();
+        //foreach (UnitPossibleAction unitPossibleAction in allPossibleUnitActions.OrderByDescending(possibleAction => possibleAction.actionWeight))
+        //{
+        //    allPossibleUnitActionsDebugString += "\n" + unitPossibleAction.actionProficiency.actionType + " in actionZone: " + unitPossibleAction.actionZone.name + " and finalDestinationZone: " + unitPossibleAction.finalDestinationZone.name + " with weight " + unitPossibleAction.actionWeight.ToString();
+        //}
+        //Debug.Log(allPossibleUnitActionsDebugString);
 
         if (allPossibleUnitActions != null && allPossibleUnitActions.Count > 0)
         {
@@ -448,7 +453,6 @@ public class Unit : MonoBehaviour
 
             foreach (UnitPossibleAction unitAction in allPossibleUnitActions)
             {
-                //allPossibleUnitActionsDebugString += "\nPossible " + unitAction.actionProficiency.actionType + " action in " + unitAction.actionZone.name + " and finalDestinationZone: " + unitAction.finalDestinationZone.name + "  with weight: " + unitAction.actionWeight.ToString();
                 if (chosenAction == null || unitAction.actionWeight > chosenAction.actionWeight)
                 {
                     chosenAction = unitAction;
@@ -946,7 +950,7 @@ public class Unit : MonoBehaviour
                                 {
                                     attackDicePool.Add(imaginedCompanionDie);
                                 }
-                                if (berserk > 0 && lifePointsMax / (float)lifePoints <= (float)lifePointsMax / 2f)
+                                if (berserk > 0 && lifePoints <= lifePointsMax / 2f)
                                 {
                                     for (int i = 0; i < berserk; i++) {
                                         attackDicePool.Add(berserkDie);
@@ -1067,7 +1071,7 @@ public class Unit : MonoBehaviour
                                     {
                                         attackDicePool.Add(imaginedCompanionDie);
                                     }
-                                    if (berserk > 0 && lifePointsMax / (float)lifePoints <= (float)lifePointsMax / 2f)
+                                    if (berserk > 0 && lifePoints <= lifePointsMax / 2f)
                                     {
                                         for (int i = 0; i < berserk; i++)
                                         {
@@ -1219,7 +1223,7 @@ public class Unit : MonoBehaviour
                                         }
                                         double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, manipulationDicePool, availableRerolls);
 
-                                        double manipulatableWeightFactor = MissionSpecifics.GetComplexActionWeight("MANIPULATION", manipulatable, possibleZone);
+                                        double manipulatableWeightFactor = MissionSpecifics.GetComplexActionWeight(manipulatable, possibleZone, gameObject);
                                         //double manipulatableWeightFactor = 100d;
                                         actionWeight += chanceOfSuccess * manipulatableWeightFactor;
                                         actionWeight = actionWeight >= 0 ? actionWeight * finalActionWeightFactor : actionWeight / finalActionWeightFactor;  // if actionWeight is negative, divide by finalActionWeightFactor instead of multiplying
@@ -1251,7 +1255,7 @@ public class Unit : MonoBehaviour
                                             thoughtDicePool.Add(imaginedCompanionDie);
                                         }
                                         double chanceOfSuccess = GetChanceOfSuccess(requiredSuccesses, thoughtDicePool, availableRerolls);
-                                        double thoughtableWeightFactor = MissionSpecifics.GetComplexActionWeight("THOUGHT", thoughtable, possibleZone);
+                                        double thoughtableWeightFactor = MissionSpecifics.GetComplexActionWeight(thoughtable, possibleZone, gameObject);
                                         actionWeight += chanceOfSuccess * thoughtableWeightFactor;
                                         actionWeight = actionWeight >= 0 ? actionWeight * finalActionWeightFactor : actionWeight / finalActionWeightFactor;  // if actionWeight is negative, divide by finalActionWeightFactor instead of multiplying
 
@@ -1596,7 +1600,7 @@ public class Unit : MonoBehaviour
                         {
                             attackDicePool.Add(imaginedCompanionDie);
                         }
-                        if (berserk > 0 && lifePointsMax / (float)lifePoints <= (float)lifePointsMax / 2f)
+                        if (berserk > 0 && lifePoints <= lifePointsMax / 2f)
                         {
                             for (int ii = 0; ii < berserk; ii++)
                             {
@@ -1777,7 +1781,7 @@ public class Unit : MonoBehaviour
                             {
                                 attackDicePool.Add(imaginedCompanionDie);
                             }
-                            if (berserk > 0 && lifePointsMax / (float)lifePoints <= (float)lifePointsMax / 2f)
+                            if (berserk > 0 && lifePoints <= lifePointsMax / 2f)
                             {
                                 for (int ii = 0; ii < berserk; ii++)
                                 {
@@ -1999,7 +2003,7 @@ public class Unit : MonoBehaviour
         rerolls += luckyRerolls;
 
         List<ActionResult> currentActionResults = new List<ActionResult>();
-        string debugString = "RollAndReroll for unit " + gameObject.name + " with " + requiredSuccesses.ToString() + " requiredSuccesses. ";
+        string debugString = "RollAndReroll for unit " + gameObject.name + " with " + requiredSuccesses.ToString() + " requiredSuccesses. Initial roll results:\n";
 
         // Separate dice results by color for freeRerolls
         Dictionary<string, List<ActionResult>> actionResultsByColor = new Dictionary<string, List<ActionResult>>();
@@ -2016,9 +2020,11 @@ public class Unit : MonoBehaviour
             {
                 actionResultsByColor[dieInfo.color] = new List<ActionResult>() { currentActionResult };
             }
+            debugString += dieInfo.name + ": " + currentActionResult.successes + "\t";
         }
 
-        // Apply freeRerolls (if needed)
+        // Apply freeRerolls
+        debugString += "\nApplying freeRerolls: ";
         foreach (List<ActionResult> dieResults in actionResultsByColor.Values)
         {
             int freeRerolls = 0;
@@ -2102,7 +2108,7 @@ public class Unit : MonoBehaviour
         //rerolls += MissionSpecifics.GetAttackRollBonus();  // All returning 0 right now
 
         List<ActionResult> currentActionResults = new List<ActionResult>();
-        string debugString = "RollAndReroll for unit " + gameObject.name + ". ";
+        string debugString = "RollAndReroll for unit " + gameObject.name + " with Initial roll results:\n";
 
         // Separate dice results by color for freeRerolls
         Dictionary<string, List<ActionResult>> actionResultsByColor = new Dictionary<string, List<ActionResult>>();
@@ -2118,9 +2124,11 @@ public class Unit : MonoBehaviour
             {
                 actionResultsByColor[dieInfo.color] = new List<ActionResult>() { currentActionResult };
             }
+            debugString += dieInfo.name + ": " + currentActionResult.successes + "\t";
         }
 
         // Apply freeRerolls
+        debugString += "\nApplying freeRerolls: ";
         foreach (List<ActionResult> dieResults in actionResultsByColor.Values)
         {
             int freeRerolls = 0;

@@ -126,7 +126,7 @@ PlayerSettings:
     16:10: 1
     16:9: 1
     Others: 1
-  bundleVersion: 0.202
+  bundleVersion: 0.203
   preloadedAssets: []
   metroInputSource: 0
   wsaTransparentSwapchain: 0
@@ -173,8 +173,8 @@ PlayerSettings:
     Standalone: com.Company.ProductName
     iPhone: BlaineEnterprises.GothicCityVillains
   buildNumber:
-    iPhone: 18
-  AndroidBundleVersionCode: 18
+    iPhone: 19
+  AndroidBundleVersionCode: 19
   AndroidMinSdkVersion: 19
   AndroidTargetSdkVersion: 0
   AndroidPreferredInstallLocation: 0

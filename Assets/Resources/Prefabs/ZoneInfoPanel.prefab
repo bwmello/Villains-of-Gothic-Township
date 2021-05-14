@@ -166,7 +166,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &9185730025264078121
 Transform:
   m_ObjectHideFlags: 0
@@ -294,8 +294,6 @@ MonoBehaviour:
   failurePrefab: {fileID: 3989726647576400915, guid: 32f0cdfb10ff446298d70758741e0a6f,
     type: 3}
   environmentalDie: {fileID: 4378926195687391191, guid: 57078db74302144e8a156c288214f7e9,
-    type: 3}
-  confirmButtonPrefab: {fileID: 6339903062524070627, guid: 4740639e9a8e342afbe919da07b3e180,
     type: 3}
   isSpawnZone: 0
   elevation: 0

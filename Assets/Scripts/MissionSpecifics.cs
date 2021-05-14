@@ -189,7 +189,7 @@ public static class MissionSpecifics
                 actionsWeightTable["MANIPULATION"] = new List<ActionWeight>();
                 if (totalTraps < 4)  // Max of 4 traps
                 {
-                    actionsWeightTable["MANIPULATION"].Add(new ActionWeight(null, 2, 160, PlaceTrap, new List<string>(){}, new List<string>() { "Gas", "Trap", "ToyBox" }));  // 60 * chanceOfSuccess, 
+                    actionsWeightTable["MANIPULATION"].Add(new ActionWeight(null, 2, 40, PlaceTrap, new List<string>(){}, new List<string>() { "Gas", "Trap", "ToyBox" }));  // Any higher than 40 and JQUEEN would rather do this with hindrance than melee
                 }
 
                 actionsWeightTable["GUARD"] = new List<ActionWeight>();
@@ -201,7 +201,7 @@ public static class MissionSpecifics
         }
     }
 
-    public static double GetComplexActionWeight(string actionType, ActionWeight actionWeight, GameObject actionZone = null)  // ComplexAction is any MANIPULATION (besides grenade) or THOUGHT action
+    public static double GetComplexActionWeight(ActionWeight actionWeight, GameObject actionZone = null, GameObject actioner = null)  // ComplexAction is any MANIPULATION (besides grenade) or THOUGHT action
     {
         double weight = actionWeight.weightFactor;
         switch (missionName)
@@ -209,7 +209,7 @@ public static class MissionSpecifics
             case "RatRace":
                 if (string.IsNullOrEmpty(actionWeight.targetType))  // No target, as rats can be placed in any zone
                 {
-                    //string ratPlacementWeightDebugString = "GetComplexActionWeight(" + actionType + ", actionWeight, " + actionZone.name + "), initial weight: " + weight.ToString();
+                    //string ratPlacementWeightDebugString = "GetComplexActionWeight(actionWeight, " + actionZone.name + "), initial weight: " + weight.ToString();
                     ZoneInfo actionZoneInfo = actionZone.GetComponent<ZoneInfo>();  // Will throw if actionZone not passed and I like it that way
                     foreach (GameObject rat in GameObject.FindGameObjectsWithTag("Rat"))
                     {
@@ -247,6 +247,14 @@ public static class MissionSpecifics
                 if (string.IsNullOrEmpty(actionWeight.targetType))  // No target, as traps can be placed in any zone
                 {
                     ZoneInfo actionZoneInfo = actionZone.GetComponent<ZoneInfo>();
+                    foreach (Unit inAreaUnit in actionZoneInfo.GetUnitsInfo(onlyActive: true))
+                    {
+                        if (inAreaUnit.gameObject != actioner && !inAreaUnit.isHeroAlly && !inAreaUnit.gasImmunity)  // Will throw if actioner not passed and I like it that way
+                        {
+                            weight -= 2;
+                        }
+                    }
+
                     List<GameObject> allAdjacentZones = new List<GameObject>(actionZoneInfo.adjacentZones);
                     allAdjacentZones.AddRange(actionZoneInfo.steeplyAdjacentZones);
                     foreach (GameObject adjacentZone in allAdjacentZones)
@@ -996,7 +1004,7 @@ public static class MissionSpecifics
                         rat.GetComponent<Token>().TokenButtonClicked(rat.GetComponent<Button>());  // Deactivate rat so it's not counting itself when calling GetComplexActionWeight()
                         GameObject ratZone = rat.GetComponent<Token>().GetZone();
                         ZoneInfo ratZoneInfo = ratZone.GetComponent<ZoneInfo>();
-                        double ratOriginalZoneWeight = GetComplexActionWeight(null, spreadInfectionAction, ratZone);
+                        double ratOriginalZoneWeight = GetComplexActionWeight(spreadInfectionAction, ratZone);
                         //ratMovesByWeight.Add((rat, ratZone, 0));
 
                         HashSet<GameObject> possibleZones = new HashSet<GameObject>(ratZoneInfo.adjacentZones);
@@ -1012,7 +1020,7 @@ public static class MissionSpecifics
 
                         foreach (GameObject zone in possibleZones)
                         {
-                            double ratInZoneWeight = GetComplexActionWeight(null, spreadInfectionAction, zone);  // If rat is not disabled, it will count against itself as another rat
+                            double ratInZoneWeight = GetComplexActionWeight(spreadInfectionAction, zone);  // If rat is not disabled, it will count against itself as another rat
                             double ratMoveWeight = ratInZoneWeight - ratOriginalZoneWeight;
                             if (ratMoveWeight > 0)
                             {

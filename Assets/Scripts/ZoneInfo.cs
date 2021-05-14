@@ -140,6 +140,7 @@ public class ZoneInfo : MonoBehaviour
     {
         int currentHindrance = 0;
         currentHindrance += GetHeroesCount();  // Assumes size and menace of 1 for each hero
+        //string debugString = "GetCurrentHindrance, unitToDiscount: " + unitToDiscount.name + ", heroHindrance: " + currentHindrance + ", unitHindrance:\n";
 
         foreach (Unit unit in gameObject.GetComponentsInChildren<Unit>())
         {
@@ -148,10 +149,12 @@ public class ZoneInfo : MonoBehaviour
                 if (unit.isHeroAlly)
                 {
                     currentHindrance += isMoving ? unit.size : unit.menace;
+                    //debugString += unit.gameObject + " makes currentHindrance: " + currentHindrance + ";\t";
                 }
                 else
                 {
                     currentHindrance -= isMoving ? unit.size : unit.menace;
+                    //debugString += unit.gameObject + " makes currentHindrance: " + currentHindrance + ";\t";
                 }
             }
         }
@@ -160,6 +163,7 @@ public class ZoneInfo : MonoBehaviour
         {
             currentHindrance = 0;
         }
+        //Debug.Log(debugString);
         return currentHindrance;
     }
 
